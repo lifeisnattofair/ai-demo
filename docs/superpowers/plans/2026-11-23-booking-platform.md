@@ -17,7 +17,7 @@
 - 런타임/빌드: Node 24, Vite 8.3.8, Vitest 5.1.1(+ jsdom)
 - Supabase: `@supabase/supabase-js` 2.119.2, Supabase CLI(npm 패키지 `supabase`, 로컬 실행은 Docker)
 - UI: KRDS(`krds-uiux` 1.1.0), Pretendard GOV
-- 결제: 토스페이먼츠 결제위젯 v2(`https://js.tosspayments.com/v2/standard`)
+- 결제: 결제대행 어댑터 구조, 프로토타입은 모의 어댑터(외부 키, 외부 호출 없음)
 - 서버 함수: Deno(Edge Functions)
 
 **Spec**
@@ -26,8 +26,8 @@
 
 ## Global Constraints
 
-- 결제는 토스페이먼츠 **테스트 키**만 씁니다. 코드와 문서 어디에도 `live_` 키를 두지 않습니다(COR-002).
-- 키는 환경 변수로만 다룹니다. 화면용은 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_TOSS_CLIENT_KEY`, `VITE_ENV`(`local|qa|demo`)입니다. 함수용 비밀값은 `TOSS_SECRET_KEY`이고, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`는 Supabase가 자동으로 넣습니다. `.env`는 커밋하지 않고, `.env.example`에는 이름만 적습니다(COR-003, SER-003).
+- 결제는 모의 결제 어댑터만 씁니다. 외부 결제대행사 키나 API 호출을 넣지 않습니다(COR-002).
+- 키는 환경 변수로만 다룹니다. 화면용은 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_ENV`(`local|qa|demo`)입니다. 함수는 Supabase가 자동으로 넣는 `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`만 씁니다. `.env`는 커밋하지 않고, `.env.example`에는 이름만 적습니다(COR-003, SER-003).
 - 금액은 원 단위 정수입니다. 환불액은 `floor(결제액 × 환불비율)`, 수수료는 `결제액 − 환불액`, 할인액은 `floor(단가 × 할인율)`입니다(DAR-003).
 - 일시는 `timestamptz`(UTC)로 저장합니다. D-day는 `Asia/Seoul` 달력 날짜 차이로 계산합니다(DAR-004).
 - 현재 시각은 반드시 `app_now()`(SQL)나 인자로 받은 `now`(JS)로 얻습니다. `now()`나 `Date.now()`를 정책 판단에 직접 쓰지 않습니다(SFR-025).
@@ -51,14 +51,14 @@
 | 항목 | 필요한 시점 | 비고 |
 |---|---|---|
 | Docker 실행 | Task 3부터 | 로컬 Supabase(`npx supabase start`)용. 설치 확인됨(29.9.2) |
-| 토스페이먼츠 개발자센터 테스트 키(클라이언트 키/시크릿 키) | Task 6, 11 | 사용자가 직접 발급해 `.env`와 `supabase/functions/.env`에 넣음. AI는 키 값을 다루지 않음 |
+| ~~결제대행사 테스트 키~~ 필요 없음 | - | 사용자가 직접 발급해 `.env`와 `supabase/functions/.env`에 넣음. AI는 키 값을 다루지 않음 |
 | Supabase 프로젝트 2개(검수용/시연용) | Task 16(배포 구성) 이후 | 로컬 개발에는 필요 없음 |
 
 ## Review Focus
 
 1. **결제 성공 화면에서 새로고침하거나 뒤로 가기**: `payments-confirm`이 같은 `orderId`로 두 번 호출됩니다. 두 번째 호출은 이미 만들어진 예약을 그대로 돌려줘야 하고, 이중 승인이나 오류가 나면 안 됩니다. → Task 6의 `confirm is idempotent for same orderId`
 2. **KST 자정 경계 취소**: 관람일 전날 23:59 KST와 당일 00:01 KST(UTC 14:59 / 15:01)에서 결과가 달라야 합니다(D-1은 70% 환불, D-0은 취소 불가). → Task 1의 `dDay switches at KST midnight`
-3. **토스 승인은 성공했는데 DB 확정이 실패**: 결제를 반드시 전액 취소하고 「결제가 취소되었습니다」라고 안내해야 합니다. → Task 6의 `cancels payment when finalize fails`
+3. **PG 승인은 성공했는데 DB 확정이 실패**: 결제를 반드시 전액 취소하고 「결제가 취소되었습니다」라고 안내해야 합니다. → Task 6의 `cancels payment when finalize fails`
 4. **같은 회원이 탭 두 개로 동시에 선점**: 유효한 선점과 확정 수량을 합쳐 한도를 지켜야 합니다. 3매를 확정한 뒤 다른 탭에서 2매를 선점하면 거절해야 합니다. → Task 4의 `limit counts active holds and confirmed across tabs`
 5. **관리자가 판매 중인 회차의 정원을 판매 수량보다 작게 줄임**: 거절해야 합니다. 가격 변경은 이미 확정된 예약 금액에 영향을 주지 않아야 합니다. → Task 13의 `rejects capacity below sold+held`, `price change keeps existing booking amounts`
 
@@ -79,7 +79,7 @@ supabase/migrations/0005_admin.sql         관리자 RPC/작업 이력/정산 �
 supabase/migrations/0006_rls.sql           RLS 정책
 supabase/seed.sql                           가상 프로그램, 좌석, 계정 시드 (함수 seed_demo(base timestamptz))
 supabase/functions/_shared/policy/time.js, refund.js, pricing.js, limits.js
-supabase/functions/_shared/payments/toss.js      토스 API 클라이언트(fetch 주입)
+supabase/functions/_shared/payments/gateway.js   결제대행 어댑터 계약 + 모의 어댑터
 supabase/functions/_shared/payments/confirm.js   승인 처리 로직(의존성 주입)
 supabase/functions/_shared/payments/cancel.js    취소/환불 로직
 supabase/functions/_shared/payments/webhook.js   웹훅 처리 로직
@@ -93,7 +93,7 @@ src/user/components/poster.js   사진 + 타이포그래피 포스터 컴포넌�
 design/mockups/                 디자인 시안(반응형 HTML, Task 8A)
 tests/policy/*.test.js         정책 단위 테스트(Node)
 tests/db/*.test.js             DB 통합 테스트(로컬 Supabase)
-tests/payments/*.test.js       결제 로직 단위 테스트(가짜 토스/가짜 DB)
+tests/payments/*.test.js       결제 로직 단위 테스트(모의 어댑터/가짜 DB)
 tests/ui/*.test.js             화면 핵심 동작(jsdom)
 docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 (DAR-001, DAR-002)
 .github/workflows/pages.yml    GitHub Pages 배포 워크플로(실행은 사용자 요청 시)
@@ -120,9 +120,9 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
   - `scanForSecrets(files: {path:string, content:string}[]) -> {path:string, line:number, pattern:string}[]`
 
 - [ ] **Step 1: 실패하는 테스트 작성** `tests/scripts/check-secrets.test.js`
-  - `scanForSecrets([{path:'a.js', content:'const k="test_sk_abc123"'}])`는 결과 1건, `pattern === 'toss-secret'`
+  - `scanForSecrets([{path:'a.js', content:'const k="test_sk_abc123"'}])`는 결과 1건, `pattern === 'pg-secret'`
   - `live_gck_`, `live_sk_`도 감지하고, `eyJ`로 시작하는 JWT 형태(서비스 키)도 감지합니다.
-  - `.env.example`처럼 값 없이 `TOSS_SECRET_KEY=`만 있는 줄은 결과 0건입니다.
+  - `.env.example`처럼 값 없이 `SUPABASE_SERVICE_ROLE_KEY=`만 있는 줄은 결과 0건입니다.
 - [ ] **Step 2: 실행해서 실패 확인**: `npx vitest run tests/scripts` → FAIL(모듈 없음)
 - [ ] **Step 3: 구현**
   - `package.json`: `"type":"module"`, 의존성(Global의 정확한 버전), devDependency에 `supabase`, `jsdom`
@@ -220,7 +220,9 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
   - `bookings(id, booking_no text unique, user_id, offering_id, hold_id unique, status check in ('CONFIRMED','CANCELLED'), total_amount, created_at, cancelled_at)`
   - `booking_items(id, booking_id, seat_id null, discount_type, unit_price, discount_amount, amount, proof_checked bool default false)`
   - `payments(id, order_id unique, payment_key unique, booking_id null, user_id, amount, status check in ('DONE','CANCELED','PARTIAL_CANCELED'), approved_at, raw jsonb)`
-  - `refunds(id, payment_id, booking_id, refund_amount, fee_amount, rule, reason check in ('USER','INSTITUTION','CONFLICT'), toss_transaction_key, created_at)`
+  - `refunds(id, payment_id, booking_id, refund_amount, fee_amount, rule, reason check in ('USER','INSTITUTION','CONFLICT'), pg_transaction_key, created_at)`
+  - `pg_mock_transactions(payment_key text pk, order_id text unique, amount int, balance_amount int, status check in ('DONE','CANCELED','PARTIAL_CANCELED'), cancels jsonb default '[]', created_at)`: 모의 어댑터의 거래 기록
+  - `app_settings` 키에 `pg_mock_mode`(`'APPROVE'|'DECLINE'`, 기본 APPROVE. qa 환경에서만 변경)를 추가
   - `waitlist(id, offering_id, user_id, qty, allocated_qty int default 0, status check in ('WAITING','PROMOTED','COMPLETED','EXPIRED','CANCELLED','RELEASED'), promoted_at, deadline_at, created_at)`
   - `notifications(id, user_id, kind, title, body, channel text default 'SMS_MOCK', read_at, created_at)`
   - `admin_audit(id, actor_id, action, target_type, target_id, detail jsonb, at)`
@@ -314,37 +316,41 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 ### Task 6: 결제 승인 (payments-confirm)
 
 **Files**
-- Create: `supabase/migrations/0004_booking.sql`, `supabase/functions/_shared/payments/toss.js`, `confirm.js`, `supabase/functions/payments-confirm/index.ts`, `supabase/functions/.env.example`
-- Test: `tests/payments/confirm.test.js`, `tests/db/booking.test.js`
+- Create: `supabase/migrations/0004_booking.sql`, `supabase/functions/_shared/payments/gateway.js`, `confirm.js`, `supabase/functions/payments-confirm/index.ts`, `supabase/functions/.env.example`
+- Test: `tests/payments/gateway.test.js`, `tests/payments/confirm.test.js`, `tests/db/booking.test.js`
 
 **Interfaces**
 - Consumes: `priceItems`, `validateDiscounts`(Task 2), holds(Task 4)
 - Produces
-  - SQL `prepare_payment(p_hold uuid, p_items jsonb, p_amount int, p_order_id text) returns holds`: 소유자 확인 후 `order_id`, `items`, `amount`를 기록합니다. 화면이 결제위젯을 열기 전에 호출합니다.
+  - SQL `prepare_payment(p_hold uuid, p_items jsonb, p_amount int, p_order_id text) returns holds`: 소유자 확인 후 `order_id`, `items`, `amount`를 기록합니다. 화면이 결제 단계에서 「결제하기」를 누를 때 호출합니다.
   - SQL `lock_for_confirm(p_order_id text) returns holds`: ACTIVE이고 만료 전이면 PAYING으로 바꿉니다. 아니면 `HOLD_EXPIRED`입니다.
   - SQL `finalize_booking(p_order_id text, p_payment_key text, p_raw jsonb) returns bookings`: 좌석 SOLD, 선점 CONSUMED, 예약, 항목, 결제 행 생성, 승격 대기 COMPLETED, 알림 `PAYMENT_DONE`까지 한 트랜잭션으로 처리합니다.
   - SQL `unlock_after_failure(p_order_id text) returns void`: PAYING을 ACTIVE로 되돌립니다(만료 시각이 지났으면 EXPIRED).
-  - `createToss({secretKey, fetch}) -> {confirm({paymentKey, orderId, amount}), cancel(paymentKey, {cancelReason, cancelAmount?}), get(paymentKey)}`
-    - Basic 인증 `base64(secretKey + ':')`, 기본 URL `https://api.tosspayments.com/v1/payments`
-  - `confirmPayment({db, toss}, {userId, paymentKey, orderId, amount}) -> {status:'CONFIRMED', booking} | {status:'CANCELLED', reason:'HOLD_EXPIRED'|'AMOUNT_MISMATCH'|'FINALIZE_FAILED', message:string}`
+  - 어댑터 계약 `Gateway = {confirm({paymentKey, orderId, amount}), cancel(paymentKey, {cancelReason, cancelAmount?}), get(paymentKey)}`. 응답 모양은 결제대행사 API와 같게 둡니다: `{paymentKey, orderId, status:'DONE'|'CANCELED'|'PARTIAL_CANCELED', totalAmount, balanceAmount, cancels:[{transactionKey, cancelAmount}]}`. 오류는 `{code, message}`를 던집니다(`REJECT_CARD_PAYMENT`, `ALREADY_PROCESSED_PAYMENT`, `NOT_FOUND_PAYMENT`, `INVALID_CANCEL_AMOUNT`).
+  - `createMockGateway({store, mode}) -> Gateway`: `store`는 `pg_mock_transactions` 읽기/쓰기 어댑터, `mode`가 `'DECLINE'`이면 confirm에서 `REJECT_CARD_PAYMENT`. 테스트용으로 메모리 store `memoryStore()`도 함께 내보냅니다.
+  - `confirmPayment({db, pg}, {userId, paymentKey, orderId, amount}) -> {status:'CONFIRMED', booking} | {status:'CANCELLED', reason:'HOLD_EXPIRED'|'AMOUNT_MISMATCH'|'FINALIZE_FAILED', message:string}`
     - `db`는 RPC를 부르는 얇은 어댑터입니다(`db.rpc(name, args)`, `db.findBookingByOrder(orderId)`).
-  - 주문번호 형식: `HB-YYYYMMDD-` + 영숫자 10자리(토스 규칙 6~64자 준수)
+  - 주문번호 형식: `HB-YYYYMMDD-` + 영숫자 10자리(결제대행사 일반 규칙인 6~64자, 영숫자/-/_ 준수)
 
 - [ ] **Step 1: 실패하는 테스트 작성**
-  - `tests/payments/confirm.test.js`(가짜 db/toss)
-    - 정상: 선점 금액 80000 = 요청 금액 80000 → `toss.confirm` 1회, `finalize_booking` 1회, 상태 `CONFIRMED`
-    - `AMOUNT_MISMATCH`: 요청 금액 1000 ≠ 서버 재계산 80000 → `toss.confirm`을 호출하지 않습니다. 메시지는 `'결제 금액이 예약 금액과 달라 결제를 진행하지 않았습니다. 다시 시도해 주세요.'`
-    - `HOLD_EXPIRED`: `lock_for_confirm`이 실패하면 `toss.confirm`을 호출하지 않습니다(위젯 인증만 된 상태라 승인 전이므로 취소할 것이 없음). 메시지는 `'좌석 선점 시간이 지나 결제가 진행되지 않았습니다. 좌석을 다시 선택해 주세요.'`
-    - `cancels payment when finalize fails`: toss.confirm 성공 후 `finalize_booking`이 예외를 던지면 `toss.cancel(paymentKey,{cancelReason:'예약 확정 실패'})` 1회, `unlock_after_failure` 1회, 상태 `CANCELLED`
-    - `confirm is idempotent for same orderId`: `findBookingByOrder`가 예약을 돌려주면 toss를 호출하지 않고 같은 예약을 돌려줍니다.
-    - 토스가 `ALREADY_PROCESSED_PAYMENT`를 응답하면 `toss.get`으로 상태를 확인한 뒤 `finalize_booking`을 진행합니다.
+  - `tests/payments/gateway.test.js`(`memoryStore()`)
+    - confirm 후 get → `status:'DONE'`, `balanceAmount` = 금액. 같은 paymentKey로 confirm 2회 → 두 번째 `ALREADY_PROCESSED_PAYMENT`
+    - 부분 취소 36000 → `PARTIAL_CANCELED`, balance 4000. 잔액보다 큰 취소 → `INVALID_CANCEL_AMOUNT`. `cancelAmount` 생략 → 전액 `CANCELED`
+    - `mode:'DECLINE'` → confirm이 `REJECT_CARD_PAYMENT`
+  - `tests/payments/confirm.test.js`(가짜 db + `createMockGateway({store: memoryStore()})`)
+    - 정상: 선점 금액 80000 = 요청 금액 80000 → `pg.confirm` 1회, `finalize_booking` 1회, 상태 `CONFIRMED`
+    - `AMOUNT_MISMATCH`: 요청 금액 1000 ≠ 서버 재계산 80000 → `pg.confirm`을 호출하지 않습니다. 메시지는 `'결제 금액이 예약 금액과 달라 결제를 진행하지 않았습니다. 다시 시도해 주세요.'`
+    - `HOLD_EXPIRED`: `lock_for_confirm`이 실패하면 `pg.confirm`을 호출하지 않습니다(승인 전이라 취소할 것이 없음). 메시지는 `'좌석 선점 시간이 지나 결제가 진행되지 않았습니다. 좌석을 다시 선택해 주세요.'`
+    - `cancels payment when finalize fails`: pg.confirm 성공 후 `finalize_booking`이 예외를 던지면 `pg.cancel(paymentKey,{cancelReason:'예약 확정 실패'})` 1회, `unlock_after_failure` 1회, 상태 `CANCELLED`
+    - `confirm is idempotent for same orderId`: `findBookingByOrder`가 예약을 돌려주면 pg를 호출하지 않고 같은 예약을 돌려줍니다.
+    - 어댑터가 `ALREADY_PROCESSED_PAYMENT`를 던지면 `pg.get`으로 상태를 확인한 뒤 `finalize_booking`을 진행합니다.
   - `tests/db/booking.test.js`
     - `prepare_payment` → `lock_for_confirm` → `finalize_booking` 후 좌석 SOLD, 예약 1건, `booking_no` 형식 `B` + 8자리입니다.
     - **AC-3 시나리오**: 회원 A 선점 → 시계 +11분 → 회원 B가 같은 좌석을 선점/확정 → A의 `lock_for_confirm`이 `HOLD_EXPIRED`입니다.
 - [ ] **Step 2: 실행해서 실패 확인**: `npx vitest run tests/payments` → FAIL
 - [ ] **Step 3: 구현**
   - 금액 재계산은 `holds.items`(prepare 때 저장한 단가/할인)로 `priceItems`를 다시 실행해 비교합니다.
-  - 순서는 `lock_for_confirm` → 금액 비교 → `toss.confirm` → `finalize_booking`입니다. 금액이 다르면 `unlock_after_failure`를 부릅니다.
+  - 순서는 `lock_for_confirm` → 금액 비교 → `pg.confirm` → `finalize_booking`입니다. 금액이 다르면 `unlock_after_failure`를 부릅니다.
   - Deno 래퍼는 요청 JWT에서 사용자를 확인하고, 서비스 키 클라이언트로 db 어댑터를 만듭니다. CORS 허용 도메인은 환경 변수 `ALLOWED_ORIGIN`으로 받습니다.
 - [ ] **Step 4: 통과 확인**: `npx vitest run tests/payments`와 `npm run test:db -- booking` → PASS
 - [ ] **Step 5: 커밋**: `feat(payments): 결제 승인, 재검증, 실패 시 자동 취소`
@@ -356,26 +362,26 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - Test: `tests/payments/cancel.test.js`, `tests/payments/webhook.test.js`, `tests/db/cancel.test.js`
 
 **Interfaces**
-- Consumes: `calcRefund`(Task 1), `createToss`(Task 6), `release_inventory`(Task 5)
+- Consumes: `calcRefund`(Task 1), `createMockGateway`(Task 6), `release_inventory`(Task 5)
 - Produces
   - SQL `cancel_context(p_booking uuid) returns jsonb`: `{productType, paidAmount, baseAt, lessonStarts, paymentKey, status, ownerId}`
   - SQL `finalize_cancel(p_booking uuid, p_refund int, p_fee int, p_rule text, p_reason text, p_tx_key text) returns bookings`: 예약 CANCELLED, 환불 기록, 결제 상태 변경, 재고 반환(`release_inventory`), 알림 `BOOKING_CANCELLED`
-  - `cancelBooking({db, toss, now}, {userId, bookingId, reason:'USER'|'INSTITUTION'}) -> {status:'CANCELLED', refundAmount, feeAmount, rule} | {status:'REJECTED', message}`
+  - `cancelBooking({db, pg, now}, {userId, bookingId, reason:'USER'|'INSTITUTION'}) -> {status:'CANCELLED', refundAmount, feeAmount, rule} | {status:'REJECTED', message}`
     - `reason='INSTITUTION'`이면 정책과 관계없이 전액 환불하고, rule은 `'INSTITUTION_FULL'`입니다.
-  - `handleWebhook({db, toss}, body) -> {applied:boolean}`
-    - `eventType==='PAYMENT_STATUS_CHANGED'`일 때만 처리합니다. 본문은 믿지 않고 `toss.get(paymentKey)`로 상태를 다시 확인한 뒤, `payments.status`가 다를 때만 갱신합니다.
+  - `handleWebhook({db, pg}, body) -> {applied:boolean}`
+    - `eventType==='PAYMENT_STATUS_CHANGED'`일 때만 처리합니다. 본문은 믿지 않고 `pg.get(paymentKey)`로 상태를 다시 확인한 뒤, `payments.status`가 다를 때만 갱신합니다.
   - Edge `payments-cancel` 요청 본문: `{bookingId}`(회원 본인) 또는 `{offeringId, mode:'INSTITUTION'}`(정산 담당만. 승인된 취소 요청이 있어야 함)
 
 - [ ] **Step 1: 실패하는 테스트 작성**
   - `cancel.test.js`
-    - D-7 공연 40000원 → `toss.cancel(paymentKey,{cancelReason:'고객 취소', cancelAmount:36000})`, 결과 `{refundAmount:36000, feeAmount:4000, rule:'D7_4'}`
-    - 당일 → `REJECTED`, 메시지 `'관람(개강) 당일에는 취소할 수 없습니다.'`, toss 호출 없음
-    - 1/2 경과 강좌 → `cancelAmount`를 넘기지 않습니다(환불 0이라 토스 취소 없음). `finalize_cancel`의 `p_refund=0`, 예약 CANCELLED
+    - D-7 공연 40000원 → `pg.cancel(paymentKey,{cancelReason:'고객 취소', cancelAmount:36000})`, 결과 `{refundAmount:36000, feeAmount:4000, rule:'D7_4'}`
+    - 당일 → `REJECTED`, 메시지 `'관람(개강) 당일에는 취소할 수 없습니다.'`, pg 호출 없음
+    - 1/2 경과 강좌 → `cancelAmount`를 넘기지 않습니다(환불 0이라 PG 취소 없음). `finalize_cancel`의 `p_refund=0`, 예약 CANCELLED
     - 남의 예약 → `REJECTED`, `'본인 예약만 취소할 수 있습니다.'`
     - `INSTITUTION` → 전액 `cancelAmount` 생략(전액 취소)
   - `webhook.test.js`
     - 같은 본문 2회 → 첫 번째 `applied:true`, 두 번째 `applied:false`
-    - 본문 status가 `CANCELED`여도 `toss.get`이 `DONE`이면 갱신하지 않습니다.
+    - 본문 status가 `CANCELED`여도 `pg.get`이 `DONE`이면 갱신하지 않습니다.
   - `tests/db/cancel.test.js`: 취소하면 좌석이 대기 1순위에게 배정됩니다(Task 5 규칙이 취소 흐름에서 실제로 호출되는지 확인).
 - [ ] **Step 2: 실행해서 실패 확인**
 - [ ] **Step 3: 구현**: 기관 일괄 취소는 해당 회차의 CONFIRMED 예약마다 `cancelBooking(…,'INSTITUTION')`을 순차 실행합니다. 실패 건은 목록으로 돌려주고 나머지는 계속 진행합니다. 일괄 취소로 풀린 재고는 대기에 배정하지 않고, 회차가 CANCELLED이므로 판매도 닫습니다.
@@ -473,11 +479,11 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**
 - [ ] **Step 5: 커밋**: `feat(user): 좌석 배치도/대체 목록/인원 선택과 선점 타이머`
 
-### Task 11: 사용자 - 할인 선택과 토스 결제
+### Task 11: 사용자 - 할인 선택과 결제 단계
 
 **Files**
 - Create: `src/user/pages/discount.js`, `payment.js`, `payment-result.js`
-- Test: `tests/ui/discount.test.js`, `tests/ui/payment-result.test.js`
+- Test: `tests/ui/discount.test.js`, `tests/ui/payment.test.js`, `tests/ui/payment-result.test.js`
 
 **Interfaces**
 - Consumes: `priceItems`, `validateDiscounts`, `DISCOUNT_LABELS`, `api.preparePayment`, `api.confirmPayment`
@@ -485,13 +491,14 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 1: 실패하는 테스트 작성**
   - 3매 중 1매 「장애인」, 1매 「장애인 동반」을 고르면 합계가 할인 반영 금액으로 바뀝니다. 「현장에서 증빙을 확인합니다. 증빙이 없으면 차액을 현장에서 결제합니다.」 안내가 보입니다.
   - 동반만 고르면 「다음」이 비활성이고 `validateDiscounts` 오류 문구가 표시됩니다.
+  - 결제 단계(jsdom): 결제 수단(신용/체크카드, 계좌이체, 간편결제) 중 하나를 고르고 결제 약관에 동의해야 「40,000원 결제하기」가 활성화됩니다. 누르면 `preparePayment` 1회 후 `#/payment/success?paymentKey=mock_…&orderId=…&amount=40000`으로 이동합니다. 결제대행사 로고나 상표는 쓰지 않습니다.
   - 성공 페이지(jsdom, 가짜 api): 쿼리 `paymentKey, orderId, amount`로 `confirmPayment`를 1회 호출합니다. 결과 `CANCELLED`이면 사유 메시지와 「좌석 다시 선택」 버튼을 보여 줍니다.
 - [ ] **Step 2: 실행해서 실패 확인**
 - [ ] **Step 3: 구현**
-  - `prepare_payment`로 주문번호와 금액을 확정한 뒤 결제위젯을 렌더링합니다. `customerKey`는 회원 id, `successUrl`/`failUrl`은 `location.origin + base + '#/payment/success'`입니다.
+  - 결제 단계는 실제 결제창처럼 결제 수단 선택, 결제 금액 요약, 결제 약관 동의, 결제하기 버튼으로 구성합니다(설계 5-9 품질 기준). `paymentKey`는 `mock_` + 영숫자 20자리로 화면에서 만듭니다. 결제대행사 결제창이 돌려주는 값의 자리입니다.
   - 실패/사용자 취소 시 선점이 유지됐다고 안내하고 할인 단계로 돌아갑니다(SFR-010).
-- [ ] **Step 4: 통과 확인**: 로컬에서 테스트 키로 실제 테스트 결제 1회(사용자 키 필요). 실패하면 원인을 기록합니다.
-- [ ] **Step 5: 커밋**: `feat(user): 할인 선택/토스 결제위젯/결제 결과`
+- [ ] **Step 4: 통과 확인**: `npm test` PASS, 로컬에서 결제 단계 → 성공 화면까지 수동으로 1회 확인
+- [ ] **Step 5: 커밋**: `feat(user): 할인 선택/결제 단계/결제 결과`
 
 ### Task 12: 사용자 - 내 예약, 취소, 대기, 알림함
 
@@ -564,7 +571,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 2: 실행해서 실패 확인**
 - [ ] **Step 3: 구현**
   - 예약 내역: 조회 조건(기간, 프로그램, 상태, 예약번호/예약자), 증빙 확인 체크
-  - 결제/환불: 토스 거래 번호 표시
+  - 결제/환불: 결제대행 거래 번호 표시
   - 정산: 일별/프로그램별 탭, 합계 행, CSV 내려받기
 - [ ] **Step 4: 통과 확인**
 - [ ] **Step 5: 커밋**: `feat(admin): 예약, 대기, 결제, 환불 내역, 회차 취소 승인, 정산/CSV`
@@ -609,9 +616,9 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
   - README
     - 로컬 실행: `npx supabase start` → `.env` 작성 → `npm run dev`
     - 시연 계정
-    - 테스트 결제 안내: 토스 테스트 환경이라 실제 승인/출금이 없고, 결제창 안내에 따라 테스트 결제를 진행합니다.
+    - 결제 안내: 모의 결제라 실제 승인과 출금이 없습니다. 실사업 전환 시 어댑터만 결제대행사용으로 바꿉니다.
     - 무료 프로젝트 일시 정지 가능성 안내
-    - Edge Functions 배포 명령(`npx supabase functions deploy`, `npx supabase secrets set TOSS_SECRET_KEY=…`)
+    - Edge Functions 배포 명령(`npx supabase functions deploy`)
 - [ ] **Step 4: 통과 확인**: `npm test && npm run test:db && npm run check:secrets && npm run check:trace && npm run build` 모두 성공
 - [ ] **Step 5: 커밋**: `chore: Pages 워크플로/시연 안내/추적성 점검`
 
@@ -632,7 +639,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 | SFR-007 | 선점과 만료 | 4, 10 | tests/db/hold, tests/ui/hold-timer | QA | AC-4 |
 | SFR-008 | 1인 한도 검증 | 2, 4, 10 | tests/policy/limits, tests/db/hold | QA | AC-1 |
 | SFR-009 | 할인 선택/금액 계산 | 2, 11 | tests/policy/pricing, tests/ui/discount | QA | AC-1 |
-| SFR-010 | 결제 | 11 | tests/ui/payment-result | QA(테스트 결제) | AC-1 |
+| SFR-010 | 결제 | 11 | tests/ui/payment, tests/ui/payment-result | QA | AC-1 |
 | SFR-011 | 결제 승인/동시 결제 처리 | 6 | tests/payments/confirm, tests/db/booking | QA | AC-3 |
 | SFR-012 | 예약 확인 | 12 | tests/ui/booking-detail | QA | AC-1 |
 | SFR-013 | 예약 취소/환불(기준일 전) | 1, 7, 12 | tests/policy/refund, tests/payments/cancel | QA | AC-1 |
@@ -667,9 +674,9 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 | DAR-004 | 시간 기준 | 1, 4 | tests/policy/time, tests/db/hold | - | AC-1, AC-2 |
 | DAR-005 | 보관 기간 | 3 | - | 테이블 정의서 | - |
 | DAR-006 | 초기 데이터 | 3, 15 | tests/db/schema, tests/db/system | - | AC-6 |
-| SIR-001 | 결제위젯 | 11 | - | QA(테스트 결제) | AC-1 |
-| SIR-002 | 결제 승인 API | 6 | tests/payments/confirm | QA | AC-1, AC-3 |
-| SIR-003 | 결제 취소 API | 7 | tests/payments/cancel | QA | AC-1, AC-2 |
+| SIR-001 | 결제 요청 화면 | 11 | tests/ui/payment | QA | AC-1 |
+| SIR-002 | 결제 승인 연계 | 6 | tests/payments/confirm | QA | AC-1, AC-3 |
+| SIR-003 | 결제 취소 연계 | 7 | tests/payments/cancel | QA | AC-1, AC-2 |
 | SIR-004 | 결제 웹훅 | 7 | tests/payments/webhook | - | AC-3 |
 | SIR-005 | 회원 인증 | 8 | tests/ui/auth | QA | AC-1 |
 | SIR-006 | 본인인증(모의) | 8 | - | QA | AC-1 |
@@ -681,7 +688,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 | QUR-006 | 요구사항 추적성 | 16 | tests/scripts/check-trace | - | AC-8 |
 | QUR-007 | 오류 안내 | 8, 10, 11, 12 | tests/ui/* 문구 단언 | QA | - |
 | COR-001 | 가상 데이터 | 3, 9 | tests/ui/poster | 시드 검토 | - |
-| COR-002 | 결제 테스트 모드 | 0 | tests/scripts/check-secrets(`live_`) | - | AC-9 |
+| COR-002 | 결제 모의 연동 | 6 | tests/payments/gateway | - | AC-9 |
 | COR-003 | 키 관리 | 0 | tests/scripts/check-secrets | - | AC-9 |
 | COR-004 | 호스팅 | 16 | - | 배포 시 확인 | - |
 | COR-005 | 기술 구성 | 0 | - | 리뷰 | - |
