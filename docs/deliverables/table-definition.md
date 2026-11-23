@@ -106,7 +106,8 @@
 | order_id | text | UK | 결제 주문번호 |
 | amount | int | | 결제 예정액 |
 | items | jsonb | | 매수별 좌석, 할인 유형 |
-| expires_at | timestamptz | | 선점 만료 일시 |
+| expires_at | timestamptz | | 선점 만료 일시 (승격 선점은 결제 기한) |
+| waitlist_id | uuid | FK waitlist | 대기 승격 선점 연결 (0003_waitlist.sql) |
 | created_at | timestamptz | | |
 
 ### bookings

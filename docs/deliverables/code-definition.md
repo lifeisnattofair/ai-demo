@@ -45,6 +45,8 @@
 | 취소 요청 상태 | offering_cancel_requests.status | REQUESTED | 요청됨 | 5년 보관 대상 |
 | | | APPROVED | 승인 | 5년 보관 대상 |
 | | | REJECTED | 반려 | 5년 보관 대상 |
+| 알림 종류 | notifications.kind | WAIT_PROMOTED | 대기 승격(결제 가능) | |
+| | | WAIT_EXPIRED | 대기 배정 해제/기한 만료 | |
 | 알림 채널 | notifications.channel | SMS_MOCK | 문자(모의) | |
 | 모의 결제 모드 | app_settings.pg_mock_mode | APPROVE | 승인 | |
 | | | DECLINE | 거절 | |
