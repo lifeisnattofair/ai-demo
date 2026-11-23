@@ -388,11 +388,26 @@ describe('hold_for_promotion and cancel_waitlist', () => {
     const { o, w1 } = await promoted();
     const { data: h } = await m[0].rpc('hold_for_promotion', { p_waitlist: w1.id });
     await at(new Date(Date.parse(BASE) + 24 * H + 1000).toISOString());
-    const pay = psql(`begin; update public.holds set status = 'PAYING' where id = '${h.id}'; select pg_sleep(2); commit;`);
-    await new Promise((r) => setTimeout(r, 700));
-    const { error } = await m[2].rpc('sweep_offering', { p_offering: o.id });
-    expect(error).toBeNull();
-    await pay;
+    const marker = `wl_race_${h.id.slice(0, 8)}`;
+    const pay = psql(`/* ${marker} */ begin; update public.holds set status = 'PAYING' where id = '${h.id}'; select pg_sleep(3); commit;`);
+    const payDone = pay.then(() => null, (e) => e); // 실패해도 처리되지 않은 거부가 남지 않게
+    try {
+      // 결제 트랜잭션이 선점 행을 잠근 채 pg_sleep 중일 때까지 기다립니다.
+      let ready = false;
+      for (let i = 0; i < 50 && !ready; i++) {
+        const out = await psql(`select count(*) from pg_stat_activity a join pg_locks l on l.pid = a.pid
+          where a.pid <> pg_backend_pid() and a.query like '%${marker}%' and a.wait_event = 'PgSleep'
+            and l.relation = 'public.holds'::regclass and l.mode = 'RowExclusiveLock' and l.granted`);
+        ready = /^\s*1\s*$/m.test(out);
+        if (!ready) await new Promise((r) => setTimeout(r, 100));
+      }
+      expect(ready).toBe(true);
+      const { error } = await m[2].rpc('sweep_offering', { p_offering: o.id });
+      expect(error).toBeNull();
+    } finally {
+      const e = await payDone;
+      expect(e).toBeNull();
+    }
     const [x1, x2] = await queue(o);
     expect([x1.status, x2.status]).toEqual(['PROMOTED', 'WAITING']);
     const [s] = await seats(o, [5]);

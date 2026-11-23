@@ -126,11 +126,12 @@ declare
   v_is_seat boolean;
   v_seats int[];
 begin
+  -- 잠금 순서: 선점 -> 대기 -> 좌석. 결제 경로(선점 CONSUMED -> 트리거가 대기 갱신)와 같은 순서라 교착이 없습니다.
+  -- payments-confirm이 ACTIVE -> PAYING/CONSUMED를 진행 중이면 그 트랜잭션이 끝날 때까지 기다린 뒤
+  -- 확정된 상태를 다시 봅니다(스냅샷 검사만으로는 이중 배정 가능).
+  perform 1 from public.holds where waitlist_id = p_waitlist order by id for update;
   select * into v_w from public.waitlist where id = p_waitlist for update;
   if not found or v_w.status not in ('WAITING', 'PROMOTED') then return false; end if;
-  -- 연결된 선점을 잠근 뒤 다시 확인합니다. payments-confirm이 ACTIVE -> PAYING을 진행 중이면
-  -- 그 트랜잭션이 끝날 때까지 기다렸다가 확정된 상태를 봅니다(스냅샷 검사만으로는 이중 배정 가능).
-  perform 1 from public.holds where waitlist_id = p_waitlist for update;
   if exists (select 1 from public.holds where waitlist_id = p_waitlist and status = 'PAYING') then
     return false;
   end if;
