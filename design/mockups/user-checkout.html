@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>할인 선택과 결제 | 겨울 실내악 시리즈 「현의 대화」 | 한빛아트센터</title>
+<link rel="stylesheet" href="assets/css/user.css">
+</head>
+<body>
+<a class="skip" href="#main">본문 바로가기</a>
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="user-list.html"><b>한빛아트센터</b><span>한빛시 문화재단</span></a>
+    <nav class="gnb" aria-label="주 메뉴">
+      <a href="user-list.html" aria-current="page">공연</a>
+      <a href="user-list.html">체험</a>
+      <a href="user-list.html">정규 강좌</a>
+      <a href="user-list.html">대관 안내</a>
+      <a href="user-list.html">이용 안내</a>
+    </nav>
+    <div class="util">
+      <a href="user-mybooking.html">내 예약</a>
+      <a class="me" href="user-mybooking.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>김지원 님</a>
+    </div>
+    <button class="menu-btn" type="button" aria-label="전체 메뉴 열기"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+
+<div class="book-head">
+  <div class="container">
+    <div class="bh-title"><img src="assets/photos/quartet.jpg" alt=""><div><b>겨울 실내악 시리즈 「현의 대화」</b><span class="num">2026. 12. 12.(토) 19:30, 소극장</span></div></div>
+  </div>
+  <div class="container">
+    <ol class="steps" aria-label="예매 단계">
+      <li class="done">회차 선택</li>
+      <li class="done">좌석 선택</li>
+      <li class="done">할인 선택</li>
+      <li aria-current="step">결제</li>
+      <li>예매 완료</li>
+    </ol>
+  </div>
+</div>
+
+<main id="main" class="container booking">
+  <div>
+    <section class="panel" aria-labelledby="dc-title">
+      <div class="panel-head"><h2 id="dc-title">할인</h2><a class="btn-text btn" href="user-seat.html" style="font-size:var(--fs-small)">좌석 다시 선택</a></div>
+      <div class="panel-body">
+        <div class="ticket-rows">
+          <div class="ticket-row">
+            <div class="seatname">E열 9번<small>S석</small></div>
+            <label class="sr-only" for="d1">E열 9번 할인</label>
+            <select class="select" id="d1"><option>일반</option><option selected>장애인 50%</option><option>장애인 동반 50%</option><option>국가유공자 50%</option><option>국가유공자 동반 50%</option><option>다자녀 30%</option></select>
+            <div class="amt num"><s>30,000원</s>15,000원</div>
+          </div>
+          <div class="ticket-row">
+            <div class="seatname">E열 10번<small>S석</small></div>
+            <label class="sr-only" for="d2">E열 10번 할인</label>
+            <select class="select" id="d2"><option>일반</option><option>장애인 50%</option><option selected>장애인 동반 50%</option><option>국가유공자 50%</option><option>국가유공자 동반 50%</option><option>다자녀 30%</option></select>
+            <div class="amt num"><s>30,000원</s>15,000원</div>
+          </div>
+        </div>
+        <div class="note info" style="margin-top:16px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg><p style="margin:0">할인 증빙(복지카드, 국가유공자증, 다자녀 확인서)은 공연 당일 매표소에서 확인합니다. 증빙이 없으면 현장에서 차액을 결제해 주세요. 증빙 서류는 사이트에서 받지 않습니다.</p></div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="pm-title">
+      <div class="panel-head"><h2 id="pm-title">결제 수단</h2></div>
+      <div class="panel-body">
+        <div class="methods" role="radiogroup" aria-label="결제 수단">
+          <label class="method"><input type="radio" name="pm" checked><b>신용/체크카드</b><small>국내 모든 카드</small></label>
+          <label class="method"><input type="radio" name="pm"><b>계좌이체</b><small>실시간 계좌이체</small></label>
+          <label class="method"><input type="radio" name="pm"><b>간편결제</b><small>등록한 결제 수단</small></label>
+        </div>
+        <div class="card-fields">
+          <div class="field"><label for="card">카드사</label><select class="select" id="card"><option>카드사를 선택하세요</option><option selected>한빛카드</option><option>누리카드</option><option>하나로카드</option></select></div>
+          <div class="field"><label for="inst">할부</label><select class="select" id="inst"><option selected>일시불</option><option>2개월</option><option>3개월</option></select></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="ag-title">
+      <div class="panel-head"><h2 id="ag-title">약관 동의</h2></div>
+      <div class="panel-body agree">
+        <label class="check all"><input type="checkbox" checked>전체 동의</label>
+        <label class="check"><input type="checkbox" checked>[필수] 예매 및 취소 수수료 규정 확인<a href="user-detail.html#refund">보기</a></label>
+        <label class="check"><input type="checkbox" checked>[필수] 개인정보 제3자 제공(결제대행) 동의<a href="user-list.html">보기</a></label>
+        <label class="check"><input type="checkbox" checked>[필수] 결제 대행 서비스 이용약관 동의<a href="user-list.html">보기</a></label>
+      </div>
+    </section>
+  </div>
+
+  <aside class="summary" aria-label="결제 금액">
+    <div class="panel">
+      <div class="timer" role="timer" aria-live="off"><span>남은 선점 시간</span><b>06:15</b></div>
+      <div class="panel-body">
+        <h2 style="margin:0 0 16px;font-size:var(--fs-h3);color:var(--c-ink)">결제 금액</h2>
+        <ul class="sum-list">
+          <li><span>좌석</span><span>S석 E열 9번, 10번</span></li>
+          <li><span>티켓 금액</span><span>60,000원</span></li>
+          <li><span>장애인 할인</span><span>-15,000원</span></li>
+          <li><span>장애인 동반 할인</span><span>-15,000원</span></li>
+          <li><span>예매 수수료</span><span>0원</span></li>
+        </ul>
+        <div class="sum-total"><span>최종 결제 금액</span><b>30,000원</b></div>
+        <a class="btn btn-primary btn-block" href="user-mybooking.html" style="margin-top:20px">30,000원 결제하기</a>
+        <ul class="sum-list" style="margin:20px 0 0;padding-top:16px;border-top:1px solid var(--c-line-soft)" aria-label="취소 수수료 일정">
+          <li><span>무료 취소</span><span>12. 4.(금)까지</span></li>
+          <li><span>수수료 10%</span><span>12. 5.(토) - 12. 8.(화)</span></li>
+          <li><span>수수료 30%</span><span>12. 9.(수) - 12. 11.(금)</span></li>
+        </ul>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="f-links">
+      <a href="user-list.html"><strong>개인정보처리방침</strong></a>
+      <a href="user-list.html">이용약관</a>
+      <a href="user-list.html">취소/환불 규정</a>
+      <a href="user-list.html">웹 접근성 정책</a>
+    </div>
+    <address>한빛시 문화재단 한빛아트센터 | 한빛시 문화로 120 | 예약 문의 031-000-1200 (평일 09:00 - 18:00)<br>Copyright Hanbit Arts Center. All rights reserved.</address>
+  </div>
+</footer>
+</body>
+</html>

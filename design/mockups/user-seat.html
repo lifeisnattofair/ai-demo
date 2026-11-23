@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>좌석 선택 | 겨울 실내악 시리즈 「현의 대화」 | 한빛아트센터</title>
+<link rel="stylesheet" href="assets/css/user.css">
+</head>
+<body>
+<a class="skip" href="#main">본문 바로가기</a>
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="user-list.html"><b>한빛아트센터</b><span>한빛시 문화재단</span></a>
+    <nav class="gnb" aria-label="주 메뉴">
+      <a href="user-list.html" aria-current="page">공연</a>
+      <a href="user-list.html">체험</a>
+      <a href="user-list.html">정규 강좌</a>
+      <a href="user-list.html">대관 안내</a>
+      <a href="user-list.html">이용 안내</a>
+    </nav>
+    <div class="util">
+      <a href="user-mybooking.html">내 예약</a>
+      <a class="me" href="user-mybooking.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>김지원 님</a>
+    </div>
+    <button class="menu-btn" type="button" aria-label="전체 메뉴 열기"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+
+<div class="book-head">
+  <div class="container">
+    <div class="bh-title"><img src="assets/photos/quartet.jpg" alt=""><div><b>겨울 실내악 시리즈 「현의 대화」</b><span class="num">2026. 12. 12.(토) 19:30, 소극장</span></div></div>
+  </div>
+  <div class="container">
+    <ol class="steps" aria-label="예매 단계">
+      <li class="done">회차 선택</li>
+      <li aria-current="step">좌석 선택</li>
+      <li>할인 선택</li>
+      <li>결제</li>
+      <li>예매 완료</li>
+    </ol>
+  </div>
+</div>
+
+<main id="main" class="container booking">
+  <section class="panel" aria-labelledby="seat-title">
+    <div class="panel-head">
+      <h2 id="seat-title">좌석 선택</h2>
+      <div class="view-toggle" role="group" aria-label="보기 방식">
+        <button type="button" aria-pressed="true">배치도</button>
+        <button type="button" aria-pressed="false">좌석 목록</button>
+      </div>
+    </div>
+    <div class="panel-body">
+      <div class="seat-tools">
+        <ul class="legend">
+          <li><i style="background:#3b4f6b"></i>R석 40,000원</li>
+          <li><i style="background:#7a8ea8"></i>S석 30,000원</li>
+          <li><i style="background:#b9c5d3"></i>A석 20,000원</li>
+          <li><i style="background:var(--c-action)"></i>선택한 좌석</li>
+          <li><i style="background:#dfe2e5"></i>판매 완료</li>
+        </ul>
+        <span style="font-size:var(--fs-xsmall);color:var(--c-text-3)">잔여 12석 / 200석</span>
+      </div>
+      <div class="hall">
+        <div class="stage">STAGE</div>
+        <div class="rows" id="rows"></div>
+        <div class="hall-foot"><span>출입구</span><span>휠체어석 J열 양끝</span><span>출입구</span></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="summary" aria-label="선택 내역">
+    <div class="panel">
+      <div class="timer" role="timer" aria-live="off"><span>남은 선점 시간</span><b>08:42</b></div>
+      <div class="panel-body">
+        <h2 style="margin:0 0 12px;font-size:var(--fs-h3);color:var(--c-ink)">선택한 좌석 <span class="num" style="color:var(--c-text-3);font-weight:500">2 / 4매</span></h2>
+        <div class="seat-chips">
+          <span class="seat-chip">S석 E열 9번<button type="button" aria-label="S석 E열 9번 선택 해제"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>
+          <span class="seat-chip">S석 E열 10번<button type="button" aria-label="S석 E열 10번 선택 해제"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></span>
+        </div>
+        <ul class="sum-list" style="margin-top:20px">
+          <li><span>관람일시</span><span>2026. 12. 12.(토) 19:30</span></li>
+          <li><span>S석 2매</span><span>60,000원</span></li>
+          <li><span>할인</span><span>다음 단계에서 선택</span></li>
+        </ul>
+        <div class="sum-total"><span>합계</span><b>60,000원</b></div>
+        <a class="btn btn-primary btn-block" href="user-checkout.html" style="margin-top:20px">다음: 할인 선택</a>
+        <p style="margin:12px 0 0;font-size:var(--fs-xsmall);color:var(--c-text-3)">선점 시간이 지나면 좌석이 자동으로 해제됩니다. 회차당 1인 4매까지 예매할 수 있습니다.</p>
+      </div>
+    </div>
+  </aside>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="f-links">
+      <a href="user-list.html"><strong>개인정보처리방침</strong></a>
+      <a href="user-list.html">이용약관</a>
+      <a href="user-list.html">취소/환불 규정</a>
+      <a href="user-list.html">웹 접근성 정책</a>
+    </div>
+    <address>한빛시 문화재단 한빛아트센터 | 한빛시 문화로 120 | 예약 문의 031-000-1200 (평일 09:00 - 18:00)<br>Copyright Hanbit Arts Center. All rights reserved.</address>
+  </div>
+</footer>
+<script>
+  // 좌석 배치: A-D R석, E-G S석, H-J A석. 4 + 12 + 4 블록
+  const rows = 'ABCDEFGHIJ'.split('');
+  const open = new Set(['A3','B18','C2','C19','D11','E9','E10','F5','F16','H1','H20','I12','J4','J17']);
+  const selected = new Set(['E9', 'E10']);
+  const grade = (r) => (r <= 'D' ? 'r' : r <= 'G' ? 's' : 'a');
+  const gradeName = { r: 'R석', s: 'S석', a: 'A석' };
+  const el = document.getElementById('rows');
+  for (const r of rows) {
+    const row = document.createElement('div');
+    row.className = 'row';
+    row.setAttribute('role', 'group');
+    row.setAttribute('aria-label', r + '열');
+    row.innerHTML = '<span class="lbl" aria-hidden="true">' + r + '</span>';
+    for (let n = 1; n <= 20; n++) {
+      if (n === 5 || n === 17) row.insertAdjacentHTML('beforeend', '<span class="gap"></span>');
+      const id = r + n;
+      const g = grade(r);
+      const isSel = selected.has(id);
+      const isOpen = open.has(id);
+      const cls = isSel ? 'sel' : isOpen ? g : 'sold';
+      const state = isSel ? '선택됨' : isOpen ? '선택 가능' : '선택할 수 없음';
+      row.insertAdjacentHTML('beforeend', '<button type="button" class="seat ' + g + ' ' + cls + '" aria-label="' + r + '열 ' + n + '번 ' + gradeName[g] + ' ' + state + '"' + (isOpen || isSel ? '' : ' aria-disabled="true"') + (isSel ? ' aria-pressed="true"' : '') + '></button>');
+    }
+    row.insertAdjacentHTML('beforeend', '<span class="lbl" aria-hidden="true">' + r + '</span>');
+    el.appendChild(row);
+  }
+</script>
+</body>
+</html>

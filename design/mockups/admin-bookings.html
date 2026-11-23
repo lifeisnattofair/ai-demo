@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>예약 내역 | 한빛아트센터 통합 예약 관리</title>
+<link rel="stylesheet" href="assets/css/admin.css">
+</head>
+<body>
+<header class="topbar">
+  <button class="menu-toggle" type="button" aria-label="메뉴 열기"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  <a class="brand" href="admin-bookings.html"><b>한빛아트센터</b><span>통합 예약 관리</span></a>
+  <div class="t-search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><label class="sr-only" for="gs">통합 검색</label><input id="gs" type="search" placeholder="예약번호, 예약자, 프로그램명 검색"></div>
+  <div class="t-right">
+    <span class="session">자동 로그아웃 <b class="num">28:41</b><button type="button">연장</button></span>
+    <span class="who"><span class="role">운영 담당</span><span><b>박서연</b> 님</span></span>
+    <a class="logout" href="admin-bookings.html">로그아웃</a>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="sidebar" aria-label="관리자 메뉴">
+    <div class="s-group">
+      <a class="s-head" href="admin-settlement.html"><span class="lbl"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>대시보드</span></a>
+    </div>
+    <div class="s-group">
+      <button class="s-head" type="button" aria-expanded="true"><span class="lbl"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg>프로그램관리</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <ul><li><a href="admin-bookings.html">프로그램 목록</a></li><li><a href="admin-bookings.html">회차/좌석 관리</a></li></ul>
+    </div>
+    <div class="s-group">
+      <button class="s-head" type="button" aria-expanded="true"><span class="lbl"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 5h16v4a2 2 0 0 0 0 4v4H4v-4a2 2 0 0 0 0-4z"/><path d="M10 5v12" stroke-dasharray="2 2"/></svg>예약관리</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <ul><li><a href="admin-bookings.html" aria-current="page">예약 내역</a></li><li><a href="admin-bookings.html">대기자 관리<span class="cnt">7</span></a></li></ul>
+    </div>
+    <div class="s-group">
+      <button class="s-head" type="button" aria-expanded="true"><span class="lbl"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h4"/></svg>결제/정산</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+      <ul><li><a href="admin-bookings.html">결제/환불 내역</a></li><li><a href="admin-bookings.html">회차 취소 승인<span class="cnt">1</span></a></li><li><a href="admin-settlement.html">정산 현황</a></li></ul>
+    </div>
+    <div class="s-group">
+      <button class="s-head" type="button" aria-expanded="false"><span class="lbl"><svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/></svg>시스템</span><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+    </div>
+    <div class="s-foot">최근 접속 2026. 12. 7. 09:12<br>접속 IP 10.20.**.**</div>
+  </nav>
+
+  <main class="content">
+    <div class="page-head">
+      <div>
+        <div class="crumb"><span>홈</span><span>예약관리</span><span>예약 내역</span></div>
+        <h1>예약 내역</h1>
+      </div>
+      <span class="help">개인정보는 일부를 가려 표시합니다. 예약번호를 누르면 상세 정보를 볼 수 있고, 열람 기록이 남습니다.</span>
+    </div>
+
+    <form class="search-box" aria-label="조회 조건">
+      <div class="search-grid">
+        <label class="sl" for="from">예약일</label>
+        <div class="sf wide">
+          <input class="ctl date" id="from" value="2026-12-01"><span>-</span><label class="sr-only" for="to">예약일 종료</label><input class="ctl date" id="to" value="2026-12-07">
+          <span class="range-btns" role="group" aria-label="빠른 기간"><button type="button">오늘</button><button type="button" aria-pressed="true">7일</button><button type="button">1개월</button><button type="button">3개월</button></span>
+        </div>
+        <label class="sl" for="ptype">유형</label>
+        <div class="sf"><select class="ctl grow" id="ptype"><option>전체</option><option>공연</option><option>체험</option><option>정규 강좌</option></select></div>
+        <label class="sl" for="prog">프로그램</label>
+        <div class="sf"><select class="ctl grow" id="prog"><option>겨울 실내악 시리즈 「현의 대화」</option></select></div>
+        <label class="sl" for="sess">회차</label>
+        <div class="sf"><select class="ctl grow" id="sess"><option>전체 회차 (4)</option><option>12. 12.(토) 15:00</option><option>12. 12.(토) 19:30</option></select></div>
+        <span class="sl">예약 상태</span>
+        <div class="sf"><label class="chk"><input type="checkbox" checked>확정</label><label class="chk"><input type="checkbox" checked>선점</label><label class="chk"><input type="checkbox">취소</label></div>
+        <label class="sl" for="disc">할인 유형</label>
+        <div class="sf"><select class="ctl grow" id="disc"><option>전체</option><option>장애인/동반</option><option>국가유공자/동반</option><option>다자녀</option></select></div>
+        <label class="sl" for="kw">검색어</label>
+        <div class="sf"><select class="ctl" aria-label="검색 항목"><option>예약자명</option><option>예약번호</option><option>휴대폰 뒤 4자리</option></select><input class="ctl grow" id="kw" placeholder="검색어 입력"></div>
+      </div>
+      <div class="search-actions"><button class="btn" type="reset">초기화</button><button class="btn btn-dark" type="button">조회</button></div>
+    </form>
+
+    <section class="result" aria-label="조회 결과">
+      <div class="toolbar">
+        <span class="total">총 <b>128</b>건 <span class="muted">(확정 116, 선점 12)</span></span>
+        <div class="tools">
+          <button class="btn" type="button">증빙 확인 처리</button>
+          <button class="btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>엑셀 다운로드</button>
+          <label class="sr-only" for="ps">페이지당 건수</label><select class="ctl" id="ps"><option>20건씩</option><option>50건씩</option></select>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table class="grid-table">
+          <caption class="sr-only">예약 내역 목록</caption>
+          <thead><tr>
+            <th scope="col"><input type="checkbox" aria-label="전체 선택"></th><th scope="col">번호</th><th scope="col">예약번호</th><th scope="col">회차</th><th scope="col">좌석</th><th scope="col">예약자</th><th scope="col">연락처</th><th scope="col">할인</th><th scope="col" class="r">결제 금액</th><th scope="col">상태</th><th scope="col">증빙</th><th scope="col">예약 일시</th>
+          </tr></thead>
+          <tbody>
+            <tr><td><input type="checkbox" aria-label="B26120731 선택"></td><td>128</td><td><a class="link num" href="admin-bookings.html">B26120731</a></td><td class="num">12. 12. 19:30</td><td class="l">R석 B열 11, 12</td><td>정*우</td><td class="num">010-****-4471</td><td class="muted">-</td><td class="r">80,000</td><td><span class="chip hold">선점</span></td><td class="muted">-</td><td class="num">12. 7. 10:42</td></tr>
+            <tr class="is-selected"><td><input type="checkbox" checked aria-label="B26120729 선택"></td><td>127</td><td><a class="link num" href="admin-bookings.html">B26120729</a></td><td class="num">12. 12. 15:00</td><td class="l">S석 F열 3, 4</td><td>한*림</td><td class="num">010-****-0925</td><td>국가유공자, 동반</td><td class="r">30,000</td><td><span class="chip ok">확정</span></td><td><span class="proof todo">확인 전</span></td><td class="num">12. 7. 09:58</td></tr>
+            <tr><td><input type="checkbox" aria-label="B26120641 선택"></td><td>126</td><td><a class="link num" href="admin-bookings.html">B26120641</a></td><td class="num">12. 13. 15:00</td><td class="l">A석 H열 7, 8, 9</td><td>최*진</td><td class="num">010-****-6610</td><td>다자녀</td><td class="r">42,000</td><td><span class="chip ok">확정</span></td><td><span class="proof todo">확인 전</span></td><td class="num">12. 6. 21:37</td></tr>
+            <tr><td><input type="checkbox" aria-label="B26120617 선택"></td><td>125</td><td><a class="link num" href="admin-bookings.html">B26120617</a></td><td class="num">12. 12. 19:30</td><td class="l">R석 C열 7, 8</td><td>윤*아</td><td class="num">010-****-3018</td><td class="muted">-</td><td class="r">80,000</td><td><span class="chip promo">대기 승격</span></td><td class="muted">-</td><td class="num">12. 6. 14:00</td></tr>
+            <tr><td><input type="checkbox" aria-label="B26120602 선택"></td><td>124</td><td><a class="link num" href="admin-bookings.html">B26120602</a></td><td class="num">12. 13. 15:00</td><td class="l">S석 E열 15</td><td>오*현</td><td class="num">010-****-8852</td><td class="muted">-</td><td class="r">30,000</td><td><span class="chip ok">확정</span></td><td class="muted">-</td><td class="num">12. 6. 11:23</td></tr>
+            <tr><td><input type="checkbox" aria-label="B26120544 선택"></td><td>123</td><td><a class="link num" href="admin-bookings.html">B26120544</a></td><td class="num">12. 12. 15:00</td><td class="l">R석 A열 9, 10</td><td>강*수</td><td class="num">010-****-1196</td><td>장애인, 동반</td><td class="r">40,000</td><td><span class="chip ok">확정</span></td><td><span class="proof done">확인 완료</span></td><td class="num">12. 5. 18:09</td></tr>
+            <tr><td><input type="checkbox" aria-label="B26120518 선택"></td><td>122</td><td><a class="link num" href="admin-bookings.html">B26120518</a></td><td class="num">12. 13. 19:30</td><td class="l">A석 I열 1, 2</td><td>서*윤</td><td class="num">010-****-7743</td><td class="muted">-</td><td class="r">40,000</td><td><span class="chip ok">확정</span></td><td class="muted">-</td><td class="num">12. 5. 13:46</td></tr>
+            <tr><td><input type="checkbox" aria-label="B26120503 선택"></td><td>121</td><td><a class="link num" href="admin-bookings.html">B26120503</a></td><td class="num">12. 12. 19:30</td><td class="l">S석 G열 12</td><td>임*호</td><td class="num">010-****-2209</td><td class="muted">-</td><td class="r">30,000</td><td><span class="chip ok">확정</span></td><td class="muted">-</td><td class="num">12. 5. 10:02</td></tr>
+            <tr><td><input type="checkbox" aria-label="B26120426 선택"></td><td>120</td><td><a class="link num" href="admin-bookings.html">B26120426</a></td><td class="num">12. 13. 15:00</td><td class="l">R석 D열 4, 5, 6, 7</td><td>배*은</td><td class="num">010-****-5531</td><td>다자녀</td><td class="r">112,000</td><td><span class="chip ok">확정</span></td><td><span class="proof todo">확인 전</span></td><td class="num">12. 4. 20:15</td></tr>
+            <tr><td><input type="checkbox" aria-label="B26120417 선택"></td><td>119</td><td><a class="link num" href="admin-bookings.html">B26120417</a></td><td class="num">12. 12. 19:30</td><td class="l">S석 E열 9, 10</td><td>김*원</td><td class="num">010-****-3392</td><td>장애인, 동반</td><td class="r">30,000</td><td><span class="chip ok">확정</span></td><td><span class="proof todo">확인 전</span></td><td class="num">12. 3. 21:14</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <nav class="pager" aria-label="페이지">
+        <a href="admin-bookings.html" aria-label="이전 페이지">‹</a><span aria-current="page">1</span><a href="admin-bookings.html">2</a><a href="admin-bookings.html">3</a><a href="admin-bookings.html">4</a><a href="admin-bookings.html">5</a><a href="admin-bookings.html">6</a><a href="admin-bookings.html">7</a><a href="admin-bookings.html" aria-label="다음 페이지">›</a>
+      </nav>
+    </section>
+  </main>
+</div>
+</body>
+</html>

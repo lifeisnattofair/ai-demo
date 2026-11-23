@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>공연/교육 예약 | 한빛아트센터</title>
+<link rel="stylesheet" href="assets/css/user.css">
+</head>
+<body>
+<a class="skip" href="#main">본문 바로가기</a>
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="user-list.html"><b>한빛아트센터</b><span>한빛시 문화재단</span></a>
+    <nav class="gnb" aria-label="주 메뉴">
+      <a href="user-list.html" aria-current="page">공연</a>
+      <a href="user-list.html">체험</a>
+      <a href="user-list.html">정규 강좌</a>
+      <a href="user-list.html">대관 안내</a>
+      <a href="user-list.html">이용 안내</a>
+    </nav>
+    <div class="util">
+      <a href="user-mybooking.html">내 예약</a>
+      <a class="me" href="user-mybooking.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>김지원 님</a>
+    </div>
+    <button class="menu-btn" type="button" aria-label="전체 메뉴 열기"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+
+<main id="main">
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <p class="eyebrow">2026 겨울 시즌</p>
+        <h1>무대와 배움이<br>가까운 곳에</h1>
+        <p>한빛아트센터의 공연과 체험, 정규 강좌를 한곳에서 찾고 예약하세요. 회원이면 좌석 선택부터 취소, 환불까지 직접 하실 수 있습니다.</p>
+      </div>
+      <article class="hero-feature">
+        <a class="poster-wrap" href="user-detail.html">
+          <div class="poster">
+            <img src="assets/photos/quartet.jpg" alt="">
+            <div class="p-inner">
+              <span class="p-series">HANBIT CHAMBER 2026</span>
+              <span class="p-title">현의<br>대화</span>
+              <span class="p-sub">겨울 실내악 시리즈</span>
+              <span class="p-meta"><span>12.12 - 12.13</span><span>소극장</span></span>
+            </div>
+          </div>
+        </a>
+        <div class="f-info">
+          <span class="type perf">공연</span>
+          <h2>겨울 실내악 시리즈 「현의 대화」</h2>
+          <span class="status on">예매 중</span>
+          <dl>
+            <dt>기간</dt><dd class="num">2026. 12. 12.(토) - 12. 13.(일)</dd>
+            <dt>장소</dt><dd>한빛아트센터 소극장</dd>
+            <dt>가격</dt><dd class="num">R석 40,000원 / S석 30,000원 / A석 20,000원</dd>
+          </dl>
+          <p class="f-mini num">12. 12.(토) - 12. 13.(일) 소극장</p>
+          <a class="btn btn-primary" href="user-detail.html">예매하기</a>
+        </div>
+      </article>
+    </div>
+    <div class="container">
+      <nav class="quick" aria-label="바로가기">
+        <a href="user-list.html"><span>공연 예매<small>지정석 선택, 1인 4매</small></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="user-list.html"><span>체험 신청<small>회차별 인원 신청</small></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="user-list.html"><span>정규 강좌 수강 신청<small>12주 과정, 개강 전 신청</small></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+        <a href="user-list.html"><span>취소/환불 안내<small>관람일 기준 수수료</small></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      </nav>
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="list-title">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <h2 id="list-title">프로그램</h2>
+          <p>12월부터 내년 3월까지 진행하는 프로그램입니다.</p>
+        </div>
+      </div>
+      <div class="filters">
+        <div class="seg" role="group" aria-label="유형">
+          <button type="button" aria-pressed="true">전체</button>
+          <button type="button" aria-pressed="false">공연</button>
+          <button type="button" aria-pressed="false">체험</button>
+          <button type="button" aria-pressed="false">정규 강좌</button>
+        </div>
+        <div class="right">
+          <span class="count">총 6건</span>
+          <label class="sr-only" for="month">기간</label>
+          <select class="select" id="month"><option>전체 기간</option><option>2026년 12월</option><option>2027년 1월</option></select>
+          <label class="sr-only" for="target">대상</label>
+          <select class="select" id="target"><option>전체 대상</option><option>어린이 동반</option><option>성인</option></select>
+        </div>
+      </div>
+
+      <ul class="grid" role="list" style="list-style:none;margin:0;padding:0">
+        <li><a class="card" href="user-detail.html">
+          <div class="poster-wrap"><div class="poster">
+            <img src="assets/photos/quartet.jpg" alt="">
+            <div class="p-inner"><span class="p-series">HANBIT CHAMBER 2026</span><span class="p-title">현의<br>대화</span><span class="p-sub">겨울 실내악 시리즈</span><span class="p-meta"><span>12.12 - 12.13</span><span>소극장</span></span></div>
+          </div></div>
+          <div class="c-body">
+            <div class="c-top"><span class="type perf">공연</span><span class="status on">예매 중</span></div>
+            <h3>겨울 실내악 시리즈 「현의 대화」</h3>
+            <p class="c-meta num" style="margin:0">2026. 12. 12. - 12. 13. 소극장</p>
+            <p class="c-price num" style="margin:6px 0 0">20,000원부터</p>
+          </div>
+        </a></li>
+        <li><a class="card" href="user-detail.html">
+          <div class="poster-wrap"><div class="poster">
+            <img src="assets/photos/theater.jpg" alt="" style="object-position:50% 40%">
+            <div class="p-inner"><span class="p-series">제7회 한빛 청소년 연극제</span><span class="p-title">우리들의<br>무대</span><span class="p-sub">청소년 극단 세 팀의 창작극</span><span class="p-meta"><span>12.19 - 12.21</span><span>소극장</span></span></div>
+          </div></div>
+          <div class="c-body">
+            <div class="c-top"><span class="type perf">공연</span><span class="status wait">매진, 대기 가능</span></div>
+            <h3>한빛 청소년 연극제 「우리들의 무대」</h3>
+            <p class="c-meta num" style="margin:0">2026. 12. 19. - 12. 21. 소극장</p>
+            <p class="c-price num" style="margin:6px 0 0">10,000원부터</p>
+          </div>
+        </a></li>
+        <li><a class="card" href="user-detail.html">
+          <div class="poster-wrap"><div class="poster">
+            <img src="assets/photos/pottery.jpg" alt="">
+            <div class="p-inner"><span class="p-series">주말 가족 체험</span><span class="p-title">흙으로<br>빚는 겨울</span><span class="p-sub">가족 도자기 공방</span><span class="p-meta"><span>12월 매주 토요일</span><span>창작공방</span></span></div>
+          </div></div>
+          <div class="c-body">
+            <div class="c-top"><span class="type exp">체험</span><span class="status on">신청 중</span></div>
+            <h3>가족 도자기 공방</h3>
+            <p class="c-meta num" style="margin:0">2026. 12. 5. - 12. 26. 매주 토요일</p>
+            <p class="c-price num" style="margin:6px 0 0">1인 10,000원</p>
+          </div>
+        </a></li>
+        <li><a class="card" href="user-detail.html">
+          <div class="poster-wrap"><div class="poster">
+            <img src="assets/photos/makeup.jpg" alt="" style="object-position:30% 50%">
+            <div class="p-inner"><span class="p-series">무대 뒤 이야기</span><span class="p-title">배우의<br>얼굴</span><span class="p-sub">무대 분장 체험</span><span class="p-meta"><span>12.20 일 14:00</span><span>분장실</span></span></div>
+          </div></div>
+          <div class="c-body">
+            <div class="c-top"><span class="type exp">체험</span><span class="status soon">12. 8. 신청 시작</span></div>
+            <h3>무대 분장 체험</h3>
+            <p class="c-meta num" style="margin:0">2026. 12. 20.(일) 분장실</p>
+            <p class="c-price num" style="margin:6px 0 0">1인 10,000원</p>
+          </div>
+        </a></li>
+        <li><a class="card" href="user-detail.html">
+          <div class="poster-wrap"><div class="poster">
+            <img src="assets/photos/choir.jpg" alt="" style="object-position:60% 50%">
+            <div class="p-inner"><span class="p-series">2027 봄학기 정규 강좌</span><span class="p-title">함께<br>부르는 노래</span><span class="p-sub">시민 합창 교실 12주</span><span class="p-meta"><span>1.6 - 3.24 수 19:00</span><span>연습실</span></span></div>
+          </div></div>
+          <div class="c-body">
+            <div class="c-top"><span class="type course">정규 강좌</span><span class="status on">수강 신청 중</span></div>
+            <h3>시민 합창 교실 (12주)</h3>
+            <p class="c-meta num" style="margin:0">2027. 1. 6. - 3. 24. 매주 수요일</p>
+            <p class="c-price num" style="margin:6px 0 0">120,000원</p>
+          </div>
+        </a></li>
+        <li><a class="card" href="user-detail.html">
+          <div class="poster-wrap"><div class="poster light">
+            <img src="assets/photos/watercolor.jpg" alt="" style="object-position:70% 60%">
+            <div class="p-inner"><span class="p-series">2027 봄학기 정규 강좌</span><span class="p-title">물빛으로<br>그리는 일상</span><span class="p-sub">생활 수채화 12주</span><span class="p-meta"><span>1.8 - 3.26 금 10:30</span><span>미술실</span></span></div>
+          </div></div>
+          <div class="c-body">
+            <div class="c-top"><span class="type course">정규 강좌</span><span class="status on">잔여 3명</span></div>
+            <h3>생활 수채화 (12주)</h3>
+            <p class="c-meta num" style="margin:0">2027. 1. 8. - 3. 26. 매주 금요일</p>
+            <p class="c-price num" style="margin:6px 0 0">120,000원</p>
+          </div>
+        </a></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="notice-strip" aria-labelledby="notice-title">
+    <div class="container">
+      <h2 id="notice-title">공지사항</h2>
+      <ul>
+        <li><time datetime="2026-12-01">2026. 12. 1.</time><a href="user-list.html">겨울 시즌 공연, 교육 프로그램 예약을 한곳에서 받습니다</a></li>
+        <li><time datetime="2026-11-27">2026. 11. 27.</time><a href="user-list.html">할인 증빙은 입장(수업) 당일 현장에서 확인합니다</a></li>
+        <li><time datetime="2026-11-20">2026. 11. 20.</time><a href="user-list.html">주차장 공사로 12월 한 달간 지하 2층만 이용할 수 있습니다</a></li>
+      </ul>
+      <a class="btn btn-secondary btn-sm" href="user-list.html">전체 보기</a>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="f-links">
+      <a href="user-list.html"><strong>개인정보처리방침</strong></a>
+      <a href="user-list.html">이용약관</a>
+      <a href="user-list.html">취소/환불 규정</a>
+      <a href="user-list.html">웹 접근성 정책</a>
+      <a href="user-list.html">오시는 길</a>
+    </div>
+    <address>한빛시 문화재단 한빛아트센터 | 한빛시 문화로 120 | 예약 문의 031-000-1200 (평일 09:00 - 18:00)<br>Copyright Hanbit Arts Center. All rights reserved.</address>
+  </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>내 예약 | 한빛아트센터</title>
+<link rel="stylesheet" href="assets/css/user.css">
+</head>
+<body>
+<a class="skip" href="#main">본문 바로가기</a>
+<header class="site-header">
+  <div class="container">
+    <a class="logo" href="user-list.html"><b>한빛아트센터</b><span>한빛시 문화재단</span></a>
+    <nav class="gnb" aria-label="주 메뉴">
+      <a href="user-list.html">공연</a>
+      <a href="user-list.html">체험</a>
+      <a href="user-list.html">정규 강좌</a>
+      <a href="user-list.html">대관 안내</a>
+      <a href="user-list.html">이용 안내</a>
+    </nav>
+    <div class="util">
+      <a href="user-mybooking.html" aria-current="page" style="color:var(--c-ink);font-weight:700">내 예약</a>
+      <a class="me" href="user-mybooking.html"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>김지원 님</a>
+    </div>
+    <button class="menu-btn" type="button" aria-label="전체 메뉴 열기"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+</header>
+
+<main id="main" class="container mypage">
+  <nav class="side-nav" aria-label="마이페이지">
+    <h2>마이페이지</h2>
+    <ul>
+      <li><a href="user-mybooking.html" aria-current="page">예약 내역 <em>3</em></a></li>
+      <li><a href="user-mybooking.html">대기 신청 <em>1</em></a></li>
+      <li><a href="user-mybooking.html">알림 <em>2</em></a></li>
+      <li><a href="user-mybooking.html">회원 정보</a></li>
+    </ul>
+  </nav>
+
+  <div>
+    <h1 class="page-title">예약 내역</h1>
+
+    <section class="wait-card" aria-label="대기 승격 안내">
+      <div>
+        <b>대기하신 「우리들의 무대」 좌석이 배정되었습니다</b>
+        <p class="num">12. 19.(토) 15:00, R석 C열 7번, 8번. 결제 기한은 <strong style="color:var(--c-ink)">12. 8.(화) 14:00까지</strong>이며, 기한이 지나면 다음 대기자에게 넘어갑니다.</p>
+      </div>
+      <a class="btn btn-primary" href="user-checkout.html">결제하기</a>
+    </section>
+
+    <div class="sub-tabs" role="tablist" aria-label="예약 상태">
+      <a href="user-mybooking.html" role="tab" aria-current="true" aria-selected="true">예정 2</a>
+      <a href="user-mybooking.html" role="tab" aria-selected="false">지난 예약 4</a>
+      <a href="user-mybooking.html" role="tab" aria-selected="false">취소 1</a>
+    </div>
+
+    <article class="bk" aria-labelledby="bk1">
+      <div class="poster-wrap"><div class="poster"><img src="assets/photos/quartet.jpg" alt=""></div></div>
+      <div>
+        <div style="display:flex;gap:8px;align-items:center"><span class="type perf">공연</span><span class="status on">예매 완료</span></div>
+        <h3 id="bk1">겨울 실내악 시리즈 「현의 대화」</h3>
+        <div class="bk-meta num">
+          <div><span>관람일시</span>2026. 12. 12.(토) 19:30</div>
+          <div><span>좌석</span>S석 E열 9번, 10번 (장애인 1, 동반 1)</div>
+          <div><span>장소</span>한빛아트센터 소극장</div>
+        </div>
+      </div>
+      <div class="bk-side">
+        <span class="bk-no">예약번호 B26120417</span>
+        <span class="bk-amt">30,000원</span>
+      </div>
+      <div class="bk-detail">
+        <div>
+          <h4>결제 정보</h4>
+          <ul class="sum-list">
+            <li><span>결제일시</span><span>2026. 12. 3.(목) 21:14</span></li>
+            <li><span>결제 수단</span><span>신용카드 (한빛카드 일시불)</span></li>
+            <li><span>할인 증빙</span><span>공연 당일 매표소 확인</span></li>
+          </ul>
+        </div>
+        <div class="refund-box">
+          지금 취소하면 환불되는 금액
+          <span class="big">27,000원</span>
+          <span style="color:var(--c-text-3)">관람일 5일 전, 취소 수수료 10% (3,000원)</span>
+          <div class="actions">
+            <button class="btn btn-secondary btn-sm" type="button">예약 취소</button>
+            <a class="btn btn-text btn-sm" href="user-detail.html#refund">취소 규정 보기</a>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <article class="bk" aria-labelledby="bk2">
+      <div class="poster-wrap"><div class="poster"><img src="assets/photos/choir.jpg" alt="" style="object-position:60% 50%"></div></div>
+      <div>
+        <div style="display:flex;gap:8px;align-items:center"><span class="type course">정규 강좌</span><span class="status on">수강 확정</span></div>
+        <h3 id="bk2">시민 합창 교실 (12주)</h3>
+        <div class="bk-meta num">
+          <div><span>수업 기간</span>2027. 1. 6. - 3. 24. 매주 수요일 19:00 (12회)</div>
+          <div><span>신청 인원</span>본인 1명</div>
+          <div><span>장소</span>한빛아트센터 2층 연습실</div>
+        </div>
+      </div>
+      <div class="bk-side">
+        <span class="bk-no">예약번호 B26112908</span>
+        <span class="bk-amt">120,000원</span>
+        <button class="btn btn-secondary btn-sm" type="button">상세 보기</button>
+      </div>
+    </article>
+  </div>
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    <div class="f-links">
+      <a href="user-list.html"><strong>개인정보처리방침</strong></a>
+      <a href="user-list.html">이용약관</a>
+      <a href="user-list.html">취소/환불 규정</a>
+      <a href="user-list.html">웹 접근성 정책</a>
+    </div>
+    <address>한빛시 문화재단 한빛아트센터 | 한빛시 문화로 120 | 예약 문의 031-000-1200 (평일 09:00 - 18:00)<br>Copyright Hanbit Arts Center. All rights reserved.</address>
+  </div>
+</footer>
+</body>
+</html>
