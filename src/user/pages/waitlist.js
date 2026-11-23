@@ -96,8 +96,8 @@ function waitCard(w, ctx) {
     await withBusy(cancel, async () => {
       try {
         await ctx.api.cancelWaitlist(w.id);
-        ctx.notice('ok', '대기 신청을 취소했습니다.');
         await ctx.reload();
+        ctx.notice('ok', '대기 신청을 취소했습니다.', { focus: true });
       } catch (e) {
         ctx.notice('error', describeError(e));
       }

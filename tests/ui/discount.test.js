@@ -43,7 +43,11 @@ describe('할인 선택', () => {
     const go = await run(fakeApi());
     pick(0, 'DISABLED_COMPANION');
     expect(next().getAttribute('aria-disabled')).toBe('true');
-    expect(el.querySelector('[role="alert"]').textContent).toContain('동반 할인은 본인 할인과 함께 선택해 주세요.');
+    const alert = el.querySelector('[role="alert"]');
+    expect(alert.textContent).toContain('동반 할인은 본인 할인과 함께 선택해 주세요.');
+    // 다른 줄을 바꿔도 같은 오류면 같은 알림을 두어 되풀이해 읽지 않는다
+    pick(1, 'GENERAL');
+    expect(el.querySelector('[role="alert"]')).toBe(alert);
     next().click();
     await new Promise((r) => setTimeout(r, 0));
     expect(go).not.toHaveBeenCalled();
@@ -75,6 +79,13 @@ describe('할인 선택', () => {
     await run(fakeApi({ getMyHold: vi.fn().mockResolvedValue({ id: 'h1', offering_id: 'o1', qty: 1, status: 'ACTIVE', expires_at: iso(-1), seats: [] }) }));
     expect(el.textContent).toContain('선점 시간이 지났습니다');
     expect(el.querySelector('a[href="#/booking/o1/select"]')).not.toBeNull();
+  });
+
+  it('결제를 마친 선점(CONSUMED)으로 뒤로 돌아오면 만료 대신 예매 완료와 내 예약 링크를 보인다', async () => {
+    await run(fakeApi({ getMyHold: vi.fn().mockResolvedValue({ id: 'h1', offering_id: 'o1', qty: 1, status: 'CONSUMED', expires_at: iso(-1), seats: [] }) }));
+    expect(el.querySelector('h1').textContent).toBe('이미 예매가 완료되었습니다.');
+    expect(el.textContent).not.toContain('선점 시간이 지났습니다');
+    expect(el.querySelector('a[href="#/me/bookings"]').textContent).toBe('내 예약 보기');
   });
 
   it('로그인하지 않았으면 로그인으로 보낸다', async () => {

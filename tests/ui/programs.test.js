@@ -256,6 +256,21 @@ describe('프로그램 상세', () => {
     expect(el.querySelector('.mobile-bar a.btn-primary').getAttribute('href')).toBe('#/booking/o1/select');
   });
 
+  it('모바일 하단 바는 날짜(요일)와 시간을 한 번씩만 보입니다', async () => {
+    await open('p1');
+    const info = el.querySelector('.mobile-bar .mb-info');
+    expect(info.firstChild.textContent).toBe('12.03(목) 1회차');
+    expect(info.querySelector('b').textContent).toMatch(/^19:00 /);
+    expect(info.textContent.match(/19:00/g)).toHaveLength(1);
+  });
+
+  it('날짜 고르기 칸은 요일과 날짜를 format.js 로 보입니다', async () => {
+    await open('p1');
+    const first = el.querySelector('.dates .date');
+    expect(first.querySelector('small').textContent).toBe('목');
+    expect(first.getAttribute('aria-label')).toBe('2026.12.03(목)');
+  });
+
   it('다른 날짜를 고르면 그 날의 회차가 나오고 주소가 바뀝니다', async () => {
     await open('p1');
     const dates = el.querySelectorAll('.date');

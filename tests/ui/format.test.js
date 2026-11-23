@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   won, kstDateTime, kstDate, kstDatePlain, kstShortDate, kstShortDateTime, kstTime, kstMonthKey,
-  kstDateParts, dateRange, dayKeyLabel, monthKeyLabel, formatPhone,
+  kstDateParts, kstShortDateWd, kstDayChipLabel, dateRange, dayKeyLabel, monthKeyLabel, formatPhone,
 } from '../../src/lib/format.js';
 
 describe('format', () => {
@@ -26,6 +26,9 @@ describe('format', () => {
     expect(kstShortDate('2026-12-01T10:30:00Z')).toBe('12.01');
     expect(kstShortDateTime('2026-12-01T10:30:00Z')).toBe('12.01(화) 19:30');
     expect(kstTime('2026-12-01T10:30:00Z')).toBe('19:30');
+    expect(kstShortDateWd('2026-12-01T10:30:00Z')).toBe('12.01(화)');
+    expect(kstDayChipLabel('2026-12-01T10:30:00Z')).toBe('화');
+    expect(kstDayChipLabel('2027-01-01T10:30:00Z', { withMonth: true })).toBe('1월 금');
   });
   it('kstMonthKey, kstDateParts', () => {
     expect(kstMonthKey('2026-12-31T15:30:00Z')).toBe('2027-01');

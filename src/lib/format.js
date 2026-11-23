@@ -68,6 +68,18 @@ export function kstShortDate(iso) {
   return `${t.month}.${t.day}`;
 }
 
+// 연도 없이 요일까지: 12.01(화) (모바일 하단 바처럼 시간을 따로 보일 때)
+export function kstShortDateWd(iso) {
+  const t = kstParts(iso);
+  return `${t.month}.${t.day}(${t.weekday})`;
+}
+
+// 날짜 고르기 칸의 윗줄: 여러 달이면 '12월 화', 한 달이면 '화'
+export function kstDayChipLabel(iso, { withMonth = false } = {}) {
+  const t = kstParts(iso);
+  return withMonth ? `${Number(t.month)}월 ${t.weekday}` : t.weekday;
+}
+
 // 연도를 줄인 일정(표, 알림): 12.01(화) 19:30
 export function kstShortDateTime(iso) {
   const t = kstParts(iso);

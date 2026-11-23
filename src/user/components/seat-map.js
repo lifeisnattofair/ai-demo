@@ -15,14 +15,15 @@ export function seatState(seat, statusById, selected) {
   return statusOf(statusById, seat.id) === 'AVAILABLE' ? 'available' : 'unavailable';
 }
 
-const STATE_TEXT = { selected: '선택됨', available: '선택 가능', unavailable: '선택할 수 없음' };
+// 선택 여부는 aria-pressed(배치도), checked(목록)가 알려 주므로 이름에는 고를 수 없는 경우만 덧붙입니다(두 번 읽지 않게).
+const STATE_TEXT = { selected: '', available: '', unavailable: '선택할 수 없음' };
 
 export function seatName(seat) {
   return `${seat.row_label}열 ${seat.seat_no}번 ${GRADE_NAME[seat.grade] ?? seat.grade}`;
 }
 
 export function seatLabel(seat, state) {
-  return `${seatName(seat)} ${STATE_TEXT[state]}`;
+  return STATE_TEXT[state] ? `${seatName(seat)} ${STATE_TEXT[state]}` : seatName(seat);
 }
 
 /**
@@ -41,7 +42,12 @@ export function toggleSeat(seat, ctx) {
   return 'toggled';
 }
 
-/** 한도 안내를 el 맨 앞에 보여 주거나(message 있음) 지웁니다. */
+/** 한도 안내를 el 맨 앞에 보여 주거나(message 있음) 지웁니다. ctx.onMessage 가 있으면 그쪽(화면의 안내 한 곳)으로 보냅니다. */
+export function seatMessage(el, ctx, message) {
+  if (ctx.onMessage) ctx.onMessage(message);
+  else showSeatMessage(el, message);
+}
+
 export function showSeatMessage(el, message) {
   let box = el.querySelector(':scope > .seat-msg');
   if (!message) {
@@ -157,11 +163,11 @@ export function renderSeatMap(el, state, onToggle) {
   function activate(seat) {
     const result = toggleSeat(seat, st);
     if (result === 'limit') {
-      showSeatMessage(el, messageFor('LIMIT_EXCEEDED'));
+      seatMessage(el, st, messageFor('LIMIT_EXCEEDED'));
       return;
     }
     if (result === 'blocked') return;
-    showSeatMessage(el, '');
+    seatMessage(el, st, '');
     paint();
     onToggle?.(seat, st.selected.has(seat.id));
   }
@@ -227,7 +233,7 @@ export function renderSeatMap(el, state, onToggle) {
       paint();
       if (!tabStop || tabStop.hasAttribute('aria-disabled')) setTabStop(initialTabStop());
     },
-    message: (text) => showSeatMessage(el, text),
+    message: (text) => seatMessage(el, st, text),
     focusFirst() {
       (tabStop ?? initialTabStop())?.focus();
     },

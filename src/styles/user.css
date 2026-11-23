@@ -75,7 +75,7 @@ button, input, select { font: inherit; color: inherit; }
 .type.exp { color: var(--c-type-exp); background: var(--c-ok-soft); }
 .type.course { color: var(--c-type-course); background: var(--c-warn-soft); }
 
-.select { appearance: none; height: 40px; padding: 0 36px 0 14px; border: 1px solid var(--c-line); border-radius: var(--r-md); background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23464c53' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; font-size: var(--fs-small); }
+.select { appearance: none; height: var(--h-control); padding: 0 36px 0 14px; border: 1px solid var(--c-line); border-radius: var(--r-md); background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23464c53' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; font-size: var(--fs-small); }
 /* 푸터 */
 .site-footer { border-top: 1px solid var(--c-line-soft); padding: var(--sp-6) 0 var(--sp-7); font-size: var(--fs-xsmall); color: var(--c-text-3); margin-top: var(--sp-7); }
 .site-footer .f-links { display: flex; flex-wrap: wrap; gap: 0 var(--sp-5); margin: 0 0 var(--sp-3); padding: 0; list-style: none; font-size: var(--fs-small); color: var(--c-text-2); }
@@ -158,7 +158,7 @@ button, input, select { font: inherit; color: inherit; }
 
 .filters { display: flex; flex-wrap: wrap; gap: var(--sp-3); align-items: center; justify-content: space-between; margin-bottom: var(--sp-5); }
 .seg { display: inline-flex; padding: var(--sp-1); background: var(--c-surface-2); border-radius: var(--r-pill); gap: 2px; }
-.seg button { min-height: 40px; border: 0; background: none; padding: 0 var(--sp-4); border-radius: var(--r-pill); font-weight: 500; font-size: var(--fs-small); color: var(--c-text-2); cursor: pointer; white-space: nowrap; }
+.seg button { min-height: var(--h-control); border: 0; background: none; padding: 0 var(--sp-4); border-radius: var(--r-pill); font-weight: 500; font-size: var(--fs-small); color: var(--c-text-2); cursor: pointer; white-space: nowrap; }
 .seg button:hover { color: var(--c-ink); background: var(--c-line-soft); }
 .seg button[aria-pressed="true"] { background: #fff; color: var(--c-ink); font-weight: 700; box-shadow: inset 0 0 0 1px var(--c-line); }
 .filters .right { display: flex; gap: var(--sp-2); align-items: center; }

@@ -2,6 +2,7 @@
 import { api as defaultApi, describeError } from '../../lib/api.js';
 import { formatPhone, kstDate, escapeHtml } from '../../lib/format.js';
 import { validatePassword } from './auth.js';
+import { withBusy } from '../../components/button-busy.js';
 
 const q = (el, sel) => el.querySelector(sel);
 
@@ -71,23 +72,26 @@ export async function renderAccount(el, deps = {}) {
       note(el, pwForm, 'error', msg);
       return;
     }
-    try {
-      await api.updatePassword(pw);
-      q(el, '#new-password').value = '';
-      note(el, pwForm, 'ok', '비밀번호를 변경했습니다.');
-    } catch (err) {
-      note(el, pwForm, 'error', describeError(err));
-    }
+    await withBusy(q(pwForm, '[type="submit"]'), async () => {
+      try {
+        await api.updatePassword(pw);
+        q(el, '#new-password').value = '';
+        note(el, pwForm, 'ok', '비밀번호를 변경했습니다.');
+      } catch (err) {
+        note(el, pwForm, 'error', describeError(err));
+      }
+    });
   });
 
-  q(el, '#logout').addEventListener('click', async () => {
+  const logout = q(el, '#logout');
+  logout.addEventListener('click', () => withBusy(logout, async () => {
     try {
       await api.signOut();
       go('#/');
     } catch (err) {
       note(el, q(el, '#withdraw-area'), 'error', describeError(err));
     }
-  });
+  }));
 
   const area = q(el, '#withdraw-area');
   q(el, '#withdraw-open').addEventListener('click', () => {
@@ -102,16 +106,15 @@ export async function renderAccount(el, deps = {}) {
     </div>`;
     q(area, '#withdraw-cancel').addEventListener('click', () => { area.replaceChildren(); q(el, '#withdraw-open').focus(); });
     q(area, '#withdraw-confirm').addEventListener('click', async (ev) => {
-      const btn = ev.currentTarget;
-      btn.disabled = true;
-      try {
-        await api.withdraw();
-        await api.signOut().catch(() => {});
-        go('#/');
-      } catch (err) {
-        note(el, q(area, '.confirm-box'), 'error', describeError(err));
-        btn.disabled = false;
-      }
+      await withBusy(ev.currentTarget, async () => {
+        try {
+          await api.withdraw();
+          await api.signOut().catch(() => {});
+          go('#/');
+        } catch (err) {
+          note(el, q(area, '.confirm-box'), 'error', describeError(err));
+        }
+      });
     });
     q(area, '#withdraw-cancel').focus();
   });

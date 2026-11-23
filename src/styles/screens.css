@@ -71,6 +71,10 @@ main:focus { outline: none; }
 .btn-danger-solid { background: var(--c-err-text); color: #fff; }
 .btn-danger-solid:hover { background: var(--c-err-hover); }
 .btn-danger-solid:active { background: var(--c-err-press); }
+.btn-danger[aria-disabled="true"]:not([data-busy]), .btn-danger:disabled { background: #fff; color: var(--c-text-3); border-color: var(--c-line-soft); }
+.btn-danger-solid[aria-disabled="true"]:not([data-busy]), .btn-danger-solid:disabled { background: var(--c-line); color: var(--c-ink); }
+/* 처리 중에는 누름/올림 색이 바뀌지 않게 원래 색을 유지합니다 */
+.btn-danger-solid[data-busy="true"] { background: var(--c-err-text); }
 
 /* 내 정보 */
 .account { padding-top: var(--sp-6); padding-bottom: var(--sp-8); max-width: 720px; }

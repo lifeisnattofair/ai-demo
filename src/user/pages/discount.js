@@ -66,13 +66,18 @@ export async function renderDiscount(el, { api, go, holdId, now = clockNow }) {
       const l = lines[i];
       amt.innerHTML = l.discountAmount > 0 ? `<s>${won(l.unitPrice)}</s>${won(l.amount)}` : won(l.amount);
     });
-    live.replaceChildren(...check.errors.map((m) => {
-      const p = document.createElement('p');
-      p.className = 'form-error';
-      p.setAttribute('role', 'alert');
-      p.textContent = m;
-      return p;
-    }));
+    // 같은 오류가 그대로면 다시 그리지 않습니다(할인을 바꿀 때마다 화면 낭독기가 같은 경고를 되풀이하지 않게).
+    const errKey = check.errors.join('|');
+    if (live.dataset.key !== errKey) {
+      live.dataset.key = errKey;
+      live.replaceChildren(...check.errors.map((m) => {
+        const p = document.createElement('p');
+        p.className = 'form-error';
+        p.setAttribute('role', 'alert');
+        p.textContent = m;
+        return p;
+      }));
+    }
     const disabled = check.ok ? 'false' : 'true';
     shell.summary.innerHTML = `
       <h2 class="sum-title">결제 금액</h2>

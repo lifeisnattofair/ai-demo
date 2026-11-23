@@ -136,6 +136,22 @@ describe('GNB 2depth 메뉴 동작', () => {
     expect(a.getAttribute('aria-expanded')).toBe('false');
   });
 
+  it('마우스를 올려 열린 메뉴는 이어서 눌러도 닫히지 않고, 한 번 더 누르면 닫힙니다', () => {
+    const mm = window.matchMedia;
+    window.matchMedia = () => ({ matches: true });
+    try {
+      const [a] = tops();
+      a.dispatchEvent(new MouseEvent('mouseover', { bubbles: true }));
+      expect(a.getAttribute('aria-expanded')).toBe('true');
+      a.click();
+      expect(a.getAttribute('aria-expanded')).toBe('true');
+      a.click();
+      expect(a.getAttribute('aria-expanded')).toBe('false');
+    } finally {
+      window.matchMedia = mm;
+    }
+  });
+
   it('2depth 링크를 고르면 메뉴가 닫힙니다', () => {
     const [a] = tops();
     a.click();

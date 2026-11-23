@@ -108,3 +108,14 @@ describe('결제 단계', () => {
     expect(go).toHaveBeenCalledWith('#/booking/h1/discount');
   });
 });
+
+describe('취소 수수료 일정 문구', () => {
+  it('유형에 맞는 당일 문구를 쓰고, 기간은 점 형식 범위로 보인다', async () => {
+    const { cancelSchedule } = await import('../../src/user/components/checkout-shell.js');
+    const course = cancelSchedule('2026-12-20T10:00:00Z', 'COURSE');
+    expect(course[3]).toEqual(['취소 불가', '개강 당일(첫 수업 전)']);
+    expect(course[1][1]).toBe('2026.12.13(일) - 12.16(수)');
+    expect(cancelSchedule('2026-12-20T10:00:00Z', 'EXPERIENCE')[3][1]).toBe('체험 당일');
+    expect(cancelSchedule('2026-12-20T10:00:00Z')[3][1]).toBe('공연 당일');
+  });
+});

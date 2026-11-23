@@ -17,7 +17,7 @@ export function node(tag, className, text) {
 
 /**
  * 로그인을 확인하고 마이페이지 틀을 그립니다. 로그인하지 않았으면 로그인으로 보내고 null 을 돌려줍니다.
- * @returns {Promise<null|{content:HTMLElement, notice:(kind:'ok'|'error', text:string)=>void, clearNotice:()=>void, refreshCounts:()=>Promise<void>}>}
+ * @returns {Promise<null|{content:HTMLElement, notice:(kind:'ok'|'error', text:string, opts?:{focus?:boolean})=>void, clearNotice:()=>void, refreshCounts:()=>Promise<void>}>}
  */
 export async function mountMyPage(el, { api, go, active, next }) {
   const session = await api.getSession();
@@ -41,13 +41,17 @@ export async function mountMyPage(el, { api, go, active, next }) {
     noticeBox?.remove();
     noticeBox = null;
   }
-  function notice(kind, text) {
+  // focus: 다시 그리기로 누른 버튼이 사라진 뒤에는 안내로 초점을 옮깁니다.
+  // 초점이 가면 화면 낭독기가 읽으므로 이때는 알림 역할(status/alert)을 붙이지 않아 두 번 읽지 않게 합니다.
+  function notice(kind, text, { focus = false } = {}) {
     clearNotice();
     noticeBox = node('p', `my-notice ${kind === 'error' ? 'error' : 'ok'}`, text);
-    noticeBox.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    if (focus) noticeBox.tabIndex = -1;
+    else noticeBox.setAttribute('role', kind === 'error' ? 'alert' : 'status');
     // 제목 아래, 본문 위
     const h = content.querySelector('h1');
     if (h) h.after(noticeBox); else content.prepend(noticeBox);
+    if (focus) noticeBox.focus();
   }
 
   async function refreshCounts() {

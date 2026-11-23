@@ -27,8 +27,8 @@
 .booking-live:empty { display: none; }
 .booking-live { margin-bottom: var(--sp-4); }
 .seat-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
-.seat-chip { display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3); border-radius: 999px; background: var(--c-surface-2); font-size: var(--fs-xsmall); font-weight: 500; }
-/* 지우기 버튼: 보이는 원은 24px, 누름 영역은 44px */
+.seat-chip { display: inline-flex; align-items: center; gap: var(--sp-2); padding: var(--sp-1) var(--sp-2) var(--sp-1) var(--sp-3); border-radius: var(--r-pill); background: var(--c-surface-2); font-size: var(--fs-xsmall); font-weight: 500; }
+/* 지우기 버튼: 보이는 원은 32px, 누름 영역은 44px(::after 로 6px씩 넓힘) */
 .seat-chip { padding-right: 0; }
 .seat-chip button { position: relative; width: 32px; height: 32px; margin: -6px 0; border: 0; border-radius: 50%; background: transparent; display: grid; place-items: center; cursor: pointer; color: var(--c-text-3); }
 .seat-chip button::after { content: ""; position: absolute; inset: -6px; }

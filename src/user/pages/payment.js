@@ -93,7 +93,7 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
       </div>
     </section>`;
 
-  const schedule = cancelSchedule(offering.starts_at);
+  const schedule = cancelSchedule(offering.starts_at, type);
   const payLabel = `${won(total)} 결제하기`;
   shell.summary.innerHTML = `
     <h2 class="sum-title">결제 금액</h2>
@@ -115,7 +115,10 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
   let paying = false;
 
   function say(code, text) {
-    if (!text) { live.replaceChildren(); return; }
+    if (!text) { live.replaceChildren(); delete live.dataset.key; return; }
+    // 이미 같은 안내가 떠 있으면 다시 만들지 않습니다(같은 경고를 되풀이해 읽지 않게).
+    if (live.dataset.key === `${code}|${text}`) return;
+    live.dataset.key = `${code}|${text}`;
     const err = document.createElement('p');
     err.className = 'form-error';
     err.setAttribute('role', 'alert');

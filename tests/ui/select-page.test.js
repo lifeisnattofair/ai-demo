@@ -58,8 +58,8 @@ describe('좌석 선택 화면', () => {
   it('좌석을 고르면 요약에 좌석과 합계가 보이고 다음을 누르면 선점 후 할인 선택으로 간다', async () => {
     const api = fakeApi();
     const go = await run(api);
-    el.querySelector('[aria-label="E열 9번 S석 선택 가능"]').click();
-    el.querySelector('[aria-label="E열 10번 S석 선택 가능"]').click();
+    el.querySelector('[aria-label="E열 9번 S석"]').click();
+    el.querySelector('[aria-label="E열 10번 S석"]').click();
     expect(el.querySelector('.seat-chips').textContent).toContain('S석 E열 9번');
     expect(el.querySelector('.sum-total b').textContent).toBe('60,000원');
     el.querySelector('.summary [data-next]').click();
@@ -71,7 +71,7 @@ describe('좌석 선택 화면', () => {
   it('선점 실패 시 안내 문구를 보여 주고 좌석 상태를 다시 불러온다', async () => {
     const api = fakeApi({ holdSeats: vi.fn().mockRejectedValue(new ApiError('SEAT_TAKEN')) });
     const go = await run(api);
-    el.querySelector('[aria-label="E열 9번 S석 선택 가능"]').click();
+    el.querySelector('[aria-label="E열 9번 S석"]').click();
     api.offeringSeatMap.mockResolvedValue(seatRows([89]));
     el.querySelector('.summary [data-next]').click();
     await flush();
@@ -84,9 +84,28 @@ describe('좌석 선택 화면', () => {
 
   it('이미 확정한 매수만큼 선택 가능 매수가 줄어든다', async () => {
     await run(fakeApi({ myOfferingQty: vi.fn().mockResolvedValue(1) }));
-    for (const n of [1, 2, 3, 4]) el.querySelector(`[aria-label="E열 ${n}번 S석 선택 가능"]`).click();
+    for (const n of [1, 2, 3, 4]) el.querySelector(`[aria-label="E열 ${n}번 S석"]`).click();
     expect(el.querySelector('.seat-chips').children).toHaveLength(3);
     expect(el.querySelector('[role="alert"]').textContent).toBe('1인 예약 한도를 넘었습니다. 남은 매수 안에서 선택해 주세요.');
+  });
+
+  it('한도 안내는 배치도와 좌석 목록에서 넘어도 화면에 한 번만 나온다', async () => {
+    await run(fakeApi({ myOfferingQty: vi.fn().mockResolvedValue(3) }));
+    el.querySelector('[aria-label="E열 1번 S석"]').click();
+    el.querySelector('[aria-label="E열 2번 S석"]').click();
+    el.querySelector('[data-view="list"]').click();
+    el.querySelector('input[aria-label="E열 3번 S석"]').click();
+    const alerts = [...el.querySelectorAll('[role="alert"]')].filter((a) => a.textContent.includes('한도'));
+    expect(alerts).toHaveLength(1);
+    expect(el.querySelector('.booking-live [role="alert"]')).toBe(alerts[0]);
+  });
+
+  it('좌석 이름에는 선택 상태를 붙이지 않고 aria-pressed 로만 알린다(두 번 읽지 않게)', async () => {
+    await run(fakeApi());
+    const b = el.querySelector('[aria-label="E열 9번 S석"]');
+    b.click();
+    expect(b.getAttribute('aria-pressed')).toBe('true');
+    expect(b.getAttribute('aria-label')).toBe('E열 9번 S석');
   });
 
   it('체험은 인원을 늘려 선점하고, 한도를 넘기면 안내한다', async () => {

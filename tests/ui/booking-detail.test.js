@@ -82,6 +82,10 @@ describe('예약 상세와 취소 환불 미리보기', () => {
     expect(a.cancelBooking).toHaveBeenCalledWith('b1');
     await vi.waitFor(() => expect(el.textContent).toContain('예약이 취소되었습니다'));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
+    // 다시 그린 뒤 초점은 결과 안내로 가고, 초점으로 읽히므로 알림 역할은 붙이지 않는다
+    await vi.waitFor(() => expect(document.activeElement?.classList.contains('my-notice')).toBe(true));
+    expect(document.activeElement.textContent).toContain('예약이 취소되었습니다');
+    expect(document.activeElement.hasAttribute('role')).toBe(false);
   });
 
   it('확인 대화상자를 닫으면 취소를 요청하지 않는다(Esc)', async () => {

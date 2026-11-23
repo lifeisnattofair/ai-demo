@@ -1,7 +1,7 @@
 // 프로그램 상세. 마크업과 클래스는 설계 확정본(user-detail.html)과 같습니다.
 import { refundForBeforeStart, refundForCourse } from '@policy/refund.js';
 import { now as clockNow } from '../../lib/clock.js';
-import { kstDate, kstDateParts, kstDateTime, kstShortDateTime, kstTime, won } from '../../lib/format.js';
+import { kstDate, kstDateParts, kstDateTime, kstDayChipLabel, kstShortDateWd, kstTime, won } from '../../lib/format.js';
 import { showSkeleton } from '../../components/skeleton.js';
 import {
   activeOfferings, periodText, posterProps, saleStatus, STATUS_LABEL, statusMark, typeMark,
@@ -120,7 +120,7 @@ function loadFailed(el, retry) {
 
 function dateParts(iso) {
   const t = kstDateParts(iso);
-  return { key: t.key, label: kstDate(iso), m: Number(t.month), d: Number(t.day), wd: t.weekday };
+  return { key: t.key, iso, label: kstDate(iso), m: Number(t.month), d: Number(t.day), wd: t.weekday };
 }
 const hhmm = kstTime;
 
@@ -299,7 +299,7 @@ export async function renderProgramDetail(el, { api, id, now = clockNow }) {
       const left = s === 'ON_SALE' && typeof remaining[selected.id] === 'number'
         ? ` 잔여 ${remaining[selected.id]}${w.unit}` : ` ${STATUS_LABEL[s]}`;
       barInfo.replaceChildren(
-        document.createTextNode(type === 'COURSE' ? `${kstShortDateTime(selected.starts_at)} 개강` : `${kstShortDateTime(selected.starts_at)} ${seq}회차`),
+        document.createTextNode(type === 'COURSE' ? `${kstShortDateWd(selected.starts_at)} 개강` : `${kstShortDateWd(selected.starts_at)} ${seq}회차`),
         node('b', '', `${hhmm(selected.starts_at)}${left}`),
       );
     } else {
@@ -363,7 +363,7 @@ export async function renderProgramDetail(el, { api, id, now = clockNow }) {
       b.type = 'button';
       b.setAttribute('aria-pressed', String(d.key === currentKey));
       b.setAttribute('aria-label', d.label);
-      b.append(node('small', '', multiMonth ? `${d.m}월 ${d.wd}` : d.wd), node('b', '', d.d));
+      b.append(node('small', '', kstDayChipLabel(d.iso, { withMonth: multiMonth })), node('b', '', d.d));
       b.addEventListener('click', () => {
         currentKey = d.key;
         dateButtons.forEach((x, i) => x.setAttribute('aria-pressed', String(days[i].key === currentKey)));
@@ -475,6 +475,7 @@ export async function renderProgramDetail(el, { api, id, now = clockNow }) {
   const container = node('div', 'container');
   container.append(detail, tabsNav, prose);
   frag.append(topWrap, container, bar);
+  release();
   el.replaceChildren(frag);
 
   // 같은 화면 안에서 위치만 옮깁니다(해시 라우터라 #id 주소는 쓰지 않습니다).

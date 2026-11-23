@@ -94,8 +94,10 @@ function bindGnb(host) {
     panelOf(btn).hidden = true;
   }
   function closeAll(except) { for (const b of tops()) if (b !== except) close(b); }
-  function open(btn) {
+  // how: 'hover' 로 열린 메뉴는 이어지는 클릭에서 닫지 않고 그대로 둡니다(마우스로 올린 뒤 누르는 흔한 동작).
+  function open(btn, how = 'click') {
     closeAll(btn);
+    btn.dataset.openedBy = how;
     btn.setAttribute('aria-expanded', 'true');
     btn.closest('.gnb-item').classList.add('is-open');
     panelOf(btn).hidden = false;
@@ -105,7 +107,12 @@ function bindGnb(host) {
 
   host.addEventListener('click', (e) => {
     const top = e.target.closest('.gnb-top');
-    if (top) { if (isOpen(top)) close(top); else open(top); return; }
+    if (top) {
+      if (!isOpen(top)) open(top);
+      else if (top.dataset.openedBy === 'hover') top.dataset.openedBy = 'click';
+      else close(top);
+      return;
+    }
     if (e.target.closest('.gnb-panel a')) closeAll();
   });
 
@@ -157,7 +164,7 @@ function bindGnb(host) {
     if (!item || !hoverable()) return;
     clearTimeout(leaveTimer);
     const btn = item.querySelector('.gnb-top');
-    if (!isOpen(btn)) open(btn);
+    if (!isOpen(btn)) open(btn, 'hover');
   });
   host.addEventListener('mouseout', (e) => {
     const item = e.target.closest('.gnb-item');

@@ -31,7 +31,7 @@ beforeEach(() => {
 describe('좌석 배치도', () => {
   it('좌석마다 열, 번호, 등급, 상태를 읽어 주는 버튼이 된다', () => {
     renderSeatMap(el, { seats, statusById: {}, selected: new Set(), max: 4 }, () => {});
-    const b = el.querySelector('[aria-label="E열 7번 S석 선택 가능"]');
+    const b = el.querySelector('[aria-label="E열 7번 S석"]');
     expect(b).not.toBeNull();
     expect(b.tagName).toBe('BUTTON');
     expect(el.querySelectorAll('button.seat')).toHaveLength(200);
@@ -39,16 +39,16 @@ describe('좌석 배치도', () => {
 
   it('좌석에 포커스를 두고 오른쪽 방향키를 누르면 다음 좌석으로 초점이 옮겨진다', () => {
     renderSeatMap(el, { seats, statusById: {}, selected: new Set(), max: 4 }, () => {});
-    const e7 = el.querySelector('[aria-label="E열 7번 S석 선택 가능"]');
+    const e7 = el.querySelector('[aria-label="E열 7번 S석"]');
     e7.focus();
     key(e7, 'ArrowRight');
-    expect(document.activeElement.getAttribute('aria-label')).toBe('E열 8번 S석 선택 가능');
+    expect(document.activeElement.getAttribute('aria-label')).toBe('E열 8번 S석');
     key(document.activeElement, 'ArrowLeft');
-    expect(document.activeElement.getAttribute('aria-label')).toBe('E열 7번 S석 선택 가능');
+    expect(document.activeElement.getAttribute('aria-label')).toBe('E열 7번 S석');
     key(document.activeElement, 'ArrowDown');
-    expect(document.activeElement.getAttribute('aria-label')).toBe('F열 7번 S석 선택 가능');
+    expect(document.activeElement.getAttribute('aria-label')).toBe('F열 7번 S석');
     key(document.activeElement, 'ArrowUp');
-    expect(document.activeElement.getAttribute('aria-label')).toBe('E열 7번 S석 선택 가능');
+    expect(document.activeElement.getAttribute('aria-label')).toBe('E열 7번 S석');
   });
 
   it('Tab 이 닿는 좌석은 한 곳뿐이다(이동은 방향키)', () => {
@@ -60,12 +60,12 @@ describe('좌석 배치도', () => {
     const selected = new Set();
     const onToggle = vi.fn();
     renderSeatMap(el, { seats, statusById: {}, selected, max: 4 }, onToggle);
-    const b = el.querySelector('[aria-label="E열 7번 S석 선택 가능"]');
+    const b = el.querySelector('[aria-label="E열 7번 S석"]');
     b.focus();
     key(b, ' ');
     expect(selected.has(idOf(seats, 'E', 7))).toBe(true);
     expect(b.getAttribute('aria-pressed')).toBe('true');
-    expect(b.getAttribute('aria-label')).toBe('E열 7번 S석 선택됨');
+    expect(b.getAttribute('aria-label')).toBe('E열 7번 S석');
     expect(onToggle).toHaveBeenCalledTimes(1);
     key(b, ' ');
     expect(selected.size).toBe(0);
@@ -99,10 +99,10 @@ describe('좌석 배치도', () => {
     expect(remaining).toBe(3);
     const selected = new Set();
     renderSeatMap(el, { seats, statusById: {}, selected, max: remaining }, () => {});
-    for (const n of [1, 2, 3]) el.querySelector(`[aria-label="E열 ${n}번 S석 선택 가능"]`).click();
+    for (const n of [1, 2, 3]) el.querySelector(`[aria-label="E열 ${n}번 S석"]`).click();
     expect(selected.size).toBe(3);
     expect(el.querySelector('[role="alert"]')).toBeNull();
-    el.querySelector('[aria-label="E열 4번 S석 선택 가능"]').click();
+    el.querySelector('[aria-label="E열 4번 S석"]').click();
     expect(selected.size).toBe(3);
     expect(el.querySelector('[role="alert"]').textContent).toBe(LIMIT_MSG);
   });
@@ -124,7 +124,7 @@ describe('좌석 목록(대체 수단)', () => {
     const onToggle = vi.fn();
     renderSeatList(el, { seats, statusById: { [idOf(seats, 'A', 1)]: 'SOLD' }, selected, max: 2 }, onToggle);
     expect(el.querySelectorAll('tbody tr')).toHaveLength(200);
-    const cb = el.querySelector('input[aria-label="E열 7번 S석 선택 가능"]');
+    const cb = el.querySelector('input[aria-label="E열 7번 S석"]');
     expect(cb.type).toBe('checkbox');
     cb.click();
     expect(selected.has(idOf(seats, 'E', 7))).toBe(true);
@@ -135,8 +135,8 @@ describe('좌석 목록(대체 수단)', () => {
   it('한도를 넘기면 체크가 되돌아가고 안내가 나온다', () => {
     const selected = new Set();
     renderSeatList(el, { seats, statusById: {}, selected, max: 1 }, () => {});
-    el.querySelector('input[aria-label="E열 1번 S석 선택 가능"]').click();
-    const second = el.querySelector('input[aria-label="E열 2번 S석 선택 가능"]');
+    el.querySelector('input[aria-label="E열 1번 S석"]').click();
+    const second = el.querySelector('input[aria-label="E열 2번 S석"]');
     second.click();
     expect(second.checked).toBe(false);
     expect(selected.size).toBe(1);

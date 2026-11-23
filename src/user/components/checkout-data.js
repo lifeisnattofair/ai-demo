@@ -20,11 +20,12 @@ export function discountOptions(type, discountEnabled = true) {
 
 /**
  * 선점 + 회차를 불러와 티켓 줄(seatId, 이름, 단가)로 만듭니다.
- * @returns {{hold, offering, type, tickets}|{error:'GONE'|'EXPIRED'}}
+ * @returns {{hold, offering, type, tickets}|{error:'GONE'|'EXPIRED'|'DONE'}}  DONE: 결제가 끝나 예약으로 바뀐 선점
  */
 export async function loadCheckout(api, holdId, now) {
   const hold = await api.getMyHold(holdId);
   if (!hold) return { error: 'GONE' };
+  if (hold.status === 'CONSUMED') return { error: 'DONE', hold };
   if (hold.status !== 'ACTIVE' || new Date(hold.expires_at).getTime() <= now().getTime()) return { error: 'EXPIRED', hold };
   const offering = await api.getOffering(hold.offering_id);
   if (!offering) return { error: 'GONE' };
@@ -107,6 +108,11 @@ export async function bootCheckout(el, { api, go, holdId, now, selfHash, stale }
     release();
     if (data.error === 'GONE') {
       messagePage(el, '선점 정보를 찾을 수 없습니다.', '선점이 해제되었거나 주소가 바뀌었습니다. 프로그램을 다시 선택해 주세요.', '#/programs', '프로그램 목록');
+      return null;
+    }
+    if (data.error === 'DONE') {
+      // 결제 완료 뒤 뒤로 가기로 돌아온 경우: 만료 안내 대신 예매 완료를 알립니다.
+      messagePage(el, '이미 예매가 완료되었습니다.', '이 선점은 결제를 마쳐 예약으로 확정되었습니다. 예약 내역에서 확인해 주세요.', '#/me/bookings', '내 예약 보기');
       return null;
     }
     if (data.error === 'EXPIRED') {

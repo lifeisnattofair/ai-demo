@@ -1,5 +1,6 @@
 // 가입(계정 정보, 약관 동의, 본인 인증), 로그인, 비밀번호 재설정 화면
 import { api as defaultApi, describeError } from '../../lib/api.js';
+import { withBusy } from '../../components/button-busy.js';
 
 const PW_MESSAGE = '비밀번호는 영문과 숫자를 함께 8자 이상 입력해 주세요.';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -194,22 +195,21 @@ export function renderSignup(el, deps = {}) {
         q(el, '[aria-invalid="true"]')?.focus();
         return;
       }
-      const btn = q(form, '[type="submit"]');
-      btn.disabled = true;
-      try {
-        const session = await api.getSession();
-        if (!session && !state.signedUp) {
-          await api.signUp(state.email, state.password);
-          state.signedUp = true;
+      await withBusy(q(form, '[type="submit"]'), async () => {
+        try {
+          const session = await api.getSession();
+          if (!session && !state.signedUp) {
+            await api.signUp(state.email, state.password);
+            state.signedUp = true;
+          }
+          await api.completeVerification(name, phone);
+          if (state.marketing) await api.saveConsent?.({ marketing_opt_in: true }).catch(() => {});
+          go('#/');
+        } catch (err) {
+          showFormError(form, describeError(err));
+          if (err.code === 'user_already_exists') state.signedUp = false;
         }
-        await api.completeVerification(name, phone);
-        if (state.marketing) await api.saveConsent?.({ marketing_opt_in: true }).catch(() => {});
-        go('#/');
-      } catch (err) {
-        showFormError(form, describeError(err));
-        if (err.code === 'user_already_exists') state.signedUp = false;
-        btn.disabled = false;
-      }
+      });
     });
     focusTitle();
   }
@@ -245,15 +245,14 @@ export function renderLogin(el, deps = {}) {
       q(el, '[aria-invalid="true"]')?.focus();
       return;
     }
-    const btn = q(form, '[type="submit"]');
-    btn.disabled = true;
-    try {
-      await api.signIn(email, pw);
-      go(next && next.startsWith('#/') ? next : '#/');
-    } catch (err) {
-      showFormError(form, describeError(err));
-      btn.disabled = false;
-    }
+    await withBusy(q(form, '[type="submit"]'), async () => {
+      try {
+        await api.signIn(email, pw);
+        go(next && next.startsWith('#/') ? next : '#/');
+      } catch (err) {
+        showFormError(form, describeError(err));
+      }
+    });
   });
 }
 
@@ -279,18 +278,22 @@ export function renderReset(el, deps = {}) {
       return;
     }
     const btn = q(form, '[type="submit"]');
-    btn.disabled = true;
-    try {
-      await api.resetPassword(email);
+    let sent = false;
+    await withBusy(btn, async () => {
+      try {
+        await api.resetPassword(email);
+        sent = true;
+      } catch (err) {
+        showFormError(form, describeError(err));
+      }
+    });
+    if (sent) {
       form.replaceChildren();
       const done = document.createElement('p');
       done.className = 'note info';
       done.setAttribute('role', 'status');
       done.textContent = '메일을 보냈습니다. 받은 편지함에서 링크를 열어 새 비밀번호를 정해 주세요. 메일이 보이지 않으면 스팸함을 확인해 주세요.';
       form.append(done);
-    } catch (err) {
-      showFormError(form, describeError(err));
-      btn.disabled = false;
     }
   });
 }

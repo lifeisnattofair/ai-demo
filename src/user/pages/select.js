@@ -186,7 +186,10 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
   // 안내와 오류. 화면 낭독기가 바로 읽도록 role 을 붙입니다.
   const live = node('div', 'booking-live');
   function say(text, kind = 'error') {
-    if (!text) { live.replaceChildren(); return; }
+    if (!text) { live.replaceChildren(); delete live.dataset.key; return; }
+    // 같은 안내가 이미 떠 있으면 다시 만들지 않습니다(한도 안내를 누를 때마다 되풀이해 읽지 않게).
+    if (live.dataset.key === `${kind}|${text}`) return;
+    live.dataset.key = `${kind}|${text}`;
     const p = node('p', kind === 'error' ? 'form-error' : 'note info', text);
     p.setAttribute('role', kind === 'error' ? 'alert' : 'status');
     live.replaceChildren(p);
@@ -325,7 +328,8 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
       </ul>`;
     body.innerHTML = `<div class="seat-tools">${legend}<span class="seat-count num">잔여 ${left}석 / ${total}석</span></div>`;
     body.append(live, mapHost, listHost);
-    const ctx = { seats, statusById, selected, max: maxPick };
+    // 한도 안내는 배치도와 목록이 따로 띄우지 않고 화면 위 안내 한 곳(say)으로 모읍니다.
+    const ctx = { seats, statusById, selected, max: maxPick, onMessage: (m) => say(m) };
     mapView = renderSeatMap(mapHost, ctx, onSeatToggle);
     listView = renderSeatList(listHost, { ...ctx, prices }, onSeatToggle);
     el.querySelector('.view-toggle')?.addEventListener('click', (e) => {

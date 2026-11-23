@@ -194,10 +194,11 @@ export function renderBookingCard(b, ctx) {
       try {
         const res = await ctx.api.cancelBooking(b.id);
         if (res?.status === 'CANCELLED') {
+          // 목록을 다시 그리면 누른 버튼이 사라지므로, 다시 그린 뒤 결과 안내로 초점을 옮깁니다.
+          await ctx.reload();
           ctx.notice('ok', res.refundAmount > 0
             ? `예약이 취소되었습니다. ${won(res.refundAmount)}이 결제 수단으로 환불됩니다(취소 수수료 ${won(res.feeAmount)}).`
-            : '예약이 취소되었습니다. 환불 금액은 없습니다.');
-          await ctx.reload();
+            : '예약이 취소되었습니다. 환불 금액은 없습니다.', { focus: true });
         } else {
           ctx.notice('error', res?.message ?? ctx.api.messageFor('UNKNOWN'));
         }
