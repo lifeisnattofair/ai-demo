@@ -13,7 +13,7 @@
   - 검토자(builder check) 질문 6개 → AI 판단 3건, 사용자 결정 3건 반영
 - **1.5단계 디자인 콘셉트**: 완료. 사용자 화면은 「포스터가 색, UI는 무채색 + 행동 색 하나」, 관리자 화면은 공공 관리자 표준 틀(좌측 메뉴, 조회 → 목록 → 상세). 설계 문서 5-9절
 - **2단계 구현 계획 (writing-plans)**: 작성 완료, 사용자 검토 대기
-  - 산출물: `docs/superpowers/plans/2026-11-23-booking-platform.md`(Task 17개, 요구사항 추적표 64행)
+  - 산출물: `docs/superpowers/plans/2026-11-23-booking-platform.md`(Task 18개, 요구사항 추적표 64행)
 
 ## AI at Work 페이지용 포인트(누적)
 - AI가 질문 8개로 범위/정책 빈칸을 짚음 → 기획 점검표로 정리

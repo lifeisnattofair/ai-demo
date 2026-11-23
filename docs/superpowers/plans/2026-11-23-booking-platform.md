@@ -41,7 +41,8 @@
 - 민감정보(장애/보훈 여부 증빙)는 수집하지 않습니다. 할인 유형 코드만 저장합니다(SER-004).
 - 문구에는 가운뎃점(·)을 꼭 필요한 곳(정식 사업명 등)에만 씁니다. 나열은 쉼표, 짝 개념은 /, 표 구분은 | 로 씁니다. 화면 문구와 산출물 모두에 적용합니다.
 - UI 문구는 한국어 존댓말로 씁니다. 오류 안내는 「원인 + 다음 행동」 형식입니다(QUR-007). 색으로만 정보를 전달하지 않습니다(QUR-001).
-- 실제 기관명/실제 공연 포스터/실제 개인정보는 쓰지 않습니다. 포스터는 직접 생성한 SVG만 씁니다(COR-001).
+- 실제 기관명, 실제 공연 포스터, 실제 개인정보는 쓰지 않습니다. 포스터는 무료 사진(상업적 이용 가능) 또는 생성 이미지에 타이포그래피를 얹어 만들고, 출처를 `src/assets/images/CREDITS.md`에 남깁니다(COR-001).
+- 화면 품질: 바로 출시 가능한 완성도로 만듭니다. 「목업」 「예시」 같은 설명 문구나 설명용 UI는 넣지 않습니다. 도형이나 카드 옆에 포인트 색 두꺼운 선(강조 막대)은 쓰지 않습니다. 장식 요소는 용도, 가독성, 심미성을 따져 하나씩 정합니다(설계 5-9).
 - git 작성자는 `lifeisnattofair`(저장소 로컬 설정)입니다. push/배포는 사용자가 요청할 때만 합니다.
 
 ## 사용자 준비물 (실행 전 확인)
@@ -86,7 +87,9 @@ src/lib/supabase.js, api.js, format.js, router.js, clock.js
 src/styles/tokens.css (KRDS 토큰 재선언), user.css, admin.css
 src/user/main.js, pages/*.js, components/*.js
 src/admin/main.js, layout.js, pages/*.js
-src/assets/posters.js          SVG 포스터 생성기
+src/assets/images/              무료 사진 원본(내려받기는 사용자 확인 후), CREDITS.md에 출처와 라이선스 기록
+src/user/components/poster.js   사진 + 타이포그래피 포스터 컴포넌트
+design/mockups/                 디자인 시안(반응형 HTML, Task 8A)
 tests/policy/*.test.js         정책 단위 테스트(Node)
 tests/db/*.test.js             DB 통합 테스트(로컬 Supabase)
 tests/payments/*.test.js       결제 로직 단위 테스트(가짜 토스/가짜 DB)
@@ -206,7 +209,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 **Interfaces**
 - Produces (테이블. 이후 모든 Task가 이 이름을 씁니다)
   - `profiles(id uuid pk → auth.users, name, phone, role text check in ('member','operator','finance'), verified_at)`
-  - `programs(id, type check in ('PERFORMANCE','EXPERIENCE','COURSE'), title, summary, description, venue, audience, poster_seed int, is_public bool, created_at)`
+  - `programs(id, type check in ('PERFORMANCE','EXPERIENCE','COURSE'), title, summary, description, venue, audience, poster_image text, poster_tone text check in ('light','dark'), is_public bool, created_at)`
   - `offerings(id, program_id, starts_at, ends_at, capacity int, sale_starts_at, sale_ends_at, status check in ('OPEN','CANCEL_REQUESTED','CANCELLED'))`: 판매 단위. 공연/체험은 회차, 정규 강좌는 과정
   - `course_lessons(offering_id, seq, starts_at, pk(offering_id, seq))`
   - `seats(id, row_label, seat_no, grade check in ('R','S','A'), pk id, unique(row_label, seat_no))`
@@ -378,6 +381,22 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**
 - [ ] **Step 5: 커밋**: `feat(payments): 취소, 환불, 기관 일괄 환불/웹훅 멱등 처리`
 
+### Task 8A: 디자인 시안 (사용자 확인 게이트)
+
+구현 화면(Task 8~15)보다 먼저 만듭니다. **사용자가 시안을 확정하기 전에는 Task 8 이후를 진행하지 않습니다.**
+
+**Files**
+- Create: `design/mockups/user-list.html`, `user-detail.html`, `user-seat.html`, `user-checkout.html`, `user-mybooking.html`, `admin-bookings.html`, `admin-settlement.html`, `design/mockups/assets/`(시안용 사진, CSS)
+
+**Interfaces**
+- Produces: 확정한 디자인 토큰(색, 글자 크기 단계, 간격, 모서리, 그림자)을 `design/mockups/tokens.css`에 정리합니다. Task 8의 `src/styles/tokens.css`는 이 값을 그대로 옮깁니다.
+
+- [ ] **Step 1: 사진 확보**: 프로그램 6개에 맞는 무료 사진 후보(Unsplash, Pexels 등 상업적 이용 가능 라이선스)를 찾아 링크와 라이선스를 사용자에게 보여 주고, 내려받기 승인을 받습니다. 맞는 사진이 없으면 생성 이미지 프롬프트를 제안합니다(사용자가 직접 생성해도 됩니다).
+- [ ] **Step 2: 시안 작성**: 설계 5-9의 콘셉트와 「시안, 화면 품질 기준」을 따라 반응형 HTML 시안을 만듭니다. KRDS 컴포넌트를 바탕으로 하고, 실제 서비스처럼 현실적인 가상 데이터로 채웁니다.
+- [ ] **Step 3: 자체 점검**: 1440×900, 390×844로 캡처해 확인합니다. 확인 항목은 가로 넘침 없음, 강조 막대와 설명용 문구 없음, 가운뎃점은 필요한 곳에만 있음입니다. 캡처는 `portfolio/shots/mockups/`에 webp로 저장합니다.
+- [ ] **Step 4: 사용자 확인**: 시안을 보여 드리고 피드백을 반영합니다. 확정되면 `tokens.css`를 고정합니다.
+- [ ] **Step 5: 커밋**: `design: 사용자, 관리자 화면 시안과 디자인 토큰`
+
 ### Task 8: 화면 공통 — KRDS 토큰, 라우터, 인증/회원
 
 **Files**
@@ -385,6 +404,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - Test: `tests/ui/router.test.js`, `tests/ui/format.test.js`, `tests/ui/auth.test.js`
 
 **Interfaces**
+- Consumes: `design/mockups/tokens.css`(Task 8A 확정본)
 - Produces
   - `createRouter(routes:{[pattern:string]:(params, el)=>void|Promise<void>}, el:HTMLElement) -> {start(), go(path)}`: 패턴 예 `'#/programs/:id'`
   - `won(n:number) -> '40,000원'`, `kstDateTime(iso) -> '2026. 12. 10.(목) 19:00'`
@@ -405,18 +425,18 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**: `npm test` PASS, `npm run dev`로 가입/로그인 수동 확인
 - [ ] **Step 5: 커밋**: `feat(ui): KRDS 토큰, 라우터, 회원 가입과 모의 본인인증`
 
-### Task 9: 사용자 — 프로그램 목록/상세와 SVG 포스터
+### Task 9: 사용자 — 프로그램 목록/상세와 사진 포스터
 
 **Files**
-- Create: `src/assets/posters.js`, `src/user/pages/programs.js`, `program-detail.js`, `src/user/components/program-card.js`
-- Test: `tests/ui/posters.test.js`, `tests/ui/programs.test.js`
+- Create: `src/user/components/poster.js`, `src/user/pages/programs.js`, `program-detail.js`, `src/user/components/program-card.js`
+- Test: `tests/ui/poster.test.js`, `tests/ui/programs.test.js`
 
 **Interfaces**
 - Produces
-  - `posterSvg({seed:number, title:string, type}) -> string`(세로 3:4 SVG, `role="img"`, `aria-label`=제목)
+  - `renderPoster(el, {image:string, tone:'light'|'dark', title, subtitle, type, periodText})`: 세로 3:4 포스터. 사진은 `<img alt="">`(장식)로 두고, 제목과 기간은 실제 텍스트로 얹습니다. 타이포그래피 배치는 Task 8A 시안을 따릅니다.
   - `saleStatus(offering, now, soldOut:boolean) -> 'UPCOMING'|'ON_SALE'|'SOLD_OUT_WAITLIST'|'CLOSED'`(한국어 라벨: 예매 예정/예매 중/매진(대기 가능)/마감)
 - [ ] **Step 1: 실패하는 테스트 작성**
-  - 같은 seed → 같은 SVG 문자열, 다른 seed → 다른 색 조합
+  - 포스터에 제목, 기간, 유형 라벨이 텍스트로 있습니다. 이미지 로딩에 실패해도 무채색 바탕에 같은 타이포그래피가 남습니다(빈 상자 금지).
   - `saleStatus`: 판매 시작 전 → UPCOMING, 판매 중이고 매진 → SOLD_OUT_WAITLIST, 판매 종료 후 → CLOSED
   - 목록 필터(jsdom): 유형 「체험」 선택 시 체험 카드 2개만 남습니다. 상태 라벨은 텍스트로 표시합니다(색만으로 표시하지 않음).
 - [ ] **Step 2: 실행해서 실패 확인**
@@ -424,7 +444,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
   - 목록: 세로형 포스터 카드 격자, 유형, 기간, 대상 필터
   - 상세: 큰 포스터와 편집형 제목, 장소, 대상, 가격, 취소 규정 표(Global의 수수료 구간), 회차 목록과 잔여석(`remaining_capacity`). 정규 강좌는 12회 일정 전체를 보여 줍니다.
 - [ ] **Step 4: 통과 확인**
-- [ ] **Step 5: 커밋**: `feat(user): 프로그램 목록/상세와 SVG 포스터`
+- [ ] **Step 5: 커밋**: `feat(user): 프로그램 목록/상세와 사진 포스터`
 
 ### Task 10: 사용자 — 좌석/인원 선택과 선점 타이머
 
@@ -653,13 +673,13 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 | SIR-005 | 회원 인증 | 8 | tests/ui/auth | QA | AC-1 |
 | SIR-006 | 본인인증(모의) | 8 | — | QA | AC-1 |
 | QUR-001 | 웹 접근성 | 8~15 | tests/ui/seat-map | QA(자동 점검 + 키보드) | AC-7 |
-| QUR-002 | 디자인 시스템 | 8, 13 | — | QA | — |
+| QUR-002 | 디자인 시스템 | 8A, 8, 13 | — | QA | — |
 | QUR-003 | 반응형 | 8~15 | — | QA(1440/390) | — |
 | QUR-004 | 브라우저 지원 | — | — | QA | — |
 | QUR-005 | 정책 로직 검증 | 1, 2 | tests/policy/* | — | AC-1, AC-2, AC-4, AC-5 |
 | QUR-006 | 요구사항 추적성 | 16 | tests/scripts/check-trace | — | AC-8 |
 | QUR-007 | 오류 안내 | 8, 10, 11, 12 | tests/ui/* 문구 단언 | QA | — |
-| COR-001 | 가상 데이터 | 3, 9 | tests/ui/posters | 시드 검토 | — |
+| COR-001 | 가상 데이터 | 3, 9 | tests/ui/poster | 시드 검토 | — |
 | COR-002 | 결제 테스트 모드 | 0 | tests/scripts/check-secrets(`live_`) | — | AC-9 |
 | COR-003 | 키 관리 | 0 | tests/scripts/check-secrets | — | AC-9 |
 | COR-004 | 호스팅 | 16 | — | 배포 시 확인 | — |
