@@ -25,11 +25,14 @@ const q = (el, sel) => el.querySelector(sel);
 
 function setFieldError(el, id, message) {
   const input = q(el, `#${id}`);
+  if (input && input.dataset.baseDescribedby === undefined) input.dataset.baseDescribedby = input.getAttribute('aria-describedby') ?? '';
+  const base = input?.dataset.baseDescribedby ?? '';
   let box = q(el, `#${id}-error`);
   if (!message) {
     box?.remove();
     input?.removeAttribute('aria-invalid');
-    input?.removeAttribute('aria-describedby');
+    if (base) input?.setAttribute('aria-describedby', base);
+    else input?.removeAttribute('aria-describedby');
     return;
   }
   if (!box) {
@@ -40,7 +43,7 @@ function setFieldError(el, id, message) {
   }
   box.textContent = message;
   input.setAttribute('aria-invalid', 'true');
-  input.setAttribute('aria-describedby', box.id);
+  input.setAttribute('aria-describedby', [base, box.id].filter(Boolean).join(' '));
 }
 
 function showFormError(form, message) {
@@ -95,18 +98,19 @@ export function renderSignup(el, deps = {}) {
     q(el, '.auth-title')?.focus();
   }
 
-  function accountStep() {
+  function accountStep(focus = false) {
     el.innerHTML = shell('회원 가입', `
       ${stepper(0)}
       <form class="auth-form" novalidate>
         ${field('email', '이메일', 'email', 'autocomplete="email" inputmode="email" required')}
-        ${field('password', '비밀번호', 'password', 'autocomplete="new-password" required')}
-        <p class="field-hint">영문과 숫자를 함께 8자 이상 입력해 주세요.</p>
+        ${field('password', '비밀번호', 'password', 'autocomplete="new-password" aria-describedby="password-hint" required')}
+        <p class="field-hint" id="password-hint">영문과 숫자를 함께 8자 이상 입력해 주세요.</p>
         ${field('password2', '비밀번호 확인', 'password', 'autocomplete="new-password" required')}
         <button class="btn btn-primary btn-block" type="submit">다음</button>
       </form>
       <p class="auth-alt">이미 회원이신가요? <a href="#/login">로그인</a></p>`);
     q(el, '#email').value = state.email;
+    if (focus) focusTitle();
     const form = q(el, 'form');
     form.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -155,7 +159,7 @@ export function renderSignup(el, deps = {}) {
       sync();
     });
     sync();
-    q(el, '#consent-back').addEventListener('click', accountStep);
+    q(el, '#consent-back').addEventListener('click', () => accountStep(true));
     next.addEventListener('click', () => {
       if (next.disabled) return;
       state.marketing = q(el, '#agree-marketing').checked;

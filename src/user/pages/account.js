@@ -44,8 +44,8 @@ export async function renderAccount(el, deps = {}) {
       <div class="panel-head"><h2>비밀번호 변경</h2></div>
       <div class="panel-body">
         <form class="auth-form" id="pw-form" novalidate>
-          <div class="field"><label for="new-password">새 비밀번호</label><input class="input" id="new-password" type="password" autocomplete="new-password" required></div>
-          <p class="field-hint">영문과 숫자를 함께 8자 이상 입력해 주세요.</p>
+          <div class="field"><label for="new-password">새 비밀번호</label><input class="input" id="new-password" type="password" autocomplete="new-password" aria-describedby="new-password-hint" required></div>
+          <p class="field-hint" id="new-password-hint">영문과 숫자를 함께 8자 이상 입력해 주세요.</p>
           <button class="btn btn-secondary" type="submit">비밀번호 변경</button>
         </form>
       </div>

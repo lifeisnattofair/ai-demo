@@ -74,7 +74,7 @@ function authMessage(error) {
   if (code === 'over_request_rate_limit' || code === 'over_email_send_rate_limit' || error?.status === 429) {
     return '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.';
   }
-  if (code === 'user_banned') return '이용할 수 없는 계정입니다. 탈퇴한 계정은 같은 이메일로 다시 가입할 수 없습니다.';
+  if (code === 'user_banned') return '이용할 수 없는 계정입니다. 탈퇴한 계정으로는 로그인할 수 없습니다. 새로 가입해 주세요.';
   return GENERIC;
 }
 

@@ -54,6 +54,22 @@ describe('가입 폼', () => {
     expect(el.querySelector('#step-consent')).toBeNull();
   });
 
+  it('비밀번호 안내와 오류가 모두 입력칸에 연결됩니다', () => {
+    renderSignup(el, { api: fakeApi(), go: vi.fn() });
+    expect(el.querySelector('#password').getAttribute('aria-describedby')).toBe('password-hint');
+    fillAccount(el, 'abcdefgh');
+    expect(el.querySelector('#password').getAttribute('aria-describedby')).toBe('password-hint password-error');
+    fillAccount(el);
+    expect(el.querySelector('#step-consent')).not.toBeNull();
+  });
+
+  it('이전 단계로 돌아가면 제목에 초점이 갑니다', () => {
+    renderSignup(el, { api: fakeApi(), go: vi.fn() });
+    fillAccount(el);
+    el.querySelector('#consent-back').click();
+    expect(document.activeElement).toBe(el.querySelector('.auth-title'));
+  });
+
   it('abc12345 는 약관 단계로 넘어갑니다', () => {
     renderSignup(el, { api: fakeApi(), go: vi.fn() });
     fillAccount(el);

@@ -59,16 +59,30 @@ export function createRouter(routes, el) {
       const m = re.exec(path);
       if (!m) continue;
       const params = {};
-      keys.forEach((k, i) => { params[k] = decodeURIComponent(m[i + 1]); });
+      try {
+        keys.forEach((k, i) => { params[k] = decodeURIComponent(m[i + 1]); });
+      } catch {
+        break; // 잘못된 퍼센트 인코딩은 없는 주소로 봅니다.
+      }
       try {
         await handler(params, el, query);
       } catch (e) {
         console.error(e);
         if (my === seq) el.replaceChildren(messageBlock('문제가 발생했습니다.', GENERIC_ERROR, '#/', '처음으로'));
       }
+      if (my === seq) afterRender();
       return;
     }
+    if (my !== seq) return;
     el.replaceChildren(messageBlock(NOT_FOUND, '주소를 다시 확인하시거나 처음 화면에서 원하는 메뉴를 선택해 주세요.', '#/', '처음으로'));
+    afterRender();
+  }
+
+  // 화면이 바뀌면 문서 제목을 갱신하고 초점을 본문으로 옮겨 스크린리더가 새 화면을 읽게 합니다.
+  function afterRender() {
+    const name = el.querySelector('h1')?.textContent?.trim();
+    document.title = name ? `${name} | 한빛아트센터` : '한빛아트센터';
+    if (el.hasAttribute('tabindex')) el.focus({ preventScroll: true });
   }
 
   return {

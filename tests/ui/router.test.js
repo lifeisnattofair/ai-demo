@@ -48,4 +48,23 @@ describe('createRouter', () => {
     await router.go('#/');
     expect(el.textContent).toContain('요청을 처리하지 못했습니다.');
   });
+
+  it('잘못된 퍼센트 인코딩 주소는 404 화면을 보여 줍니다', async () => {
+    const handler = vi.fn();
+    el.textContent = '이전 화면';
+    const router = createRouter({ '#/programs/:id': handler }, el);
+    await router.go('#/programs/%E0%A4%A');
+    expect(handler).not.toHaveBeenCalled();
+    expect(el.textContent).toContain('페이지를 찾을 수 없습니다.');
+  });
+
+  it('화면이 바뀌면 문서 제목을 바꾸고 본문으로 초점을 옮깁니다', async () => {
+    document.body.append(el);
+    el.tabIndex = -1;
+    const router = createRouter({ '#/x': (_p, e) => { e.innerHTML = '<h1>내 정보</h1>'; } }, el);
+    await router.go('#/x');
+    expect(document.title).toBe('내 정보 | 한빛아트센터');
+    expect(document.activeElement).toBe(el);
+    el.remove();
+  });
 });
