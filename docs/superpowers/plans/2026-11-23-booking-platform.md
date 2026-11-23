@@ -621,6 +621,18 @@ Task 8~15에서 만든 화면 전체에 인터랙션과 로딩 상태를 고르�
 - [ ] **Step 4: 통과 확인**: `npm test` PASS, 1440, 768, 390에서 수동 확인(가로 넘침 없음)
 - [ ] **Step 5: 커밋**: `feat(ui): 인터랙션 상태와 스켈레톤 로딩`
 
+### Task 15B: anti-slop 감사 (사용자 승인, 15A 이후)
+
+[miqdadbadjuber/anti-slop](https://github.com/miqdadbadjuber/anti-slop)의 규칙(Hard Gate, Purpose-Gate, Quality Locks)을 점검표로 써서 사용자, 관리자 화면 전체를 감사합니다. 플러그인은 설치하지 않습니다(CLAUDE.md, 설정 파일을 바꾸지 않기 위해).
+
+**Files**
+- Create: `anti-slop/audit-001-<날짜>.md`(번호 매긴 위반 목록, 규칙 번호, 한 줄 이유, 우선순위), `DESIGN.md`(디자인 방향, ENERGY/RHYTHM/MOTION 다이얼, 주요 결정마다 한 줄 이유), 수정 후 `anti-slop/delivery-gate-<날짜>.md`(항목별 PASS/FAIL과 근거)
+
+- [ ] **Step 1: 감사**: 브라우저로 모든 화면을 1440, 768, 390에서 열고 모든 컨트롤을 눌러 결과를 기록합니다. 대비는 계산으로 확인합니다.
+- [ ] **Step 2: 보고**: 감사 보고서를 사용자에게 보여 주고, **승인한 번호만** 고칩니다.
+- [ ] **Step 3: 수정과 재검사**: 승인 항목 수정, `npm test`, Delivery Gate 보고서 작성
+- [ ] **Step 4: 커밋**: `fix(ui): anti-slop 감사 반영`
+
 ### Task 16: 배포 구성/시연 안내/추적성 점검
 
 **Files**
