@@ -7,7 +7,7 @@
 ## 1단계. 요구사항 정의 (완료, 2026-11-23 승인)
 
 - **스킬**: superpowers:brainstorming
-- **산출물**: `docs/superpowers/specs/2026-11-23-booking-platform-design.md`, `docs/superpowers/notes/planning-checklist.md`
+- **산출물**: `docs/superpowers/specs/2026-11-23-booking-platform-requirements.md`, `docs/superpowers/specs/2026-11-23-booking-platform-design.md`, `docs/superpowers/notes/planning-checklist.md`
 - **내가 내린 결정과 이유**
   - 추진 배경: 공연은 외부 예매처, 교육은 전화·구글폼으로 창구가 나뉘어 정원·예약자·결제 내역이 흩어짐 → 신규 통합 구축.
   - 범위: 단계적 대체(C안). 1차는 교육 + 자체 기획공연, 대관공연은 외부 예매처 유지(2차 과제). 공공사업의 1차/향후 과제 구분을 그대로 보여 주기 위해.
