@@ -17,10 +17,10 @@ function esc(s) {
 export function headerHtml({ name = null, loggedIn = false } = {}) {
   const nav = GNB.map(([label, href]) => `<a href="${href}">${label}</a>`).join('');
   const util = loggedIn
-    ? `<a href="#/my">내 예약</a><a class="me" href="#/account">${USER_ICON}${esc(name ?? '내 정보')}${name ? ' 님' : ''}</a><button class="link" type="button" data-logout>로그아웃</button>`
+    ? `<a href="#/me/bookings">내 예약</a><a class="me" href="#/account">${USER_ICON}${esc(name ?? '내 정보')}${name ? ' 님' : ''}</a><button class="link" type="button" data-logout>로그아웃</button>`
     : '<a href="#/login">로그인</a><a class="btn btn-primary btn-sm" href="#/signup">회원 가입</a>';
   const mobile = loggedIn
-    ? '<a href="#/my">내 예약</a><a href="#/account">내 정보</a><button type="button" data-logout>로그아웃</button>'
+    ? '<a href="#/me/bookings">내 예약</a><a href="#/account">내 정보</a><button type="button" data-logout>로그아웃</button>'
     : '<a href="#/login">로그인</a><a href="#/signup">회원 가입</a>';
   return `<div class="container">
       <a class="logo" href="#/"><b>한빛아트센터</b><span>한빛시 문화재단</span></a>

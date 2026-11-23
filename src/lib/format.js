@@ -44,6 +44,12 @@ export function kstDateTime(iso) {
   return `${t.year}. ${t.month}. ${t.day}.(${t.weekday}) ${t.hour}:${t.minute}`;
 }
 
+// 올해 안의 일정처럼 연도를 줄여 보일 때: 12. 3.(목) 14:00
+export function kstShortDateTime(iso) {
+  const t = kstParts(iso);
+  return `${t.month}. ${t.day}.(${t.weekday}) ${t.hour}:${t.minute}`;
+}
+
 export function formatPhone(digits) {
   const d = String(digits ?? '').replace(/\D/g, '');
   if (d.length === 11) return `${d.slice(0, 3)}-${d.slice(3, 7)}-${d.slice(7)}`;

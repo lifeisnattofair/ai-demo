@@ -180,23 +180,28 @@ export const api = {
     if (error) throw fromDbError(error);
     return data;
   },
+  // 마이페이지: 본인 행만 돌려주는 조회 함수(0009_my_page.sql)
   async myBookings() {
-    const { data, error } = await client()
-      .from('bookings')
-      .select('id, booking_no, status, total_amount, created_at, cancelled_at, offering:offerings(id, starts_at, ends_at, status, program:programs(id, type, title, venue, poster_image, poster_tone))')
-      .order('created_at', { ascending: false });
+    return (await rpc('my_bookings_overview', {})) ?? [];
+  },
+  async myBooking(id) {
+    const { data, error } = await client().rpc('my_bookings_overview', { p_booking: id });
+    // 주소의 id 가 uuid 형식이 아니면 없는 예약으로 봅니다.
+    if (error?.code === '22P02') return null;
     if (error) throw fromDbError(error);
-    return data;
+    return data?.[0] ?? null;
   },
   async myWaitlist() {
-    const { data, error } = await client()
-      .from('waitlist')
-      .select('id, qty, status, created_at, deadline_at, offering:offerings(id, starts_at, program:programs(id, type, title))')
-      .in('status', ['WAITING', 'PROMOTED'])
-      .order('created_at', { ascending: false });
-    if (error) throw fromDbError(error);
-    return data;
+    return (await rpc('my_waitlist_overview', {})) ?? [];
   },
+  async myCounts() {
+    return (await rpc('my_counts', {})) ?? { upcoming: 0, waitlist: 0, unread: 0 };
+  },
+  async myNotifications() {
+    return (await rpc('my_notifications', {})) ?? [];
+  },
+  markNotificationRead: (id) => rpc('mark_notification_read', { p_id: id }),
+  markAllNotificationsRead: () => rpc('mark_all_notifications_read', {}),
 
   // Edge Functions
   confirmPayment: (paymentKey, orderId, amount) => invoke('payments-confirm', { paymentKey, orderId, amount }),
