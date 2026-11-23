@@ -7,7 +7,7 @@
 ```
 index.html, admin.html   사용자 화면과 관리자 화면 진입점
 src/                     화면 코드(user, admin, lib)
-supabase/migrations/     스키마, 정책 함수, RLS (0001~0014)
+supabase/migrations/     스키마, 정책 함수, RLS (0001~0015)
 supabase/seed.sql        시연 계정과 시드 일정
 supabase/functions/      Edge Functions(payments-confirm, payments-cancel, payments-webhook)와 정책/결제 공용 코드
 tests/                   policy, payments, db, ui, scripts 테스트
@@ -35,11 +35,21 @@ docs/                    요구사항, 설계, 계획, 산출물 정의서
 |---|---|
 | member1@demo.test, member2@demo.test, member3@demo.test | 회원 |
 | operator@demo.test | 운영 담당 |
-| finance@demo.test | 재무 담당 |
+| finance@demo.test | 정산 담당 |
+
+공개 시연(`app_settings.env = demo`, `VITE_ENV = demo`)에서는 여러 사람이 이 계정을 함께 쓰므로 계정을 바꾸지 못하게 막습니다.
+
+- 연락처(이름, 휴대폰 번호) 수정과 회원 탈퇴는 DB 함수가 거절합니다(`DEMO_ACCOUNT_LOCKED`, 안내: 「시연용 계정은 변경할 수 없습니다. 새 계정을 만들어 사용해 주세요.」).
+- 비밀번호 변경은 Supabase Auth가 직접 처리해 DB에서 막을 수 없습니다. 그래서 내 정보 화면에서 이 계정의 비밀번호 변경, 연락처 수정, 탈퇴 버튼을 감추고 같은 안내를 보입니다. API를 직접 불러 비밀번호를 바꾸는 것까지 막지는 못합니다.
+- 그래도 계정이 바뀌었으면 운영 담당의 시연 데이터 초기화(`admin_reset_demo`)가 다섯 계정의 차단, 이메일, 비밀번호(`Demo-1234!`), 로그인 수단, 이름과 휴대폰 번호, 역할을 시드 값으로 되돌립니다. 운영 담당 계정 자체가 잠겼다면 소유자가 SQL 편집기에서 `select public.restore_demo_accounts();`를 실행합니다.
+- 직접 가입한 계정은 제한 없이 수정하고 탈퇴할 수 있습니다. 이메일 변경은 이 프로토타입 범위 밖이라 모든 계정에서 읽기 전용입니다.
 
 ## 결제 안내
 
-모의 결제라 실제 승인과 출금이 없습니다. 결제 화면에서 카드사를 반드시 골라야 하고, 카드 번호는 아무 가상 값이나 써도 됩니다. 실사업으로 바꿀 때는 결제 어댑터(`supabase/functions/_shared/payments/gateway.js`)만 결제대행사용으로 교체합니다.
+모의 결제라 실제 승인과 출금이 없습니다. 결제 화면에서 카드사를 반드시 골라야 하고, 카드 번호는 아무 가상 값이나 써도 됩니다. 실사업으로 바꿀 때는 두 곳을 결제대행사용으로 교체합니다.
+
+- 결제 어댑터 `supabase/functions/_shared/payments/gateway.js`
+- DB 함수 `order_has_charge`(`supabase/migrations/0004_booking.sql`). 주문에 승인된 결제가 있는지 모의 결제 기록(`pg_mock_transactions`)을 읽어 판단하므로, 실제 결제 기록(예: `payments` 테이블이나 결제대행사 조회 결과를 저장한 표)을 읽도록 바꿔야 합니다. 이 함수가 틀리면 sweep이 승인된 결제 중 선점을 풀어 좌석을 다시 팔 수 있습니다.
 
 ## 검수용 시계와 시연 데이터 초기화
 
@@ -62,10 +72,18 @@ docs/                    요구사항, 설계, 계획, 산출물 정의서
 
 아래는 저장소 소유자가 자신의 계정에서 실행하는 순서입니다. 이 저장소의 작업 과정에서는 실행하지 않았습니다.
 
-1. Supabase 프로젝트를 만들고 `npx supabase link --project-ref <프로젝트 ref>` 후 `npx supabase db push` 로 마이그레이션을 올립니다. 시드(`supabase/seed.sql`)를 적용하고, 공개 시연이면 `app_settings.env`를 `demo`로 둡니다.
+1. Supabase 프로젝트를 만들고 `npx supabase link --project-ref <프로젝트 ref>` 후 `npx supabase db push` 로 마이그레이션을 올립니다. 시드(`supabase/seed.sql`)를 적용한 뒤, 대시보드의 SQL 편집기에서 환경을 `demo`로 바꿉니다.
+
+   ```sql
+   insert into public.app_settings(key, value) values ('env', '"demo"')
+   on conflict (key) do update set value = excluded.value;
+   select public.app_env();  -- demo 가 나와야 합니다
+   ```
+
+   주의: 마이그레이션의 기본값은 `local`이고, `local`에서는 검수용 시계(`admin_set_clock`)와 시연 데이터 초기화가 모두 켜져 있습니다. `VITE_ENV=demo` 빌드는 메뉴만 감출 뿐이라, 이 단계를 빠뜨리면 공개된 운영 담당 계정으로 누구나 RPC를 불러 시계를 옮길 수 있고 시연 계정 보호도 동작하지 않습니다.
 2. Edge Functions 비밀값에 `ALLOWED_ORIGIN`(Pages 주소 예: `https://<계정>.github.io`)을 설정하고 `npx supabase functions deploy` 로 배포합니다. 모의 결제라 결제 비밀값은 필요 없습니다.
 3. GitHub 저장소 Settings의 Secrets and variables에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`를 등록합니다.
-4. Settings의 Pages 소스를 GitHub Actions로 바꾸고 `main`에 push하면 `.github/workflows/pages.yml`이 `VITE_BASE=/ai-demo/`, `VITE_ENV=demo`로 빌드해 배포합니다.
+4. Settings의 Pages 소스를 GitHub Actions로 바꾸고 `main`에 push하면 `.github/workflows/pages.yml`이 `npm test`와 `npm run check:secrets`를 통과한 뒤 `VITE_BASE=/ai-demo/`, `VITE_ENV=demo`로 빌드해 배포합니다.
 
 무료 Supabase 프로젝트는 일정 기간 접속이 없으면 일시 정지될 수 있습니다. 시연 전에 대시보드에서 상태를 확인하고, 정지돼 있으면 복구한 뒤 사용합니다.
 
