@@ -390,19 +390,19 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 
 ### Task 8A: 디자인 시안 (사용자 확인 게이트)
 
-구현 화면(Task 8~15)보다 먼저 만듭니다. **사용자가 시안을 확정하기 전에는 Task 8 이후를 진행하지 않습니다.**
+**완료(2026-11-23 사용자 확정)**: `design/mockups/` 시안 7장, 토큰은 `design/mockups/assets/css/tokens.css`. 구현 화면(Task 8~15)보다 먼저 만듭니다. **사용자가 시안을 확정하기 전에는 Task 8 이후를 진행하지 않습니다.**
 
 **Files**
 - Create: `design/mockups/user-list.html`, `user-detail.html`, `user-seat.html`, `user-checkout.html`, `user-mybooking.html`, `admin-bookings.html`, `admin-settlement.html`, `design/mockups/assets/`(시안용 사진, CSS)
 
 **Interfaces**
-- Produces: 확정한 디자인 토큰(색, 글자 크기 단계, 간격, 모서리, 그림자)을 `design/mockups/tokens.css`에 정리합니다. Task 8의 `src/styles/tokens.css`는 이 값을 그대로 옮깁니다.
+- Produces: 확정한 디자인 토큰(색, 글자 크기 단계, 간격, 모서리, 그림자)을 `design/mockups/tokens.css`에 정리합니다. Task 8의 `src/styles/tokens.css`는 이 값을 그대로 옮기고, 화면 구조와 클래스 체계는 `design/mockups/assets/css/user.css`, `admin.css`를 기준으로 합니다.
 
-- [ ] **Step 1: 사진 확보**: 프로그램 6개에 맞는 무료 사진 후보(Unsplash, Pexels 등 상업적 이용 가능 라이선스)를 찾아 링크와 라이선스를 사용자에게 보여 주고, 내려받기 승인을 받습니다. 맞는 사진이 없으면 생성 이미지 프롬프트를 제안합니다(사용자가 직접 생성해도 됩니다).
-- [ ] **Step 2: 시안 작성**: 설계 5-9의 콘셉트와 「시안, 화면 품질 기준」을 따라 반응형 HTML 시안을 만듭니다. KRDS 컴포넌트를 바탕으로 하고, 실제 서비스처럼 현실적인 가상 데이터로 채웁니다.
-- [ ] **Step 3: 자체 점검**: 1440×900, 390×844로 캡처해 확인합니다. 확인 항목은 가로 넘침 없음, 강조 막대와 설명용 문구 없음, 가운뎃점은 필요한 곳에만 있음입니다. 캡처는 `portfolio/shots/mockups/`에 webp로 저장합니다.
-- [ ] **Step 4: 사용자 확인**: 시안을 보여 드리고 피드백을 반영합니다. 확정되면 `tokens.css`를 고정합니다.
-- [ ] **Step 5: 커밋**: `design: 사용자, 관리자 화면 시안과 디자인 토큰`
+- [x] **Step 1: 사진 확보**: 프로그램 6개에 맞는 무료 사진 후보(Unsplash, Pexels 등 상업적 이용 가능 라이선스)를 찾아 링크와 라이선스를 사용자에게 보여 주고, 내려받기 승인을 받습니다. 맞는 사진이 없으면 생성 이미지 프롬프트를 제안합니다(사용자가 직접 생성해도 됩니다).
+- [x] **Step 2: 시안 작성**: 설계 5-9의 콘셉트와 「시안, 화면 품질 기준」을 따라 반응형 HTML 시안을 만듭니다. KRDS 컴포넌트를 바탕으로 하고, 실제 서비스처럼 현실적인 가상 데이터로 채웁니다.
+- [x] **Step 3: 자체 점검**: 1440×900, 390×844로 캡처해 확인합니다. 확인 항목은 가로 넘침 없음, 강조 막대와 설명용 문구 없음, 가운뎃점은 필요한 곳에만 있음입니다. 캡처는 `portfolio/shots/mockups/`에 webp로 저장합니다.
+- [x] **Step 4: 사용자 확인**: 시안을 보여 드리고 피드백을 반영합니다. 확정되면 `tokens.css`를 고정합니다.
+- [x] **Step 5: 커밋**: `design: 사용자, 관리자 화면 시안과 디자인 토큰`
 
 ### Task 8: 화면 공통 - KRDS 토큰, 라우터, 인증/회원
 
