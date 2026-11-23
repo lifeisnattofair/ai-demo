@@ -201,8 +201,12 @@ declare
   v_try int := 0;
 begin
   if p_payment_key is null or p_payment_key = '' then perform public.hold_error('INVALID_REQUEST'); end if;
-  select * into v_h from public.holds where order_id = p_order_id for update;
+  select * into v_h from public.holds where order_id = p_order_id;
   if not found then perform public.hold_error('ORDER_NOT_FOUND'); end if;
+  -- 잠금 순서(R15): 회차 -> 선점. 예약 insert의 FK가 회차에 거는 KEY SHARE보다 먼저 회차를 잡아
+  -- 같은 주문의 lock_for_confirm(회차 -> 선점)과 교착하지 않습니다.
+  perform 1 from public.offerings where id = v_h.offering_id for update;
+  select * into v_h from public.holds where order_id = p_order_id for update;
   if v_h.status = 'CONSUMED' then
     select b.* into v_b from public.bookings b join public.payments p on p.booking_id = b.id
      where b.hold_id = v_h.id and p.payment_key = p_payment_key;
@@ -298,10 +302,8 @@ declare
 begin
   select * into v_h from public.holds where order_id = p_order_id;
   if not found or v_h.status <> 'PAYING' then return; end if;
-  if v_h.waitlist_id is not null then
-    -- sweep_offering과 같은 순서(회차 -> 선점)로 잠급니다.
-    perform 1 from public.offerings where id = v_h.offering_id for update;
-  end if;
+  -- 항상 회차 -> 선점 순서로 잠급니다(sweep_offering, lock_for_confirm과 같음). revert_paying이 읽는 회차 상태도 이 잠금 아래에서 봅니다.
+  perform 1 from public.offerings where id = v_h.offering_id for update;
   if public.revert_paying(v_h.id) and v_h.waitlist_id is not null and v_h.expires_at <= public.app_now() then
     perform public.sweep_offering(v_h.offering_id);
   end if;

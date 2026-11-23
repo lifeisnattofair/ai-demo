@@ -1,3 +1,5 @@
+import { execFile, execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { createMockGateway } from '../../supabase/functions/_shared/payments/gateway.js';
 import { cancelBooking, cancelOffering } from '../../supabase/functions/_shared/payments/cancel.js';
@@ -15,6 +17,17 @@ let uid = [];
 let financeId;
 let operatorId;
 let seq = 0;
+
+// 다른 트랜잭션이 잠금을 쥐고 있는 상황을 만들려고 DB 컨테이너의 psql을 씁니다(없으면 해당 테스트만 건너뜀).
+const DB_CONTAINER = `supabase_db_${readFileSync('supabase/config.toml', 'utf8').match(/^project_id = "(.+)"/m)[1]}`;
+const dockerOk = (() => {
+  try { execFileSync('docker', ['exec', DB_CONTAINER, 'true'], { stdio: 'ignore' }); return true; } catch { return false; }
+})();
+const psql = (sql) => new Promise((resolve, reject) => {
+  execFile('docker', ['exec', DB_CONTAINER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-c', sql],
+    (err, out) => (err ? reject(err) : resolve(out)));
+});
+const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const at = (iso) => setClock(Date.parse(iso) - Date.now());
 const orderId = () => `HB-20261201-C${String(Date.now() % 1e6).padStart(6, '0')}${String(seq++).padStart(3, '0')}`;
@@ -352,4 +365,36 @@ describe('webhook', () => {
     expect(await handleWebhook({ db: adapter, pg }, body)).toEqual({ applied: false });
     expect((await paymentOf(booking.id)).status).toBe('CANCELED');
   });
+});
+
+describe('lock order (offering -> holds)', () => {
+  it.skipIf(!dockerOk)('duplicate confirm (lock_for_confirm) racing finalize_booking on the same order does not deadlock', async () => {
+    const o = await offering('PERFORMANCE');
+    const hold = await ok(m[0].rpc('hold_seats', { p_offering: o.id, p_seat_ids: [1] }));
+    const oid = orderId();
+    await ok(m[0].rpc('prepare_payment', {
+      p_hold: hold.id, p_items: [{ seatId: 1, discountType: 'GENERAL' }], p_amount: 40000, p_order_id: oid,
+    }));
+    await ok(db.rpc('lock_for_confirm', { p_order_id: oid }));
+    const paymentKey = `pk_${oid}`;
+    const payment = await pg.confirm({ paymentKey, orderId: oid, amount: 40000 });
+
+    // 다른 트랜잭션이 회차 행을 잠근 동안 중복 확정 요청(lock_for_confirm)이 먼저, finalize_booking이 뒤에 줄을 섭니다.
+    // 예전 순서(finalize가 선점을 먼저 잠그고 예약 insert의 FK가 회차를 잠금)면 잠금이 풀리는 순간 교착됩니다.
+    const blocker = psql(`begin; select 1 from public.offerings where id = '${o.id}' for update; select pg_sleep(4); commit;`);
+    await pause(1500);
+    const dup = db.rpc('lock_for_confirm', { p_order_id: oid });
+    await pause(400);
+    const fin = db.rpc('finalize_booking', { p_order_id: oid, p_payment_key: paymentKey, p_raw: payment });
+    const [d, f] = await Promise.all([dup, fin]);
+    await blocker;
+
+    expect(String(d.error?.message ?? '')).not.toMatch(/deadlock/i);
+    expect(String(f.error?.message ?? '')).not.toMatch(/deadlock/i);
+    expect(d.error?.message).toBe('PAYMENT_IN_PROGRESS');
+    expect(f.error).toBeNull();
+    expect(f.data.status).toBe('CONFIRMED');
+    const bookings = await ok(db.from('bookings').select('id, status').eq('hold_id', hold.id));
+    expect(bookings).toEqual([{ id: f.data.id, status: 'CONFIRMED' }]);
+  }, 30000);
 });

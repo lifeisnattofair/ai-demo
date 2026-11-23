@@ -195,6 +195,54 @@ describe('cancelBooking (USER)', () => {
     expect((await pg.get(KEY)).status).toBe('CANCELED');
   });
 
+  it('race: another attempt refunded at the PG after this one read its context -> no second refund', async () => {
+    // 정규 강좌 1/2 이전(MID_BEFORE_1_2): 120000의 1/2 = 60000. 두 번 취소해도 잔액 검사를 통과하는 금액입니다.
+    const lessons = Array.from({ length: 12 }, (_, i) => new Date(Date.parse('2026-12-10T10:00:00Z') + i * 7 * 86400000).toISOString());
+    const row = ctx({ productType: 'COURSE', paidAmount: 120000, baseAt: lessons[0], lessonStarts: lessons });
+    const pg = await paidGateway(120000);
+    const db = fakeDb({ context: row });
+    // 이 시도가 ctx(cancelRule 없음)를 읽은 직후 앞선 시도 A가 PG 취소를 마치고 확정에 실패해 클레임을 풀었습니다.
+    const origRpc = db.rpc;
+    db.rpc = async (name, args) => {
+      const res = await origRpc(name, args);
+      if (name === 'cancel_context' && db.count('cancel_context') === 1) {
+        await pg.cancel(KEY, { cancelReason: '고객 취소', cancelAmount: 60000 });
+      }
+      return res;
+    };
+    pg.cancel.mockClear();
+    const now = new Date(Date.parse(lessons[3]) + 3600000); // 4회 시작 -> MID_BEFORE_1_2
+    const res = await cancelBooking({ db, pg, now }, { userId: USER, bookingId: 'b-1', reason: 'USER' });
+    expect(pg.cancel).toHaveBeenCalledTimes(1); // A의 취소뿐
+    expect(res).toEqual({ status: 'CANCELLED', refundAmount: 60000, feeAmount: 60000, rule: 'MID_BEFORE_1_2' });
+    expect((await pg.get(KEY)).balanceAmount).toBe(60000);
+    expect(db.args('finalize_cancel')).toMatchObject({ p_refund: 60000, p_fee: 60000, p_reason: 'USER' });
+  });
+
+  it('a PG-side cancel made outside this flow (no cancel_rule) is recorded instead of cancelling again', async () => {
+    const pg = await paidGateway();
+    await pg.cancel(KEY, { cancelReason: '결제대행사 취소' });
+    pg.cancel.mockClear();
+    const db = fakeDb();
+    const res = await cancelBooking({ db, pg, now: kst('2026-12-04T10:00:00') }, { userId: USER, bookingId: 'b-1', reason: 'USER' });
+    expect(pg.cancel).not.toHaveBeenCalled();
+    expect(res).toEqual({ status: 'CANCELLED', refundAmount: 40000, feeAmount: 0, rule: 'D7_4' });
+  });
+
+  it('a user retry of a failed institution attempt is recorded with reason INSTITUTION', async () => {
+    const pg = await paidGateway();
+    const row = ctx({ offeringStatus: 'CANCELLED' });
+    const db1 = fakeDb({ context: row, finalizeError: new DbError('boom') });
+    await expect(cancelBooking({ db: db1, pg, now: kst('2026-12-10T10:00:00') }, { userId: FINANCE, bookingId: 'b-1', reason: 'INSTITUTION' }))
+      .rejects.toBeTruthy();
+    expect(row.cancelRule).toBe('INSTITUTION_FULL');
+    const db2 = fakeDb({ context: row });
+    const res = await cancelBooking({ db: db2, pg, now: kst('2026-12-10T10:00:00') }, { userId: USER, bookingId: 'b-1', reason: 'USER' });
+    expect(res).toEqual({ status: 'CANCELLED', refundAmount: 40000, feeAmount: 0, rule: 'INSTITUTION_FULL' });
+    expect(db2.args('finalize_cancel')).toMatchObject({ p_reason: 'INSTITUTION', p_rule: 'INSTITUTION_FULL' });
+    expect(pg.cancel).toHaveBeenCalledTimes(1);
+  });
+
   it('a started attempt that never reached the PG re-evaluates the current policy', async () => {
     const pg = await paidGateway();
     pg.cancel.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'NETWORK' }));
