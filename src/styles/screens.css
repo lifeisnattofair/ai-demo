@@ -85,6 +85,7 @@ main:focus { outline: none; }
 .profile-list dd { color: var(--c-text); overflow-wrap: anywhere; }
 .profile-list dt:nth-last-of-type(1), .profile-list dd:last-of-type { border-bottom: 0; }
 .account .panel-body > p { margin: 0 0 var(--sp-4); font-size: var(--fs-small); color: var(--c-text-2); }
+.account .panel-body > .account-hint { margin: var(--sp-3) 0 0; font-size: var(--fs-xsmall); color: var(--c-text-3); }
 .confirm-box { margin-top: var(--sp-4); padding: var(--sp-4); border-radius: var(--r-md); background: var(--c-surface-2); display: grid; gap: var(--sp-3); font-size: var(--fs-small); }
 .confirm-box p { margin: 0; }
 .confirm-box .auth-actions { margin-top: 0; }

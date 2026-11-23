@@ -9,7 +9,7 @@ import { createRouter } from '../lib/router.js';
 import { api } from '../lib/api.js';
 import { syncClock } from '../lib/clock.js';
 import { mountHeader, footerHtml } from './components/header.js';
-import { renderSignup, renderLogin, renderReset } from './pages/auth.js';
+import { renderSignup, renderLogin, renderReset, renderCompleteContact } from './pages/auth.js';
 import { renderAccount } from './pages/account.js';
 import { renderPrograms } from './pages/programs.js';
 import { renderProgramDetail } from './pages/program-detail.js';
@@ -44,6 +44,7 @@ router = createRouter(
     '#/payment/success': (_p, el, query) => renderPaymentSuccess(el, { api, go, query }),
     '#/payment/fail': (_p, el, query) => renderPaymentFail(el, { query }),
     '#/signup': (_p, el) => renderSignup(el, { api, go }),
+    '#/signup/contact': (_p, el, query) => renderCompleteContact(el, { api, go, query }),
     '#/login': (_p, el, query) => renderLogin(el, { api, go, query }),
     '#/reset': (_p, el) => renderReset(el, { api }),
     '#/account': (_p, el) => renderAccount(el, { api, go }),

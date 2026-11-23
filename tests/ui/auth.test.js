@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { validatePassword, renderSignup, renderLogin } from '../../src/user/pages/auth.js';
+import { validatePassword, renderSignup, renderLogin, renderCompleteContact } from '../../src/user/pages/auth.js';
 import { messageFor } from '../../src/lib/api.js';
 
 const PW_MSG = '비밀번호는 영문과 숫자를 함께 8자 이상 입력해 주세요.';
@@ -12,6 +12,7 @@ function fakeApi(over = {}) {
     signIn: vi.fn().mockResolvedValue({ user: { id: 'u1' } }),
     completeVerification: vi.fn().mockResolvedValue({ id: 'u1', name: '김지원' }),
     resetPassword: vi.fn().mockResolvedValue({}),
+    getProfile: vi.fn().mockResolvedValue({ id: 'u1', name: '김지원', phone: '01012345678', verified_at: '2026-11-20T00:00:00Z' }),
     ...over,
   };
 }
@@ -152,6 +153,74 @@ describe('로그인 폼', () => {
     submit(el);
     await new Promise((r) => setTimeout(r, 10));
     expect(el.querySelector('[role="alert"]').textContent).toContain('이메일 또는 비밀번호가 맞지 않습니다.');
+  });
+
+  async function login(api, next) {
+    const el = document.createElement('main');
+    document.body.replaceChildren(el);
+    const go = vi.fn();
+    renderLogin(el, { api, go, query: new URLSearchParams(next ? { next } : {}) });
+    type(el, '#email', 'a@example.com');
+    type(el, '#password', 'abc12345');
+    submit(el);
+    await new Promise((r) => setTimeout(r, 10));
+    return go;
+  }
+
+  it('연락처 입력을 마친 계정은 원래 가려던 곳으로 갑니다', async () => {
+    expect(await login(fakeApi(), '#/me/bookings')).toHaveBeenCalledWith('#/me/bookings');
+  });
+
+  it('프로필이 없는 계정(가입 중 연락처 입력 실패)은 연락처 입력 단계로 보내고 돌아올 곳을 남깁니다', async () => {
+    const api = fakeApi({ getProfile: vi.fn().mockResolvedValue(null) });
+    expect(await login(api, '#/booking/o1/select')).toHaveBeenCalledWith(`#/signup/contact?next=${encodeURIComponent('#/booking/o1/select')}`);
+    expect(await login(api)).toHaveBeenCalledWith('#/signup/contact');
+  });
+
+  it('프로필 조회가 실패하면 막지 않고 그대로 이동합니다', async () => {
+    const api = fakeApi({ getProfile: vi.fn().mockRejectedValue(new Error('net')) });
+    expect(await login(api)).toHaveBeenCalledWith('#/');
+  });
+});
+
+describe('연락처 입력 이어서 하기(#/signup/contact)', () => {
+  let el;
+  beforeEach(() => {
+    el = document.createElement('main');
+    document.body.replaceChildren(el);
+  });
+
+  it('로그인하지 않았으면 로그인으로 보냅니다', async () => {
+    const go = vi.fn();
+    await renderCompleteContact(el, { api: fakeApi(), go, query: new URLSearchParams() });
+    expect(go).toHaveBeenCalledWith(`#/login?next=${encodeURIComponent('#/signup/contact')}`);
+  });
+
+  it('이미 연락처가 있으면 다음 주소로 바로 갑니다', async () => {
+    const go = vi.fn();
+    const api = fakeApi({ getSession: vi.fn().mockResolvedValue({ user: { id: 'u1' } }) });
+    await renderCompleteContact(el, { api, go, query: new URLSearchParams({ next: '#/account' }) });
+    expect(go).toHaveBeenCalledWith('#/account');
+  });
+
+  it('프로필이 없으면 이름과 번호를 받아 complete_mock_verification 후 다음 주소로 갑니다', async () => {
+    const go = vi.fn();
+    const api = fakeApi({ getSession: vi.fn().mockResolvedValue({ user: { id: 'u1' } }), getProfile: vi.fn().mockResolvedValue(null) });
+    await renderCompleteContact(el, { api, go, query: new URLSearchParams({ next: '#/booking/o1/select' }) });
+    expect(el.querySelector('h1').textContent).toBe('연락처 입력');
+    type(el, '#name', '김지원');
+    type(el, '#phone', '010-1234-5678');
+    submit(el);
+    await new Promise((r) => setTimeout(r, 10));
+    expect(api.completeVerification).toHaveBeenCalledWith('김지원', '01012345678');
+    expect(go).toHaveBeenCalledWith('#/booking/o1/select');
+  });
+
+  it('외부 주소나 가입 주소는 next 로 쓰지 않습니다', async () => {
+    const go = vi.fn();
+    const api = fakeApi({ getSession: vi.fn().mockResolvedValue({ user: { id: 'u1' } }) });
+    await renderCompleteContact(el, { api, go, query: new URLSearchParams({ next: 'https://evil.example' }) });
+    expect(go).toHaveBeenCalledWith('#/');
   });
 });
 

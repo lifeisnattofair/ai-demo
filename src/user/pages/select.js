@@ -12,6 +12,7 @@ import { renderSeatMap, GRADE_NAME } from '../components/seat-map.js';
 import { renderSeatList } from '../components/seat-list.js';
 import { showSkeleton } from '../../components/skeleton.js';
 import { withBusy } from '../../components/button-busy.js';
+import { contactHash, hasContact } from './auth.js';
 
 const NEXT_LABEL = '다음: 할인 선택';
 const LOAD_ERROR = '예매 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
@@ -77,6 +78,14 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
   }
   if (!session) {
     go(`#/login?next=${encodeURIComponent(selfHash)}`);
+    return;
+  }
+  // 가입 중 연락처 입력을 마치지 못한 계정은 선점이 FK 로 실패하므로 먼저 그 단계로 보냅니다.
+  const contact = await hasContact(api);
+  if (stale()) { releaseSkeleton(); return; }
+  if (contact === false) {
+    releaseSkeleton();
+    go(contactHash(selfHash));
     return;
   }
 

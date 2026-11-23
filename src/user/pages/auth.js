@@ -183,40 +183,93 @@ export function renderSignup(el, deps = {}) {
         </div>
       </form>`, '예매와 취소 안내를 받을 이름과 휴대폰 번호를 입력해 주세요.');
     q(el, '#verify-back').addEventListener('click', consentStep);
-    const form = q(el, 'form');
-    form.addEventListener('submit', async (e) => {
-      e.preventDefault();
-      clearFormError(form);
-      const name = q(el, '#name').value.trim();
-      const phone = normalizePhone(q(el, '#phone').value);
-      const nErr = name ? '' : '이름을 입력해 주세요.';
-      const pErr = validatePhone(phone);
-      setFieldError(el, 'name', nErr);
-      setFieldError(el, 'phone', pErr);
-      if (nErr || pErr) {
-        q(el, '[aria-invalid="true"]')?.focus();
-        return;
-      }
-      await withBusy(q(form, '[type="submit"]'), async () => {
-        try {
-          const session = await api.getSession();
-          if (!session && !state.signedUp) {
-            await api.signUp(state.email, state.password);
-            state.signedUp = true;
-          }
-          await api.completeVerification(name, phone);
-          if (state.marketing) await api.saveConsent?.({ marketing_opt_in: true }).catch(() => {});
-          go('#/');
-        } catch (err) {
-          showFormError(form, describeError(err));
-          if (err.code === 'user_already_exists') state.signedUp = false;
+    bindContactForm(el, q(el, 'form'), async (name, phone) => {
+      try {
+        const session = await api.getSession();
+        if (!session && !state.signedUp) {
+          await api.signUp(state.email, state.password);
+          state.signedUp = true;
         }
-      });
+        await api.completeVerification(name, phone);
+        if (state.marketing) await api.saveConsent?.({ marketing_opt_in: true }).catch(() => {});
+        go('#/');
+      } catch (err) {
+        if (err.code === 'user_already_exists') state.signedUp = false;
+        throw err;
+      }
     });
     focusTitle();
   }
 
   accountStep();
+}
+
+/** 이름과 휴대폰 번호 입력 폼을 검사하고, 통과하면 onValid(name, phone) 을 부릅니다. 실패 오류는 폼 위에 보입니다. */
+export function bindContactForm(el, form, onValid) {
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    clearFormError(form);
+    const name = q(el, '#name').value.trim();
+    const phone = normalizePhone(q(el, '#phone').value);
+    const nErr = !name ? '이름을 입력해 주세요.' : name.length > 50 ? '이름은 50자까지 입력할 수 있습니다.' : '';
+    const pErr = validatePhone(phone);
+    setFieldError(el, 'name', nErr);
+    setFieldError(el, 'phone', pErr);
+    if (nErr || pErr) {
+      q(el, '[aria-invalid="true"]')?.focus();
+      return;
+    }
+    await withBusy(q(form, '[type="submit"]'), async () => {
+      try {
+        await onValid(name, phone);
+      } catch (err) {
+        showFormError(form, describeError(err));
+      }
+    });
+  });
+}
+
+/** 연락처 입력(프로필)이 끝난 계정인지. 조회에 실패하면 막지 않고 null(모름)을 돌려줍니다. */
+export async function hasContact(api) {
+  try {
+    const p = await api.getProfile();
+    return Boolean(p?.verified_at);
+  } catch {
+    return null;
+  }
+}
+
+export const contactHash = (next) => `#/signup/contact${next ? `?next=${encodeURIComponent(next)}` : ''}`;
+
+// ---------- 연락처 입력 이어서 하기 ----------
+// 가입(signUp)은 됐는데 연락처 입력이 실패한 계정이 다시 들어오면 여기서 마칩니다.
+
+export async function renderCompleteContact(el, deps = {}) {
+  const api = deps.api ?? defaultApi;
+  const go = deps.go ?? ((h) => { window.location.hash = h; });
+  const raw = deps.query?.get('next');
+  const next = raw && raw.startsWith('#/') && !raw.startsWith('#/signup') ? raw : '#/';
+  const session = await api.getSession();
+  if (!session) {
+    go(`#/login?next=${encodeURIComponent(contactHash(next === '#/' ? '' : next))}`);
+    return;
+  }
+  if (await hasContact(api)) {
+    go(next);
+    return;
+  }
+  el.innerHTML = shell('연락처 입력', `
+    ${stepper(2)}
+    <form class="auth-form" id="step-verify" novalidate>
+      ${field('name', '이름', 'text', 'autocomplete="name" required')}
+      ${field('phone', '휴대폰 번호', 'tel', 'autocomplete="tel" inputmode="numeric" placeholder="01012345678" required')}
+      <button class="btn btn-primary btn-block" type="submit">입력 완료</button>
+    </form>`, '가입이 아직 끝나지 않았습니다. 예매와 취소 안내를 받을 이름과 휴대폰 번호를 입력해 주세요.');
+  bindContactForm(el, q(el, 'form'), async (name, phone) => {
+    await api.completeVerification(name, phone);
+    go(next);
+  });
+  q(el, '.auth-title')?.focus();
 }
 
 // ---------- 로그인 ----------
@@ -250,7 +303,9 @@ export function renderLogin(el, deps = {}) {
     await withBusy(q(form, '[type="submit"]'), async () => {
       try {
         await api.signIn(email, pw);
-        go(next && next.startsWith('#/') ? next : '#/');
+        const target = next && next.startsWith('#/') ? next : '#/';
+        // 연락처 입력을 마치지 못한 계정은 그 단계로 보냅니다(마친 뒤 원래 가려던 곳으로 갑니다).
+        go(await hasContact(api) === false ? contactHash(target === '#/' ? '' : target) : target);
       } catch (err) {
         showFormError(form, describeError(err));
       }

@@ -22,6 +22,7 @@ function fakeApi(over = {}) {
   return {
     messageFor,
     getSession: vi.fn().mockResolvedValue({ user: { id: 'u1' } }),
+    getProfile: vi.fn().mockResolvedValue({ id: 'u1', verified_at: '2026-11-20T00:00:00Z' }),
     getOffering: vi.fn().mockResolvedValue({
       id: 'o1', starts_at: iso(10), ends_at: iso(10), capacity: 200, sale_starts_at: iso(-5), sale_ends_at: iso(10), status: 'OPEN',
       prices: [{ grade: 'R', price: 40000 }, { grade: 'S', price: 30000 }, { grade: 'A', price: 20000 }],
@@ -53,6 +54,13 @@ describe('좌석 선택 화면', () => {
   it('로그인하지 않았으면 로그인 화면으로 보내고 돌아올 주소를 남긴다', async () => {
     const go = await run(fakeApi({ getSession: vi.fn().mockResolvedValue(null) }));
     expect(go).toHaveBeenCalledWith(`#/login?next=${encodeURIComponent('#/booking/o1/select')}`);
+  });
+
+  it('연락처 입력을 마치지 못한 계정은 선점 전에 연락처 입력 단계로 보낸다', async () => {
+    const api = fakeApi({ getProfile: vi.fn().mockResolvedValue(null) });
+    const go = await run(api);
+    expect(go).toHaveBeenCalledWith(`#/signup/contact?next=${encodeURIComponent('#/booking/o1/select')}`);
+    expect(api.getOffering).not.toHaveBeenCalled();
   });
 
   it('좌석을 고르면 요약에 좌석과 합계가 보이고 다음을 누르면 선점 후 할인 선택으로 간다', async () => {

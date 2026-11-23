@@ -15,7 +15,9 @@ const MESSAGES = {
   UNAUTHENTICATED: '로그인이 필요합니다. 로그인 후 다시 시도해 주세요.',
   ACTIVE_BOOKING: '진행 중인 예약이 있어 탈퇴할 수 없습니다. 예약을 취소한 뒤 다시 시도해 주세요.',
   INVALID_PHONE: '휴대폰 번호 형식이 올바르지 않습니다. 숫자 10자리 또는 11자리로 입력해 주세요.',
-  INVALID_NAME: '이름을 입력해 주세요.',
+  INVALID_NAME: '이름을 입력해 주세요. 50자까지 입력할 수 있습니다.',
+  DEMO_ACCOUNT_LOCKED: '시연용 계정은 변경할 수 없습니다. 새 계정을 만들어 사용해 주세요.',
+  PROFILE_REQUIRED: '가입 때 연락처 입력이 끝나지 않았습니다. 이름과 휴대폰 번호를 입력한 뒤 다시 시도해 주세요.',
   NO_BACKEND: '서비스에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.',
 };
 const GENERIC = '요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';
@@ -40,6 +42,8 @@ function client() {
 // DB 함수는 raise exception 의 message 에 코드를 담습니다.
 export function fromDbError(error) {
   const raw = String(error?.message ?? '');
+  // 가입 중 연락처 입력이 끝나지 않아 프로필이 없는 계정은 선점/대기 insert 의 FK 에서 막힙니다.
+  if (/violates foreign key constraint "(holds|waitlist)_user_id_fkey"/.test(raw)) return new ApiError('PROFILE_REQUIRED');
   const code = /^[A-Z][A-Z_]+$/.test(raw) ? raw : (raw.match(/\b([A-Z]{3,}(?:_[A-Z]+)+)\b/)?.[1] ?? 'UNKNOWN');
   return new ApiError(code);
 }
@@ -127,6 +131,7 @@ export const api = {
 
   // 회원
   completeVerification: (name, phone) => rpc('complete_mock_verification', { p_name: name, p_phone: phone }),
+  updateContact: (name, phone) => rpc('update_my_contact', { p_name: name, p_phone: phone }),
   async getProfile() {
     const session = await api.getSession();
     if (!session) return null;
