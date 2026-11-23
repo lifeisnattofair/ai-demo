@@ -118,8 +118,8 @@ begin
 end $$;
 
 -- 진행 중인 대기 하나를 종료(p_status)하고 배정분을 다음 순번 또는 일반 판매로 돌립니다.
--- 호출자가 회차 행을 잠가야 합니다.
-create or replace function public.waitlist_close(p_waitlist uuid, p_status text, p_hold_status text) returns void
+-- 호출자가 회차 행을 잠가야 합니다. 결제 진행 중(PAYING) 선점이 있으면 아무것도 바꾸지 않고 false를 돌려줍니다.
+create or replace function public.waitlist_close(p_waitlist uuid, p_status text, p_hold_status text) returns boolean
 language plpgsql security definer set search_path = public as $$
 declare
   v_w public.waitlist%rowtype;
@@ -127,7 +127,13 @@ declare
   v_seats int[];
 begin
   select * into v_w from public.waitlist where id = p_waitlist for update;
-  if not found or v_w.status not in ('WAITING', 'PROMOTED') then return; end if;
+  if not found or v_w.status not in ('WAITING', 'PROMOTED') then return false; end if;
+  -- 연결된 선점을 잠근 뒤 다시 확인합니다. payments-confirm이 ACTIVE -> PAYING을 진행 중이면
+  -- 그 트랜잭션이 끝날 때까지 기다렸다가 확정된 상태를 봅니다(스냅샷 검사만으로는 이중 배정 가능).
+  perform 1 from public.holds where waitlist_id = p_waitlist for update;
+  if exists (select 1 from public.holds where waitlist_id = p_waitlist and status = 'PAYING') then
+    return false;
+  end if;
   select p.type = 'PERFORMANCE' into v_is_seat
     from public.offerings o join public.programs p on p.id = o.program_id where o.id = v_w.offering_id;
 
@@ -147,6 +153,7 @@ begin
   else
     perform public.waitlist_route(v_w.offering_id, null, v_w.allocated_qty);
   end if;
+  return true;
 end $$;
 
 -- 지연 처리. 누구나 호출할 수 있으므로 기한이 지난 항목만 처리하고, 여러 번 불러도 결과가 같습니다.
@@ -173,11 +180,12 @@ begin
          and not exists (select 1 from public.holds h where h.waitlist_id = w.id and h.status = 'PAYING')
        order by w.created_at, w.id
     loop
-      perform public.waitlist_close(v_w.id,
+      if public.waitlist_close(v_w.id,
         case when ((v_starts at time zone 'Asia/Seoul')::date - (v_w.deadline_at at time zone 'Asia/Seoul')::date) <= 2
              then 'RELEASED' else 'EXPIRED' end,
-        'EXPIRED');
-      perform public.waitlist_notify(v_w.id, 'WAIT_EXPIRED');
+        'EXPIRED') then
+        perform public.waitlist_notify(v_w.id, 'WAIT_EXPIRED');
+      end if;
     end loop;
 
     -- D-2부터는 모으던 배정분도 일반 판매로 풉니다.
@@ -187,8 +195,9 @@ begin
          where offering_id = p_offering and status = 'WAITING' and allocated_qty > 0
          order by created_at, id
       loop
-        perform public.waitlist_close(v_w.id, 'RELEASED', 'EXPIRED');
-        perform public.waitlist_notify(v_w.id, 'WAIT_EXPIRED');
+        if public.waitlist_close(v_w.id, 'RELEASED', 'EXPIRED') then
+          perform public.waitlist_notify(v_w.id, 'WAIT_EXPIRED');
+        end if;
       end loop;
     end if;
   end if;
@@ -226,6 +235,7 @@ begin
 
   if v_off.status <> 'OPEN' or public.app_now() < v_off.sale_starts_at or public.app_now() >= v_off.sale_ends_at
      or public.app_now() >= coalesce((select min(starts_at) from public.course_lessons where offering_id = p_offering), v_off.starts_at)
+     or public.d_day(v_off.starts_at) <= 2  -- Ruling R12: D-2 이내에는 승격이 없으므로 신청도 받지 않습니다.
   then
     perform public.hold_error('NOT_ON_SALE');
   end if;
@@ -262,10 +272,9 @@ begin
   perform public.sweep_offering(v_w.offering_id);
   select * into v_w from public.waitlist where id = p_id;
   if v_w.status not in ('WAITING', 'PROMOTED') then return; end if;
-  if exists (select 1 from public.holds where waitlist_id = p_id and status = 'PAYING') then
+  if not public.waitlist_close(p_id, 'CANCELLED', 'RELEASED') then
     perform public.hold_error('PAYMENT_IN_PROGRESS');
   end if;
-  perform public.waitlist_close(p_id, 'CANCELLED', 'RELEASED');
 end $$;
 
 -- 취소로 풀린 재고 반환(내부 전용, Task 7 취소 흐름이 호출). 좌석제는 p_seat_ids, 정원제는 p_qty.

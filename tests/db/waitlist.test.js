@@ -1,3 +1,5 @@
+import { execFile, execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { adminClient, resetDb, setClock, userClient } from './helpers.js';
 
@@ -7,6 +9,16 @@ const H = 60 * 60 * 1000;
 const db = adminClient();
 let m = [];
 let uid = [];
+
+// 커밋 전 트랜잭션을 흉내 내려고 DB 컨테이너의 psql을 씁니다(없으면 해당 테스트만 건너뜀).
+const DB_CONTAINER = `supabase_db_${readFileSync('supabase/config.toml', 'utf8').match(/^project_id = "(.+)"/m)[1]}`;
+const dockerOk = (() => {
+  try { execFileSync('docker', ['exec', DB_CONTAINER, 'true'], { stdio: 'ignore' }); return true; } catch { return false; }
+})();
+const psql = (sql) => new Promise((resolve, reject) => {
+  execFile('docker', ['exec', DB_CONTAINER, 'psql', '-U', 'postgres', '-v', 'ON_ERROR_STOP=1', '-c', sql],
+    (err, out) => (err ? reject(err) : resolve(out)));
+});
 
 const at = (iso) => setClock(Date.parse(iso) - Date.now());
 
@@ -116,6 +128,15 @@ describe('join_waitlist', () => {
     await soldOutCapacity(c, 1);
     expect(await failCode(m[0].rpc('join_waitlist', { p_offering: c.id, p_qty: 2 }))).toBe('LIMIT_EXCEEDED');
     await join(0, c, 1);
+  });
+
+  it('Ruling R12: NOT_ON_SALE at D-2 or closer; D-3 still accepted', async () => {
+    const o = await offering('PERFORMANCE'); // 12/11 KST
+    await soldOutSeats(o);
+    await at('2026-12-08T23:59:00+09:00'); // D-3
+    await join(0, o, 1);
+    await at('2026-12-09T00:00:01+09:00'); // D-2
+    expect(await failCode(m[1].rpc('join_waitlist', { p_offering: o.id, p_qty: 1 }))).toBe('NOT_ON_SALE');
   });
 
   it('concurrent joins of one user: exactly one succeeds', async () => {
@@ -346,6 +367,38 @@ describe('hold_for_promotion and cancel_waitlist', () => {
     expect(s.hold_id).toBeNull();
     const { data: h } = await db.from('holds').select('status').eq('waitlist_id', w1.id).single();
     expect(h.status).toBe('EXPIRED');
+  });
+
+  it('a PAYING promotion hold at the deadline: sweep and cancel leave entry and seats untouched', async () => {
+    const { o, w1 } = await promoted();
+    const { data: h } = await m[0].rpc('hold_for_promotion', { p_waitlist: w1.id });
+    await db.from('holds').update({ status: 'PAYING' }).eq('id', h.id);
+    await at(new Date(Date.parse(BASE) + 24 * H + 1000).toISOString());
+    await m[2].rpc('sweep_offering', { p_offering: o.id });
+    expect(await failCode(m[0].rpc('cancel_waitlist', { p_id: w1.id }))).toBe('PAYMENT_IN_PROGRESS');
+    const [x1, x2] = await queue(o);
+    expect([x1.status, x2.status]).toEqual(['PROMOTED', 'WAITING']);
+    const [s] = await seats(o, [5]);
+    expect(s.status).toBe('HELD');
+    expect(s.hold_id).toBe(h.id);
+    expect(await notes(uid[0], 'WAIT_EXPIRED')).toHaveLength(0);
+  });
+
+  it.skipIf(!dockerOk)('race: payment moves the hold to PAYING (uncommitted) while sweep expires it -> no reroute', async () => {
+    const { o, w1 } = await promoted();
+    const { data: h } = await m[0].rpc('hold_for_promotion', { p_waitlist: w1.id });
+    await at(new Date(Date.parse(BASE) + 24 * H + 1000).toISOString());
+    const pay = psql(`begin; update public.holds set status = 'PAYING' where id = '${h.id}'; select pg_sleep(2); commit;`);
+    await new Promise((r) => setTimeout(r, 700));
+    const { error } = await m[2].rpc('sweep_offering', { p_offering: o.id });
+    expect(error).toBeNull();
+    await pay;
+    const [x1, x2] = await queue(o);
+    expect([x1.status, x2.status]).toEqual(['PROMOTED', 'WAITING']);
+    const [s] = await seats(o, [5]);
+    expect(s.status).toBe('HELD');
+    expect(s.hold_id).toBe(h.id);
+    expect(s.waitlist_id).toBe(w1.id);
   });
 
   it('release_hold of a promotion hold keeps the seat allocated to the waiter', async () => {
