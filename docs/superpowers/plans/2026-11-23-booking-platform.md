@@ -682,10 +682,10 @@ Task 8~15에서 만든 화면 전체에 인터랙션과 로딩 상태를 고르�
 | SFR-016 | 대기 승격/결제 기한 | 5, 12 | tests/db/waitlist, tests/db/cancel | QA | AC-5 |
 | SFR-017 | 알림함 | 5, 6, 7, 12 | tests/db/waitlist | QA | AC-5 |
 | SFR-018 | 관리자 로그인/역할 | 13 | tests/ui/admin-layout, tests/db/rls | QA | AC-6 |
-| SFR-019 | 프로그램 관리 | 13 | tests/db/admin | QA | AC-6 |
+| SFR-019 | 프로그램 관리 | 13, 14 | tests/db/admin, tests/ui/admin-ops(할인 적용 여부) | QA | AC-6 |
 | SFR-020 | 회차, 정원, 좌석 관리 | 13 | tests/db/admin | QA | AC-6 |
-| SFR-021 | 예약 내역 관리 | 14 | - | QA | AC-6 |
-| SFR-022 | 결제/환불 내역 | 14 | - | QA | AC-6 |
+| SFR-021 | 예약 내역 관리 | 14 | tests/ui/admin-ops | QA | AC-6 |
+| SFR-022 | 결제/환불 내역 | 14 | tests/ui/admin-ops | QA | AC-6 |
 | SFR-023 | 회차 취소/일괄 환불 | 7, 14 | tests/payments/cancel, tests/db/settlement | QA | AC-6 |
 | SFR-024 | 정산 현황 | 14 | tests/db/settlement, tests/ui/csv | QA | AC-6 |
 | SFR-025 | 검수용 시계 | 4, 15 | tests/db/hold, tests/db/system | QA | AC-4, AC-5 |
