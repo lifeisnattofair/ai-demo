@@ -41,7 +41,7 @@ export async function renderDashboard(el, { api, role, available, onCounts }) {
       kpi('판매 중인 회차', n(data.open_offerings), '개', '시작 전 회차 기준', link('#/offerings', '회차/좌석 관리로 이동')),
       kpi('오늘 확정 예약', n(data.today_bookings), '건'),
       kpi('대기 신청', n(data.waiting), '건', '대기 중과 승격 포함'),
-      kpi('회차 취소 요청', n(data.cancel_requests), '건', '정산 담당 승인 대기'),
+      kpi('회차 취소 요청', n(data.cancel_requests), '건', '정산 담당 승인 대기', link('#/cancel-requests', '취소 요청 화면으로 이동')),
     ];
   kpiHost.innerHTML = `<div class="kpis">${cards.join('')}</div>`;
 

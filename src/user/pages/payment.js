@@ -52,7 +52,7 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
   const { hold, offering, type, tickets } = data;
   const selectHref = `#/booking/${encodeURIComponent(hold.offering_id)}/select`;
 
-  const types = loadDiscounts(holdId, tickets.length);
+  const types = loadDiscounts(holdId, tickets.length, { discountEnabled: data.discountEnabled });
   if (!checkDiscounts(types, type).ok) {
     go(discountHref);
     return;

@@ -9,9 +9,12 @@ export { DISCOUNT_LABELS };
 const COMPANIONS = ['DISABLED_COMPANION', 'MERIT_COMPANION'];
 const ORDER = ['GENERAL', 'DISABLED', 'DISABLED_COMPANION', 'MERIT', 'MERIT_COMPANION', 'MULTICHILD'];
 
-/** 상품 유형에 따라 고를 수 있는 할인 목록(정규 강좌는 동반 할인이 없습니다). */
-export function discountOptions(type) {
-  return ORDER.filter((t) => !(type === 'COURSE' && COMPANIONS.includes(t)))
+/**
+ * 상품 유형에 따라 고를 수 있는 할인 목록(정규 강좌는 동반 할인이 없습니다).
+ * 할인을 적용하지 않는 프로그램(discountEnabled false, R23)은 일반만 고릅니다.
+ */
+export function discountOptions(type, discountEnabled = true) {
+  return ORDER.filter((t) => (discountEnabled || t === 'GENERAL') && !(type === 'COURSE' && COMPANIONS.includes(t)))
     .map((value) => ({ value, label: DISCOUNTS[value] ? `${DISCOUNT_LABELS[value]} ${DISCOUNTS[value]}%` : DISCOUNT_LABELS[value] }));
 }
 
@@ -44,7 +47,7 @@ export async function loadCheckout(api, holdId, now) {
       unitPrice: prices._ ?? 0,
     }));
   }
-  return { hold, offering, type, tickets };
+  return { hold, offering, type, tickets, discountEnabled: offering.program.discount_enabled !== false };
 }
 
 const key = (holdId) => `hb:discounts:${holdId}`;
@@ -53,9 +56,10 @@ export function saveDiscounts(holdId, types) {
   try { sessionStorage.setItem(key(holdId), JSON.stringify(types)); } catch { /* 저장소를 쓸 수 없어도 진행합니다. */ }
 }
 
-/** 저장된 할인 선택. 길이나 값이 맞지 않으면 모두 일반으로 둡니다. */
-export function loadDiscounts(holdId, count) {
+/** 저장된 할인 선택. 길이나 값이 맞지 않거나 할인을 적용하지 않는 프로그램이면 모두 일반으로 둡니다. */
+export function loadDiscounts(holdId, count, { discountEnabled = true } = {}) {
   const general = Array(count).fill('GENERAL');
+  if (!discountEnabled) return general;
   try {
     const v = JSON.parse(sessionStorage.getItem(key(holdId)) ?? 'null');
     if (Array.isArray(v) && v.length === count && v.every((t) => Object.prototype.hasOwnProperty.call(DISCOUNTS, t))) return v;

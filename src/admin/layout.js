@@ -37,6 +37,11 @@ export const MENU = [
   },
 ];
 
+// 화면이 있는 경로. 메뉴는 이 경로만 그립니다(작업 이력, 시스템 메뉴는 Task 15).
+export const AVAILABLE = new Set([
+  '#/', '#/programs', '#/offerings', '#/bookings', '#/waitlist', '#/payments', '#/cancel-requests', '#/settlement',
+]);
+
 const ICONS = {
   dashboard: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
   program: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/>',

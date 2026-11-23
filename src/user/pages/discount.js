@@ -8,6 +8,7 @@ import {
 import { mountShell, summaryListHtml } from '../components/checkout-shell.js';
 
 const NOTE = '현장에서 증빙을 확인합니다. 증빙이 없으면 차액을 현장에서 결제합니다.';
+const NO_DISCOUNT_NOTE = '이 프로그램은 할인을 적용하지 않습니다. 모든 매수가 일반 요금입니다.';
 const NOTE_ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 8h.01M11 12h1v5h1"/></svg>';
 
 let renderSeq = 0;
@@ -21,10 +22,11 @@ export async function renderDiscount(el, { api, go, holdId, now = clockNow }) {
   const selfHash = `#/booking/${encodeURIComponent(holdId)}/discount`;
   const data = await bootCheckout(el, { api, go, holdId, now, selfHash, stale: () => mine !== renderSeq });
   if (!data || mine !== renderSeq) return;
-  const { hold, offering, type, tickets } = data;
+  const { hold, offering, type, tickets, discountEnabled } = data;
   const selectHref = `#/booking/${encodeURIComponent(hold.offering_id)}/select`;
-  const options = discountOptions(type);
-  const types = loadDiscounts(holdId, tickets.length);
+  const options = discountOptions(type, discountEnabled);
+  const types = loadDiscounts(holdId, tickets.length, { discountEnabled });
+  const note = discountEnabled ? NOTE : NO_DISCOUNT_NOTE;
 
   const shell = mountShell(el, {
     program: offering.program,
@@ -50,7 +52,7 @@ export async function renderDiscount(el, { api, go, holdId, now = clockNow }) {
           </div>`).join('')}
         </div>
         <div class="booking-live" data-live></div>
-        <div class="note info">${NOTE_ICON}<p>${NOTE}</p></div>
+        <div class="note info">${NOTE_ICON}<p>${note}</p></div>
       </div>
     </section>`;
   const selects = [...shell.main.querySelectorAll('select')];

@@ -16,6 +16,13 @@ const MESSAGES = {
   INVALID_PRICE: '가격을 0원 이상의 숫자로 입력해 주세요. 공연은 R, S, A석 가격이 모두 필요합니다.',
   OFFERING_CLOSED: '취소되었거나 취소 요청 중인 회차는 고칠 수 없습니다.',
   INVALID_REQUEST: '입력값을 확인한 뒤 다시 저장해 주세요.',
+  PRICES_REQUIRED: '새 회차는 가격을 함께 입력해야 합니다. 가격을 입력한 뒤 다시 저장해 주세요.',
+  NO_DISCOUNT: '할인을 적용하지 않은 매수는 증빙 확인 대상이 아닙니다. 할인 예약만 선택해 주세요.',
+  BOOKING_CANCELLED: '취소된 예약은 증빙 확인을 기록할 수 없습니다. 확정 예약만 선택해 주세요.',
+  INVALID_REASON: '취소 사유를 500자 안으로 입력해 주세요.',
+  ALREADY_DECIDED: '이미 승인 또는 반려된 요청입니다. 목록을 새로 불러와 상태를 확인해 주세요.',
+  CANCEL_NOT_APPROVED: '승인된 회차 취소 요청이 없습니다. 취소 요청을 먼저 승인해 주세요.',
+  OFFERING_NOT_FOUND: '회차 정보를 찾을 수 없습니다. 목록을 새로 불러와 다시 확인해 주세요.',
 };
 
 export const adminMessage = (code) => MESSAGES[code] ?? messageFor(code);
@@ -29,7 +36,23 @@ async function rpc(name, args = {}) {
   const { data, error } = await client().rpc(name, args);
   if (error) {
     const e = fromDbError(error);
+    // 회차 등록 가격 누락은 INVALID_REQUEST 의 details 로 구분합니다(0012).
+    if (e.code === 'INVALID_REQUEST' && error.details === 'PRICES_REQUIRED') throw new ApiError('PRICES_REQUIRED', adminMessage('PRICES_REQUIRED'));
     throw new ApiError(e.code, adminMessage(e.code));
+  }
+  return data;
+}
+
+// Edge Function 호출. 오류 본문 {code, message} 를 ApiError 로 바꿉니다.
+async function invoke(name, body) {
+  const { data, error } = await client().functions.invoke(name, { body });
+  if (error) {
+    let payload = null;
+    try { payload = await error.context?.json?.(); } catch { /* 본문이 JSON 이 아닐 수 있습니다. */ }
+    const code = payload?.code ?? 'UNKNOWN';
+    // 함수 런타임 오류(영문)는 그대로 보이지 않고 우리 문구로 바꿉니다.
+    const msg = /[가-힣]/.test(payload?.message ?? '') ? payload.message : adminMessage(code);
+    throw new ApiError(code, msg);
   }
   return data;
 }
@@ -80,7 +103,7 @@ export const adminApi = {
   },
   async program(id) {
     return query(client().from('programs')
-      .select('id, type, title, summary, description, venue, audience, is_public, poster_image, poster_tone, poster_series, poster_title, poster_sub, '
+      .select('id, type, title, summary, description, venue, audience, is_public, discount_enabled, poster_image, poster_tone, poster_series, poster_title, poster_sub, '
         + 'offerings(id, starts_at, ends_at, capacity, status, sale_starts_at, sale_ends_at)')
       .eq('id', id).maybeSingle());
   },
@@ -111,4 +134,40 @@ export const adminApi = {
     return (await rpc('staff_offering_bookings', { p_offering: offeringId })) ?? [];
   },
   viewMember: (userId) => rpc('admin_view_member', { p_user: userId }),
+
+  // 예약 내역, 증빙 확인(0012)
+  async bookings(f = {}) {
+    return (await rpc('staff_bookings', {
+      p_from: f.from || null, p_to: f.to || null, p_program: f.program || null, p_offering: f.offering || null,
+      p_statuses: f.statuses?.length ? f.statuses : null, p_discount: f.discount || null, p_field: f.field || null, p_q: f.q || null,
+    })) ?? [];
+  },
+  markProof: (itemId, checked) => rpc('admin_mark_proof', { p_item: itemId, p_checked: checked }),
+
+  // 대기자
+  async waitlist(offeringId = null) {
+    return (await rpc('staff_waitlist', { p_offering: offeringId })) ?? [];
+  },
+
+  // 결제/환불(정산 담당). 결제 원본은 paymentRaw 로만 엽니다.
+  async payments(from, to) {
+    return (await rpc('staff_payments', { p_from: from || null, p_to: to || null })) ?? [];
+  },
+  async refunds(from, to) {
+    return (await rpc('staff_refunds', { p_from: from || null, p_to: to || null })) ?? [];
+  },
+  paymentRaw: (paymentId) => rpc('admin_payment_raw', { p_payment: paymentId }),
+
+  // 회차 취소 요청/승인. 승인 뒤 일괄 환불은 payments-cancel(INSTITUTION)이 합니다.
+  async cancelRequests() {
+    return (await rpc('staff_cancel_requests')) ?? [];
+  },
+  requestOfferingCancel: (offeringId, reason) => rpc('admin_request_offering_cancel', { p_offering: offeringId, p_reason: reason }),
+  decideOfferingCancel: (requestId, approve) => rpc('admin_decide_offering_cancel', { p_req: requestId, p_approve: approve }),
+  runInstitutionCancel: (offeringId) => invoke('payments-cancel', { offeringId, mode: 'INSTITUTION' }),
+
+  // 정산
+  async settlement(from, to) {
+    return (await rpc('staff_settlement', { p_from: from || null, p_to: to || null })) ?? [];
+  },
 };

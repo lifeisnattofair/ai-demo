@@ -7,6 +7,18 @@ import { renderSearchBox } from '../components/search-box.js';
 import { renderDataTable, pageOf } from '../components/data-table.js';
 import { TYPE_LABEL, TYPE_OPTIONS, loadInto, offeringState, pageHead, typeChip } from '../components/page.js';
 import { formRow, readForm, showErrors, alertBox } from '../components/form.js';
+import { RULE_TEXT } from '../../user/components/refund-preview.js';
+
+// 취소 규정은 상품 유형별로 정해진 정책입니다(Ruling R23). 양식에서는 읽기 전용으로 보여 줍니다.
+const BEFORE_START = ['D8_PLUS', 'D7_4', 'D3_1', 'SAME_DAY'];
+const COURSE_AFTER = ['MID_BEFORE_1_3', 'MID_BEFORE_1_2', 'MID_AFTER_1_2'];
+export function cancelRuleLines(type) {
+  if (!type) return [];
+  return (type === 'COURSE' ? [...BEFORE_START, ...COURSE_AFTER] : BEFORE_START).map((k) => RULE_TEXT[k]);
+}
+const ruleListHtml = (type) => (type
+  ? `<ul class="rule-list">${cancelRuleLines(type).map((t) => `<li>${escapeHtml(t)}</li>`).join('')}</ul>`
+  : '<p class="hint">유형을 고르면 취소 규정이 나옵니다.</p>');
 
 const DOWNLOAD_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>';
 
@@ -137,6 +149,12 @@ export async function renderProgramEdit(el, { api, go, id }) {
             <label class="chk"><input type="radio" name="is_public" value="Y"${prog.is_public ? ' checked' : ''}>공개</label>
             <label class="chk"><input type="radio" name="is_public" value="N"${prog.is_public ? '' : ' checked'}>비공개</label></div>`,
           hint: '공개하면 사용자 화면 목록에 바로 나옵니다.' })}
+        ${formRow({ label: '할인 적용', name: 'discount_enabled', group: true, field: `<div class="radio-row" role="radiogroup" aria-labelledby="lbl-discount_enabled">
+            <label class="chk"><input type="radio" name="discount_enabled" value="Y"${prog.discount_enabled === false ? '' : ' checked'}>적용</label>
+            <label class="chk"><input type="radio" name="discount_enabled" value="N"${prog.discount_enabled === false ? ' checked' : ''}>적용 안 함</label></div>`,
+          hint: '적용 안 함이면 사용자 화면에서 일반 요금만 고를 수 있습니다. 이미 확정된 예약 금액은 바뀌지 않습니다.' })}
+        ${formRow({ label: '취소 규정', name: 'cancel_rule', group: true, field: `<div class="rule-host">${ruleListHtml(prog.type)}</div>`,
+          hint: '상품 유형별로 정해진 규정이 적용되며 바꿀 수 없습니다. 기관 사정으로 회차를 취소하면 전액 환불합니다.' })}
       </div></section>
       <section class="form-card" aria-labelledby="fs-poster"><h2 id="fs-poster">포스터</h2><div class="form-grid">
         ${formRow({ label: '사진', name: 'poster_image', field: `<select class="ctl half" id="f-poster_image" name="poster_image">${posterOpts}</select>` })}
@@ -176,12 +194,16 @@ export async function renderProgramEdit(el, { api, go, id }) {
   const form = host.querySelector('form');
   showErrors(form, {});
   const alertHost = host.querySelector('.alert-host');
+  for (const r of form.querySelectorAll('input[name="type"]')) {
+    r.addEventListener('change', () => { form.querySelector('.rule-host').innerHTML = ruleListHtml(r.value); });
+  }
   const saveBtn = form.querySelector('button[type="submit"]');
   form.addEventListener('submit', (e) => {
     e.preventDefault();
     const val = readForm(form, ['title', 'summary', 'description', 'venue', 'audience', 'poster_image', 'poster_series', 'poster_title', 'poster_sub']);
     val.type = locked ? prog.type : (form.querySelector('input[name="type"]:checked')?.value ?? '');
     val.is_public = form.querySelector('input[name="is_public"]:checked')?.value === 'Y';
+    val.discount_enabled = form.querySelector('input[name="discount_enabled"]:checked')?.value !== 'N';
     val.poster_tone = form.querySelector('input[name="poster_tone"]:checked')?.value ?? 'dark';
     const errs = validateProgram(val);
     if (showErrors(form, errs)) { alertHost.replaceChildren(); return; }

@@ -7,11 +7,17 @@ import { APP_ENV } from '../lib/supabase.js';
 import { syncClock } from '../lib/clock.js';
 import { withBusy } from '../components/button-busy.js';
 import { describeError } from '../lib/api.js';
+import { escapeHtml } from '../lib/format.js';
 import { adminApi } from './admin-api.js';
-import { findMenu, renderLayout } from './layout.js';
+import { AVAILABLE, findMenu, renderLayout } from './layout.js';
 import { renderDashboard } from './pages/dashboard.js';
 import { renderPrograms, renderProgramEdit } from './pages/programs.js';
 import { renderOfferings, renderOfferingEdit } from './pages/offerings.js';
+import { renderBookings } from './pages/bookings.js';
+import { renderWaitlist } from './pages/waitlist.js';
+import { renderPayments } from './pages/payments.js';
+import { renderCancelRequests } from './pages/cancel-requests.js';
+import { renderSettlement } from './pages/settlement.js';
 
 document.body.classList.add('admin');
 const root = document.getElementById('root');
@@ -25,7 +31,7 @@ function renderLogin(message, tone = 'err') {
       <h1 tabindex="-1">관리자 로그인</h1>
       <p class="lead">운영 담당, 정산 담당 계정으로 로그인해 주세요.</p>
       <form novalidate>
-        <p class="msg${tone === 'info' ? ' info' : ''}" role="${tone === 'info' ? 'status' : 'alert'}"${message ? '' : ' hidden'}>${message ?? ''}</p>
+        <p class="msg${tone === 'info' ? ' info' : ''}" role="${tone === 'info' ? 'status' : 'alert'}"${message ? '' : ' hidden'}>${escapeHtml(message ?? '')}</p>
         <label>이메일<input class="ctl" type="email" name="email" autocomplete="username" required></label>
         <label>비밀번호<input class="ctl" type="password" name="password" autocomplete="current-password" required></label>
         <button class="btn btn-primary" type="submit">로그인</button>
@@ -58,7 +64,7 @@ function renderLogin(message, tone = 'err') {
 function renderDenied(session) {
   root.innerHTML = `<main class="gate"><div class="gate-card">${gateBrand}
       <h1 tabindex="-1">접근 권한이 없습니다</h1>
-      <p class="lead">${session.user.email ? `${session.user.email} 계정은 ` : ''}관리자 화면을 쓸 수 없는 계정입니다. 운영 담당 또는 정산 담당 계정으로 다시 로그인해 주세요.</p>
+      <p class="lead">${session.user.email ? `${escapeHtml(session.user.email)} 계정은 ` : ''}관리자 화면을 쓸 수 없는 계정입니다. 운영 담당 또는 정산 담당 계정으로 다시 로그인해 주세요.</p>
       <button class="btn btn-primary" type="button">다른 계정으로 로그인</button>
       <p class="alt"><a href="./">사용자 화면으로 이동</a></p>
     </div></main>`;
@@ -109,9 +115,14 @@ async function boot(session) {
     '#/offerings': (_p, el, query) => renderOfferings(el, { api: adminApi, query }),
     '#/offerings/new': (_p, el, query) => renderOfferingEdit(el, { api: adminApi, go, query }),
     '#/offerings/:id': (p, el, query) => renderOfferingEdit(el, { api: adminApi, go, id: p.id, query }),
+    '#/bookings': (_p, el, query) => renderBookings(el, { api: adminApi, role, query }),
+    '#/waitlist': (_p, el, query) => renderWaitlist(el, { api: adminApi, query }),
+    '#/payments': (_p, el) => renderPayments(el, { api: adminApi }),
+    '#/cancel-requests': (_p, el) => renderCancelRequests(el, { api: adminApi, role, onCounts: (c) => layout?.setCounts(c) }),
+    '#/settlement': (_p, el) => renderSettlement(el, { api: adminApi }),
   };
   // 메뉴에 보일 경로(화면이 있는 것만)
-  const available = new Set(['#/', '#/programs', '#/offerings']);
+  const available = AVAILABLE;
 
   layout?.destroy();
   layout = renderLayout(root, {

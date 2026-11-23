@@ -175,6 +175,25 @@ describe('담당자', () => {
   });
 });
 
+describe('정산 집계 뷰(0012)', () => {
+  it('settlement_daily 는 화면 역할이 직접 읽지 못하고 정산 담당 함수(staff_settlement)로만 봅니다', async () => {
+    const o = await offering('EXPERIENCE');
+    await bookCapacity(m[0], o, 1);
+    for (const c of [anon, m[0], op, fin]) {
+      expect(await rowsOrNone(c.from('settlement_daily').select('*').limit(1))).toEqual([]);
+    }
+    expect(await code(op.rpc('staff_settlement', { p_from: null, p_to: null }))).toBe('FORBIDDEN');
+    const rows = await ok(fin.rpc('staff_settlement', { p_from: null, p_to: null }));
+    expect(rows.reduce((a, r) => a + Number(r.paid_sum), 0)).toBe(10000);
+  });
+
+  it('새 함수는 비회원이 실행하지 못합니다', async () => {
+    for (const fn of ['staff_bookings', 'staff_waitlist', 'staff_payments', 'staff_refunds', 'staff_cancel_requests', 'staff_settlement']) {
+      expect(await code(anon.rpc(fn, {})), fn).not.toBeNull();
+    }
+  });
+});
+
 describe('탈퇴/차단 계정(R17)', () => {
   it('아직 유효한 토큰이라도 회원 쓰기 함수는 UNAUTHENTICATED', async () => {
     const email = `banned-${Date.now()}@example.com`;

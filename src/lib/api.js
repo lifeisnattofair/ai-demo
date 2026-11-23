@@ -158,7 +158,7 @@ export const api = {
     const { data, error } = await client()
       .from('offerings')
       .select('id, starts_at, ends_at, capacity, sale_starts_at, sale_ends_at, status, prices:offering_prices(grade, price), '
-        + 'program:programs(id, type, title, venue, poster_image, poster_tone)')
+        + 'program:programs(id, type, title, venue, poster_image, poster_tone, discount_enabled)')
       .eq('id', id)
       .maybeSingle();
     // 주소의 id 가 uuid 형식이 아니면 없는 회차로 봅니다.

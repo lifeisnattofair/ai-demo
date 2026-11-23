@@ -85,3 +85,48 @@ export function fromKstInput(value) {
 export function kstDayKey(iso) {
   return toKstInput(iso).slice(0, 10);
 }
+
+// 연도 없이 짧게: 12. 1.(화) (정산 그래프, 표의 날짜)
+export function kstShortDate(iso) {
+  const t = kstParts(iso);
+  return `${t.month}. ${t.day}.(${t.weekday})`;
+}
+
+// 날짜 키('2026-12-01') 계산. 기간 조회 입력 값용입니다.
+const DAY_MS = 86400000;
+const keyToUtc = (key) => {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(key ?? ''));
+  return m ? Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : NaN;
+};
+const utcToKey = (ms) => new Date(ms).toISOString().slice(0, 10);
+
+export function addDays(dayKey, n) {
+  const t = keyToUtc(dayKey);
+  return Number.isNaN(t) ? '' : utcToKey(t + n * DAY_MS);
+}
+
+// 달 더하기. 없는 날(1/31 + 1달)은 그 달 마지막 날로 맞춥니다.
+export function addMonths(dayKey, n) {
+  const t = keyToUtc(dayKey);
+  if (Number.isNaN(t)) return '';
+  const d = new Date(t);
+  const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n + 1, 0)).getUTCDate();
+  return utcToKey(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + n, Math.min(d.getUTCDate(), last)));
+}
+
+// 두 날짜 키 사이의 날짜 키 목록(양 끝 포함). 순서가 거꾸로면 빈 목록.
+export function dayKeysBetween(from, to) {
+  const a = keyToUtc(from);
+  const b = keyToUtc(to);
+  if (Number.isNaN(a) || Number.isNaN(b) || a > b) return [];
+  const out = [];
+  for (let t = a; t <= b; t += DAY_MS) out.push(utcToKey(t));
+  return out;
+}
+
+// 날짜 키를 표시용 문구로: 2026. 12. 1.(화), short 면 12. 1.(화)
+export function dayKeyLabel(dayKey, { short = false } = {}) {
+  const iso = fromKstInput(dayKey);
+  if (!iso) return '';
+  return short ? kstShortDate(iso) : kstDate(iso);
+}

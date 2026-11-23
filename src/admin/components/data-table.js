@@ -3,12 +3,15 @@
 
 /**
  * @typedef {{key:string, label:string, type?:'text'|'number'|'money'|'chip', align?:'l'|'r'|'c',
- *   format?:(row:Object)=>string|Node, chip?:(row:Object)=>{text:string, tone:string}|null, srLabel?:string}} Column
+ *   format?:(row:Object)=>string|Node, chip?:(row:Object)=>{text:string, tone:string}|null, srLabel?:string,
+ *   header?:()=>Node}} Column   header: 머리글 칸에 글자 대신 넣을 요소(예: 전체 선택 체크박스)
  * @param {HTMLElement} el
  * @param {{columns:Column[], rows:Object[], total:number, page:number, pageSize:number, onPage:(p:number)=>void,
- *   caption?:string, compact?:boolean, empty?:string, emptySub?:string, emptyAction?:{label:string, href:string}}} opts
+ *   caption?:string, compact?:boolean, empty?:string, emptySub?:string, emptyAction?:{label:string, href:string},
+ *   rowClass?:(row:Object)=>string, foot?:Array<string|number|null>}} opts
+ *   foot: 합계 행(열 순서대로 값, null 은 빈 칸)
  */
-export function renderDataTable(el, { columns, rows, total, page, pageSize, onPage, caption = '목록', compact = false, empty = '조건에 맞는 자료가 없습니다.', emptySub, emptyAction }) {
+export function renderDataTable(el, { columns, rows, total, page, pageSize, onPage, caption = '목록', compact = false, empty = '조건에 맞는 자료가 없습니다.', emptySub, emptyAction, rowClass, foot }) {
   el.replaceChildren();
   if (!rows.length) {
     const box = document.createElement('div');
@@ -48,7 +51,8 @@ export function renderDataTable(el, { columns, rows, total, page, pageSize, onPa
     const th = document.createElement('th');
     th.scope = 'col';
     if (align(c) !== 'c') th.className = align(c);
-    th.textContent = c.label;
+    if (c.header) th.append(c.header());
+    else th.textContent = c.label;
     hr.append(th);
   }
   thead.append(hr);
@@ -56,6 +60,8 @@ export function renderDataTable(el, { columns, rows, total, page, pageSize, onPa
   const tbody = document.createElement('tbody');
   for (const row of rows) {
     const tr = document.createElement('tr');
+    const rc = rowClass?.(row);
+    if (rc) tr.className = rc;
     for (const c of columns) {
       const td = document.createElement('td');
       if (align(c) !== 'c') td.className = align(c);
@@ -77,6 +83,19 @@ export function renderDataTable(el, { columns, rows, total, page, pageSize, onPa
     tbody.append(tr);
   }
   table.append(cap, thead, tbody);
+  if (foot) {
+    const tfoot = document.createElement('tfoot');
+    const fr = document.createElement('tr');
+    columns.forEach((c, i) => {
+      const td = document.createElement('td');
+      if (align(c) !== 'c') td.className = align(c);
+      const v = foot[i];
+      td.textContent = v == null ? '' : (typeof v === 'number' ? v.toLocaleString('en-US') : String(v));
+      fr.append(td);
+    });
+    tfoot.append(fr);
+    table.append(tfoot);
+  }
   wrap.append(table);
   el.append(wrap);
 
