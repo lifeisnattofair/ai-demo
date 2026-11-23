@@ -180,10 +180,43 @@ describe('confirmPayment', () => {
     expect(db.count('unlock_after_failure')).toBe(1);
   });
 
-  it('card declined -> unlock and rethrow REJECT_CARD_PAYMENT, no finalize', async () => {
+  it('finalize throws and the re-lookup throws -> no cancel, pending outcome', async () => {
+    const db = fakeDb({ finalizeError: new Error('network') });
+    db.findBookingByOrder
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error('network'))
+      .mockRejectedValueOnce(new Error('network'));
+    const pg = spyPg();
+    const res = await confirmPayment({ db, pg }, input());
+    expect(res).toEqual({
+      status: 'CANCELLED', reason: 'FINALIZE_FAILED', refunded: false,
+      message: '결제 처리 결과를 확인하고 있습니다. 잠시 후 내 예약에서 확인해 주세요.',
+    });
+    expect(pg.cancel).not.toHaveBeenCalled();
+    expect(db.count('unlock_after_failure')).toBe(0);
+    expect((await pg.get(KEY)).status).toBe('DONE');
+  });
+
+  it('finalize throws, first re-lookup throws, retry finds nothing -> cancel', async () => {
+    const db = fakeDb({ finalizeError: new Error('network') });
+    db.findBookingByOrder
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(null);
+    const pg = spyPg();
+    const res = await confirmPayment({ db, pg }, input());
+    expect(res).toMatchObject({ status: 'CANCELLED', reason: 'FINALIZE_FAILED', refunded: true });
+    expect(pg.cancel).toHaveBeenCalledTimes(1);
+    expect(db.count('unlock_after_failure')).toBe(1);
+  });
+
+  it('card declined -> unlock and return PAYMENT_REJECTED, no finalize', async () => {
     const db = fakeDb();
     const pg = spyPg({ mode: 'DECLINE' });
-    await expect(confirmPayment({ db, pg }, input())).rejects.toMatchObject({ code: 'REJECT_CARD_PAYMENT' });
+    expect(await confirmPayment({ db, pg }, input())).toEqual({
+      status: 'CANCELLED', reason: 'PAYMENT_REJECTED',
+      message: '카드사에서 결제를 승인하지 않았습니다. 다른 결제 수단으로 다시 시도해 주세요.',
+    });
     expect(db.count('unlock_after_failure')).toBe(1);
     expect(db.count('finalize_booking')).toBe(0);
     expect(pg.cancel).not.toHaveBeenCalled();

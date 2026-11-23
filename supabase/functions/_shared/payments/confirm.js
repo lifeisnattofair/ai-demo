@@ -15,7 +15,11 @@ export const CANCEL_MESSAGES = {
   HOLD_EXPIRED: '좌석 선점 시간이 지나 결제가 진행되지 않았습니다. 좌석을 다시 선택해 주세요.',
   AMOUNT_MISMATCH: '결제 금액이 예약 금액과 달라 결제를 진행하지 않았습니다. 다시 시도해 주세요.',
   FINALIZE_FAILED: '예약을 확정하지 못해 결제를 자동으로 취소했습니다. 잠시 후 다시 시도해 주세요.',
+  PAYMENT_REJECTED: '카드사에서 결제를 승인하지 않았습니다. 다른 결제 수단으로 다시 시도해 주세요.',
 }
+
+// 확정 여부를 확인하지 못해 취소를 보류한 경우의 안내(정리 작업이 이어서 처리)
+export const FINALIZE_PENDING_MESSAGE = '결제 처리 결과를 확인하고 있습니다. 잠시 후 내 예약에서 확인해 주세요.'
 
 // 자동 취소까지 실패한 드문 경우의 안내
 export const REFUND_PENDING_MESSAGE =
@@ -148,6 +152,7 @@ export async function confirmPayment({ db, pg }, { userId, paymentKey, orderId, 
     }
     if (!payment) {
       await unlock()
+      if (errCode(e) === 'REJECT_CARD_PAYMENT') return cancelled('PAYMENT_REJECTED')
       throw e
     }
   }
@@ -164,13 +169,20 @@ export async function confirmPayment({ db, pg }, { userId, paymentKey, orderId, 
   } catch (e) {
     console.error('finalize_booking failed', orderId, errCode(e))
     // 확정은 커밋됐는데 응답만 잃었을 수 있습니다. 그때 취소하면 확정된 예약의 결제를 지우게 됩니다.
-    let committed = null
-    try {
-      committed = await db.findBookingByOrder(orderId)
-    } catch {
-      committed = null
+    // 조회가 두 번 다 실패하면 확정 여부를 모르므로 취소하지 않고 정리 작업(sweep의 결제 중 정리)에 맡깁니다.
+    let lookup = { ok: false, booking: null }
+    for (let attempt = 0; attempt < 2 && !lookup.ok; attempt++) {
+      try {
+        lookup = { ok: true, booking: await db.findBookingByOrder(orderId) }
+      } catch (le) {
+        console.error('findBookingByOrder failed', orderId, errCode(le))
+      }
     }
-    if (committed) return { status: 'CONFIRMED', booking: committed }
+    if (!lookup.ok) {
+      console.error('finalize outcome unknown; charge kept for reconciliation', orderId, paymentKey)
+      return { status: 'CANCELLED', reason: 'FINALIZE_FAILED', refunded: false, message: FINALIZE_PENDING_MESSAGE }
+    }
+    if (lookup.booking) return { status: 'CONFIRMED', booking: lookup.booking }
 
     const refunded = await cancelCharge(pg, paymentKey)
     await unlock()

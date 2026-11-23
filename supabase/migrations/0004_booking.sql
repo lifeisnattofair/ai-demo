@@ -16,6 +16,32 @@ language sql immutable as $$
   end
 $$;
 
+-- 할인 선택 규칙. pricing.js validateDiscounts와 같은 판정을 하며(조합 전수 테스트로 비교) 오류 코드 배열을 돌려줍니다(빈 배열이면 통과).
+create or replace function public.validate_discounts(p_types text[], p_product_type text) returns text[]
+language plpgsql immutable as $$
+declare
+  v text[] := coalesce(p_types, '{}');
+  n_d int := cardinality(array_positions(v, 'DISABLED'));
+  n_dc int := cardinality(array_positions(v, 'DISABLED_COMPANION'));
+  n_m int := cardinality(array_positions(v, 'MERIT'));
+  n_mc int := cardinality(array_positions(v, 'MERIT_COMPANION'));
+  errs text[] := '{}';
+begin
+  if exists (select 1 from unnest(v) x where public.discount_rate(x) is null) then
+    return array['UNKNOWN_DISCOUNT'];
+  end if;
+  if p_product_type = 'COURSE' and n_dc + n_mc > 0 then errs := errs || 'COURSE_NO_COMPANION'::text; end if;
+  if n_d > 1 then errs := errs || 'DISABLED_OVER_LIMIT'::text; end if;
+  if n_m > 1 then errs := errs || 'MERIT_OVER_LIMIT'::text; end if;
+  if p_product_type is distinct from 'COURSE' and (n_dc > n_d or n_mc > n_m) then
+    errs := errs || 'COMPANION_WITHOUT_MAIN'::text;
+  end if;
+  return errs;
+end $$;
+
+-- 결제 중(PAYING)이 된 시각. 오래된 PAYING은 sweep_offering이 정리합니다.
+alter table public.holds add column if not exists paying_since timestamptz;
+
 -- 결제 준비. 화면이 결제 단계에서 「결제하기」를 누를 때 부릅니다.
 -- p_items = [{ seatId?, discountType }] (좌석제는 선점한 좌석마다 하나, 정원제는 수량만큼 seatId 없이)
 -- 단가는 화면 값을 믿지 않고 offering_prices(좌석 등급별, 정원제는 등급 없음)에서 다시 읽어
@@ -51,14 +77,7 @@ begin
   -- 할인 선택 규칙(pricing.js validateDiscounts와 같음)
   select array_agg(coalesce(e->>'discountType', 'GENERAL') order by ord) into v_types
     from jsonb_array_elements(p_items) with ordinality t(e, ord);
-  if exists (select 1 from unnest(v_types) x where public.discount_rate(x) is null)
-     or (v_type = 'COURSE' and v_types && array['DISABLED_COMPANION', 'MERIT_COMPANION'])
-     or cardinality(array_positions(v_types, 'DISABLED')) > 1
-     or cardinality(array_positions(v_types, 'MERIT')) > 1
-     or (v_type <> 'COURSE' and (
-           cardinality(array_positions(v_types, 'DISABLED_COMPANION')) > cardinality(array_positions(v_types, 'DISABLED'))
-        or cardinality(array_positions(v_types, 'MERIT_COMPANION')) > cardinality(array_positions(v_types, 'MERIT'))))
-  then
+  if cardinality(public.validate_discounts(v_types, v_type)) > 0 then
     perform public.hold_error('INVALID_DISCOUNT');
   end if;
 
@@ -107,6 +126,18 @@ begin
   return v_res;
 end $$;
 
+-- PAYING이 5분 넘게 이어졌는지. paying_since가 없으면(수동으로 만든 상태 등) 오래된 것으로 보지 않습니다.
+create or replace function public.paying_is_stale(p_since timestamptz) returns boolean
+language sql stable as $$
+  select p_since is not null and p_since <= public.app_now() - interval '5 minutes'
+$$;
+
+-- 이 주문에 승인 완료(DONE)된 모의 결제가 있는지
+create or replace function public.order_has_charge(p_order_id text) returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.pg_mock_transactions where order_id = p_order_id and status = 'DONE')
+$$;
+
 -- 결제 승인 직전 잠금. ACTIVE이고 만료 전이면 선점과 좌석을 PAYING으로 바꿉니다.
 -- PAYING은 sweep_offering이 만료시키지 않으므로 승인 도중 좌석을 잃지 않습니다.
 create or replace function public.lock_for_confirm(p_order_id text) returns public.holds
@@ -120,13 +151,20 @@ begin
   select * into v_h from public.holds where order_id = p_order_id for update;
   if not found then perform public.hold_error('ORDER_NOT_FOUND'); end if;
   if v_h.status = 'CONSUMED' then perform public.hold_error('ALREADY_CONFIRMED'); end if;
-  if v_h.status = 'PAYING' then perform public.hold_error('PAYMENT_IN_PROGRESS'); end if;
+  if v_h.status = 'PAYING' then
+    -- 승인은 끝났는데 확정 결과를 모르는 채 5분 넘게 남은 결제는 다시 들어와 확정을 이어 갈 수 있습니다.
+    if public.paying_is_stale(v_h.paying_since) and public.order_has_charge(p_order_id) then
+      update public.holds set paying_since = public.app_now() where id = v_h.id returning * into v_res;
+      return v_res;
+    end if;
+    perform public.hold_error('PAYMENT_IN_PROGRESS');
+  end if;
   if v_h.status <> 'ACTIVE' or v_h.expires_at <= public.app_now() then perform public.hold_error('HOLD_EXPIRED'); end if;
 
   select p.type into v_type
     from public.offerings o join public.programs p on p.id = o.program_id where o.id = v_h.offering_id;
 
-  update public.holds set status = 'PAYING' where id = v_h.id returning * into v_res;
+  update public.holds set status = 'PAYING', paying_since = public.app_now() where id = v_h.id returning * into v_res;
   update public.inventory_seats set status = 'PAYING'
    where hold_id = v_h.id and status = 'HELD';
   get diagnostics v_changed = row_count;
@@ -171,7 +209,7 @@ begin
     from public.offerings o join public.programs p on p.id = o.program_id where o.id = v_h.offering_id;
 
   -- 선점 먼저(트리거가 대기를 갱신), 그다음 좌석
-  update public.holds set status = 'CONSUMED' where id = v_h.id;
+  update public.holds set status = 'CONSUMED', paying_since = null where id = v_h.id;
   update public.inventory_seats set status = 'SOLD', waitlist_id = null
    where hold_id = v_h.id and status = 'PAYING';
   get diagnostics v_changed = row_count;
@@ -214,6 +252,27 @@ end $$;
 -- 승인 거절, 금액 불일치, 확정 실패 뒤 잠금을 풉니다. PAYING이 아니면 아무것도 하지 않습니다.
 -- 만료 전이면 ACTIVE/HELD로 되돌려 다시 결제할 수 있게 하고, 만료 뒤면 EXPIRED/AVAILABLE로 풉니다.
 -- 승격 선점(waitlist_id 있음)의 기한 처리는 대기 로직이 맡으므로 sweep_offering을 부릅니다.
+-- PAYING 선점 하나를 되돌립니다(내부 전용). 선점 행을 잠근 뒤 좌석을 바꿉니다(선점 -> 좌석).
+-- 만료 전이거나 승격 선점이면 ACTIVE/HELD(승격 선점의 기한 처리는 sweep_offering의 대기 로직이 맡음),
+-- 만료 뒤 일반 선점이면 EXPIRED/AVAILABLE. 실제로 바꿨으면 true.
+create or replace function public.revert_paying(p_hold uuid) returns boolean
+language plpgsql security definer set search_path = public as $$
+declare
+  v_h public.holds%rowtype;
+begin
+  select * into v_h from public.holds where id = p_hold for update;
+  if not found or v_h.status <> 'PAYING' then return false; end if;
+  if v_h.expires_at > public.app_now() or v_h.waitlist_id is not null then
+    update public.holds set status = 'ACTIVE', paying_since = null where id = v_h.id;
+    update public.inventory_seats set status = 'HELD' where hold_id = v_h.id and status = 'PAYING';
+  else
+    update public.holds set status = 'EXPIRED', paying_since = null where id = v_h.id;
+    update public.inventory_seats set status = 'AVAILABLE', hold_id = null
+     where hold_id = v_h.id and status = 'PAYING';
+  end if;
+  return true;
+end $$;
+
 create or replace function public.unlock_after_failure(p_order_id text) returns void
 language plpgsql security definer set search_path = public as $$
 declare
@@ -225,27 +284,99 @@ begin
     -- sweep_offering과 같은 순서(회차 -> 선점)로 잠급니다.
     perform 1 from public.offerings where id = v_h.offering_id for update;
   end if;
-  select * into v_h from public.holds where id = v_h.id for update;
-  if v_h.status <> 'PAYING' then return; end if;
-
-  if v_h.expires_at > public.app_now() or v_h.waitlist_id is not null then
-    update public.holds set status = 'ACTIVE' where id = v_h.id;
-    update public.inventory_seats set status = 'HELD' where hold_id = v_h.id and status = 'PAYING';
-    if v_h.waitlist_id is not null and v_h.expires_at <= public.app_now() then
-      perform public.sweep_offering(v_h.offering_id);
-    end if;
-  else
-    update public.holds set status = 'EXPIRED' where id = v_h.id;
-    update public.inventory_seats set status = 'AVAILABLE', hold_id = null
-     where hold_id = v_h.id and status = 'PAYING';
+  if public.revert_paying(v_h.id) and v_h.waitlist_id is not null and v_h.expires_at <= public.app_now() then
+    perform public.sweep_offering(v_h.offering_id);
   end if;
 end $$;
 
-revoke all on function public.discount_rate(text),
+-- 0003의 sweep_offering에 0) 오래된 결제 중(PAYING) 정리를 앞에 붙입니다.
+-- PAYING이 5분 넘게 이어졌는데 승인 완료된 결제가 없으면 unlock_after_failure와 같은 규칙으로 되돌립니다.
+-- 승인 완료된 결제가 있으면 그대로 둡니다(같은 주문으로 다시 승인 요청하면 멱등하게 확정됨).
+-- 잠금 순서: 회차 -> 선점 -> 대기 -> 좌석.
+create or replace function public.sweep_offering(p_offering uuid) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_starts timestamptz;
+  v_w public.waitlist%rowtype;
+  v_hid uuid;
+begin
+  -- 0) 오래된 PAYING
+  if exists (
+    select 1 from public.holds h
+     where h.offering_id = p_offering and h.status = 'PAYING'
+       and public.paying_is_stale(h.paying_since) and not public.order_has_charge(h.order_id)
+  ) then
+    perform 1 from public.offerings where id = p_offering for update;
+    for v_hid in
+      select h.id from public.holds h
+       where h.offering_id = p_offering and h.status = 'PAYING'
+         and public.paying_is_stale(h.paying_since) and not public.order_has_charge(h.order_id)
+       order by h.id
+    loop
+      perform public.revert_paying(v_hid);
+    end loop;
+  end if;
+
+  -- 1) 처리할 대기가 있을 때만 회차 행을 잠급니다.
+  if exists (
+    select 1 from public.waitlist w join public.offerings o on o.id = w.offering_id
+     where w.offering_id = p_offering
+       and ((w.status = 'PROMOTED' and w.deadline_at <= public.app_now())
+            or (w.status = 'WAITING' and w.allocated_qty > 0 and public.d_day(o.starts_at) <= 2))
+  ) then
+    select starts_at into v_starts from public.offerings where id = p_offering for update;
+
+    -- 결제 기한 만료. 결제 진행 중(PAYING) 선점이 있으면 결제 결과를 기다립니다.
+    -- 기한 만료 시점이 D-2 이내면 RELEASED(일반 판매), 아니면 EXPIRED(다음 순번)입니다.
+    for v_w in
+      select * from public.waitlist w
+       where w.offering_id = p_offering and w.status = 'PROMOTED' and w.deadline_at <= public.app_now()
+         and not exists (select 1 from public.holds h where h.waitlist_id = w.id and h.status = 'PAYING')
+       order by w.created_at, w.id
+    loop
+      if public.waitlist_close(v_w.id,
+        case when ((v_starts at time zone 'Asia/Seoul')::date - (v_w.deadline_at at time zone 'Asia/Seoul')::date) <= 2
+             then 'RELEASED' else 'EXPIRED' end,
+        'EXPIRED') then
+        perform public.waitlist_notify(v_w.id, 'WAIT_EXPIRED');
+      end if;
+    end loop;
+
+    -- D-2부터는 모으던 배정분도 일반 판매로 풉니다.
+    if public.d_day(v_starts) <= 2 then
+      for v_w in
+        select * from public.waitlist
+         where offering_id = p_offering and status = 'WAITING' and allocated_qty > 0
+         order by created_at, id
+      loop
+        if public.waitlist_close(v_w.id, 'RELEASED', 'EXPIRED') then
+          perform public.waitlist_notify(v_w.id, 'WAIT_EXPIRED');
+        end if;
+      end loop;
+    end if;
+  end if;
+
+  -- 2) 만료된 일반 선점(Task 4). 승격 선점은 1)에서 대기 기한과 함께 처리합니다.
+  with expired as (
+    update public.holds h
+       set status = 'EXPIRED'
+     where h.offering_id = p_offering and h.status = 'ACTIVE' and h.expires_at <= public.app_now()
+       and h.waitlist_id is null
+    returning h.id
+  )
+  update public.inventory_seats s
+     set status = 'AVAILABLE', hold_id = null
+   where s.offering_id = p_offering and s.status = 'HELD' and s.hold_id in (select id from expired);
+end $$;
+
+revoke all on function public.discount_rate(text), public.validate_discounts(text[], text),
+  public.paying_is_stale(timestamptz), public.order_has_charge(text), public.revert_paying(uuid),
   public.prepare_payment(uuid, jsonb, int, text), public.lock_for_confirm(text),
-  public.finalize_booking(text, text, jsonb), public.unlock_after_failure(text)
+  public.finalize_booking(text, text, jsonb), public.unlock_after_failure(text), public.sweep_offering(uuid)
   from public, anon, authenticated;
-grant execute on function public.discount_rate(text) to anon, authenticated, service_role;
+grant execute on function public.discount_rate(text), public.validate_discounts(text[], text)
+  to anon, authenticated, service_role;
+grant execute on function public.sweep_offering(uuid) to authenticated, service_role;
 grant execute on function public.prepare_payment(uuid, jsonb, int, text) to authenticated, service_role;
 grant execute on function public.lock_for_confirm(text), public.finalize_booking(text, text, jsonb),
   public.unlock_after_failure(text) to service_role;

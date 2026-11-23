@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { DISCOUNTS } from '../../supabase/functions/_shared/policy/pricing.js';
+import { DISCOUNTS, validateDiscounts } from '../../supabase/functions/_shared/policy/pricing.js';
 import { adminClient, resetDb, setClock, userClient } from './helpers.js';
 
 const db = adminClient();
@@ -121,6 +121,32 @@ describe('prepare_payment', () => {
     for (const [type, rate] of Object.entries(DISCOUNTS)) {
       expect(await ok(db.rpc('discount_rate', { p_type: type }))).toBe(rate);
     }
+  });
+
+  it('validate_discounts (SQL) accepts/rejects exactly like validateDiscounts (JS)', async () => {
+    const types = [...Object.keys(DISCOUNTS), 'VIP'];
+    // 순서와 무관한 규칙이므로 중복 조합(최대 4매)을 모두 만듭니다.
+    const combos = [];
+    const walk = (start, acc) => {
+      if (acc.length > 0) combos.push([...acc]);
+      if (acc.length === 4) return;
+      for (let i = start; i < types.length; i++) walk(i, [...acc, types[i]]);
+    };
+    walk(0, []);
+    const cases = ['PERFORMANCE', 'EXPERIENCE', 'COURSE'].flatMap((p) => combos.map((c) => [c, p]));
+    expect(cases.length).toBe(3 * (7 + 28 + 84 + 210)); // 유형 7개(미등록 1개 포함)의 1~4매 중복 조합
+    const mismatches = [];
+    for (let i = 0; i < cases.length; i += 50) {
+      const batch = cases.slice(i, i + 50);
+      const res = await Promise.all(batch.map(([c, p]) => db.rpc('validate_discounts', { p_types: c, p_product_type: p })));
+      res.forEach(({ data, error }, j) => {
+        expect(error).toBeNull();
+        const [c, p] = batch[j];
+        const js = validateDiscounts(c, p).ok;
+        if (js !== (data.length === 0)) mismatches.push({ c, p, js, sql: data });
+      });
+    }
+    expect(mismatches).toEqual([]);
   });
 
   it('lock/finalize/unlock are not callable by members', async () => {
@@ -276,6 +302,72 @@ describe('unlock_after_failure', () => {
   });
 });
 
+describe('stale PAYING cleanup (sweep_offering)', () => {
+  async function locked(seatId) {
+    const o = await offering('PERFORMANCE');
+    const hold = await ok(m[0].rpc('hold_seats', { p_offering: o.id, p_seat_ids: [seatId] }));
+    const oid = orderId();
+    await ok(m[0].rpc('prepare_payment', { p_hold: hold.id, p_items: general([seatId]), p_amount: 40000, p_order_id: oid }));
+    const l = await ok(db.rpc('lock_for_confirm', { p_order_id: oid }));
+    expect(l.paying_since).not.toBeNull();
+    return { o, hold, oid };
+  }
+  const state = async (o, hold, seatId) => {
+    const { data: h } = await db.from('holds').select('status, paying_since').eq('id', hold.id).single();
+    const { data: s } = await db.from('inventory_seats').select('status').eq('offering_id', o.id).eq('seat_id', seatId).single();
+    return { hold: h.status, payingSince: h.paying_since, seat: s.status };
+  };
+
+  it('leaves a fresh PAYING hold alone', async () => {
+    const { o, hold } = await locked(41);
+    await setClock(4 * MIN);
+    await ok(db.rpc('sweep_offering', { p_offering: o.id }));
+    expect((await state(o, hold, 41)).hold).toBe('PAYING');
+  });
+
+  it('PAYING over 5 minutes without a DONE charge -> back to ACTIVE before expiry', async () => {
+    const { o, hold } = await locked(42);
+    await setClock(6 * MIN);
+    await ok(db.rpc('sweep_offering', { p_offering: o.id }));
+    expect(await state(o, hold, 42)).toEqual({ hold: 'ACTIVE', payingSince: null, seat: 'HELD' });
+  });
+
+  it('PAYING over 5 minutes without a DONE charge past expiry -> EXPIRED, seat AVAILABLE', async () => {
+    const { o, hold } = await locked(43);
+    await setClock(11 * MIN);
+    await ok(db.rpc('sweep_offering', { p_offering: o.id }));
+    expect(await state(o, hold, 43)).toEqual({ hold: 'EXPIRED', payingSince: null, seat: 'AVAILABLE' });
+  });
+
+  it('PAYING with a DONE charge stays PAYING; a confirm retry re-enters and finalizes', async () => {
+    const { o, hold, oid } = await locked(44);
+    await ok(db.from('pg_mock_transactions').insert({
+      payment_key: `pk_${oid}`, order_id: oid, amount: 40000, balance_amount: 40000, status: 'DONE',
+    }));
+    await setClock(11 * MIN);
+    await ok(db.rpc('sweep_offering', { p_offering: o.id }));
+    expect((await state(o, hold, 44)).hold).toBe('PAYING');
+    // 다른 회원의 선점 시도도 결제 중 좌석을 가져가지 못합니다.
+    expect(await failCode(m[1].rpc('hold_seats', { p_offering: o.id, p_seat_ids: [44] }))).toBe('SEAT_TAKEN');
+    const again = await ok(db.rpc('lock_for_confirm', { p_order_id: oid }));
+    expect(again.status).toBe('PAYING');
+    const b = await ok(db.rpc('finalize_booking', { p_order_id: oid, p_payment_key: `pk_${oid}`, p_raw: { totalAmount: 40000 } }));
+    expect(b.status).toBe('CONFIRMED');
+    expect(await state(o, hold, 44)).toEqual({ hold: 'CONSUMED', payingSince: null, seat: 'SOLD' });
+  });
+
+  it('re-entry is refused while the PAYING hold is fresh or has no charge', async () => {
+    const { oid } = await locked(45);
+    expect(await failCode(db.rpc('lock_for_confirm', { p_order_id: oid }))).toBe('PAYMENT_IN_PROGRESS');
+  });
+
+  it('unlock_after_failure clears paying_since', async () => {
+    const { o, hold, oid } = await locked(46);
+    await ok(db.rpc('unlock_after_failure', { p_order_id: oid }));
+    expect(await state(o, hold, 46)).toEqual({ hold: 'ACTIVE', payingSince: null, seat: 'HELD' });
+  });
+});
+
 describe('promotion holds', () => {
   // 승격 상태(배정 좌석 1석, 결제 기한 24시간)를 직접 만든 뒤 승격 선점을 잡습니다.
   async function promotedLocked(seatId) {
@@ -303,12 +395,28 @@ describe('promotion holds', () => {
     expect(seat).toEqual({ status: 'SOLD', waitlist_id: null });
   });
 
-  it('PAYING promotion hold survives the deadline sweep', async () => {
-    const { o, w } = await promotedLocked(13);
+  it('PAYING promotion hold with a DONE charge survives the deadline sweep', async () => {
+    const { o, w, oid } = await promotedLocked(13);
+    await ok(db.from('pg_mock_transactions').insert({
+      payment_key: `pk_${oid}`, order_id: oid, amount: 40000, balance_amount: 40000, status: 'DONE',
+    }));
     await setClock(25 * 60 * MIN);
     await ok(db.rpc('sweep_offering', { p_offering: o.id }));
     const { data: wl } = await db.from('waitlist').select('status').eq('id', w.id).single();
     expect(wl.status).toBe('PROMOTED');
+  });
+
+  it('stale PAYING promotion hold without a charge is released to the waitlist logic by sweep', async () => {
+    const { o, w, hold } = await promotedLocked(16);
+    await setClock(25 * 60 * MIN);
+    await ok(db.rpc('sweep_offering', { p_offering: o.id }));
+    const { data: h } = await db.from('holds').select('status, paying_since').eq('id', hold.id).single();
+    expect(h).toEqual({ status: 'EXPIRED', paying_since: null });
+    const { data: wl } = await db.from('waitlist').select('status').eq('id', w.id).single();
+    expect(wl.status).toBe('EXPIRED');
+    const { data: seat } = await db.from('inventory_seats').select('status, waitlist_id')
+      .eq('offering_id', o.id).eq('seat_id', 16).single();
+    expect(seat).toEqual({ status: 'AVAILABLE', waitlist_id: null });
   });
 
   it('unlock past the deadline hands the seat back to the waitlist logic', async () => {
