@@ -377,10 +377,11 @@ begin
                   when 'DISABLED' then array['DISABLED', 'DISABLED_COMPANION']
                   when 'MERIT' then array['MERIT', 'MERIT_COMPANION']
                   else array[p_discount] end)))
+       -- 부분 일치는 strpos 로 합니다(검색어의 % _ \ 가 와일드카드로 해석되지 않도록).
        and (v_q is null or case coalesce(p_field, 'name')
-             when 'booking_no' then b.booking_no ilike '%' || v_q || '%'
+             when 'booking_no' then strpos(lower(b.booking_no), lower(v_q)) > 0
              when 'phone4' then right(regexp_replace(coalesce(pr.phone, ''), '\D', '', 'g'), 4) = v_q
-             else coalesce(pr.name, '') ilike '%' || v_q || '%'
+             else strpos(lower(coalesce(pr.name, '')), lower(v_q)) > 0
            end)
      order by b.created_at desc, b.id;
 end $$;

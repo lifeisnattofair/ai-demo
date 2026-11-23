@@ -206,6 +206,12 @@ describe('예약 내역과 증빙 확인(SFR-021)', () => {
     expect(await ok(op.rpc('staff_bookings', { p_field: 'name', p_q: '회원 하나' }))).toHaveLength(1);
     expect(await ok(op.rpc('staff_bookings', { p_field: 'booking_no', p_q: a.booking.booking_no }))).toHaveLength(1);
     expect(await ok(op.rpc('staff_bookings', { p_field: 'phone4', p_q: '0002' }))).toHaveLength(1);
+    // 검색어의 % _ \ 는 글자 그대로 비교합니다(와일드카드 아님).
+    for (const q of ['%', '_', '회원%', '\\']) {
+      expect(await ok(op.rpc('staff_bookings', { p_field: 'name', p_q: q })), q).toEqual([]);
+    }
+    expect(await ok(op.rpc('staff_bookings', { p_field: 'booking_no', p_q: '%' }))).toEqual([]);
+    expect(await ok(op.rpc('staff_bookings', { p_field: 'booking_no', p_q: a.booking.booking_no.toLowerCase() }))).toHaveLength(1);
     expect(await ok(op.rpc('staff_bookings', { p_discount: 'DISABLED' }))).toHaveLength(1);
     expect(await ok(op.rpc('staff_bookings', { p_statuses: ['CANCELLED'] }))).toEqual([]);
     expect(await ok(op.rpc('staff_bookings', { p_from: '2026-12-02', p_to: '2026-12-03' }))).toEqual([]);

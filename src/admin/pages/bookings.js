@@ -95,6 +95,20 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
   const tb = el.querySelector('.tb-host');
   const alertHost = el.querySelector('.alert-host');
   const visible = () => state.rows.filter((r) => !state.filters.type || r.program_type === state.filters.type);
+  const pageRows = () => pageOf(visible(), state.page, state.pageSize);
+  // 머리글 체크박스: 이 쪽이 모두 선택이면 체크, 일부면 중간 상태
+  const syncHeader = (input) => {
+    if (!input) return;
+    const ids = pageRows().map((r) => r.booking_id);
+    const n = ids.filter((id) => state.selected.has(id)).length;
+    input.checked = ids.length > 0 && n === ids.length;
+    input.indeterminate = n > 0 && n < ids.length;
+  };
+  // 조회 조건(유형 등)으로 안 보이게 된 행은 선택에서 뺍니다(일괄 처리가 숨은 행을 건드리지 않도록).
+  const pruneSelection = () => {
+    const ids = new Set(visible().map((r) => r.booking_id));
+    for (const id of state.selected) if (!ids.has(id)) state.selected.delete(id);
+  };
 
   // 체크박스는 44px 누름 영역(label)으로 감쌉니다.
   const checkbox = (label, checked, onChange) => {
@@ -131,15 +145,20 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
 
   const columns = [
     ...(canProof ? [{
-      key: 'sel', label: '선택', header: () => checkbox('이 쪽 전체 선택', false, (c) => {
-        for (const r of pageOf(visible(), state.page, state.pageSize)) {
-          if (c.checked) state.selected.add(r.booking_id); else state.selected.delete(r.booking_id);
-        }
-        draw();
-      }),
+      key: 'sel', label: '선택', header: () => {
+        const box = checkbox('이 쪽 전체 선택', false, (c) => {
+          for (const r of pageRows()) {
+            if (c.checked) state.selected.add(r.booking_id); else state.selected.delete(r.booking_id);
+          }
+          draw();
+        });
+        syncHeader(box.querySelector('input'));
+        return box;
+      },
       format: (r) => checkbox(`${r.booking_no} 선택`, state.selected.has(r.booking_id), (c) => {
         if (c.checked) state.selected.add(r.booking_id); else state.selected.delete(r.booking_id);
         c.closest('tr')?.classList.toggle('is-selected', c.checked);
+        syncHeader(tb.querySelector('thead input[type="checkbox"]'));
       }),
     }] : []),
     { key: 'no', label: '번호', type: 'number', align: 'c' },
@@ -172,6 +191,7 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
   ];
 
   function draw() {
+    pruneSelection();
     const rows = visible();
     const confirmed = rows.filter((r) => r.status === 'CONFIRMED').length;
     el.querySelector('.total b').textContent = rows.length.toLocaleString('en-US');
@@ -193,8 +213,6 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
     }));
     if (!rows) return;
     state.rows = rows;
-    const ids = new Set(rows.map((r) => r.booking_id));
-    for (const id of state.selected) if (!ids.has(id)) state.selected.delete(id);
     draw();
   }
 
@@ -259,7 +277,8 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
   const proofBtn = el.querySelector('[data-act="proof"]');
   proofBtn?.addEventListener('click', () => withBusy(proofBtn, async () => {
     if (!state.selected.size) { alertBox(alertHost, '증빙을 확인할 예약을 목록에서 먼저 선택해 주세요.'); return; }
-    const targets = proofTargets(state.rows, state.selected);
+    pruneSelection();
+    const targets = proofTargets(visible(), state.selected);
     if (!targets.length) { alertBox(alertHost, '선택한 예약에 증빙 확인 전인 할인 매수가 없습니다. 할인을 적용한 확정 예약을 선택해 주세요.'); return; }
     const bookings = new Set(targets.map((t) => t.bookingNo)).size;
     const ok = await confirmDialog({

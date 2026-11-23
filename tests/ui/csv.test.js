@@ -14,6 +14,20 @@ describe('toCsv', () => {
     expect(out.slice(1).split('\n')).toEqual(['일자,금액', '2026-12-01,2000']);
   });
 
+  it('수식으로 시작하는 문자열은 앞에 \' 를 붙이고, 숫자(음수 포함)는 그대로 둡니다', () => {
+    const cols = [{ key: 'a', label: 'a' }];
+    const line = (v) => toCsv(cols, [{ a: v }]).split('\n')[1];
+    expect(line('=HYPERLINK("http://x","y")')).toBe('"\'=HYPERLINK(""http://x"",""y"")"');
+    expect(line('@SUM(A1)')).toBe("'@SUM(A1)");
+    expect(line('+1')).toBe("'+1");
+    expect(line('-2+3')).toBe("'-2+3");
+    expect(line('\tx')).toBe("'\tx");
+    expect(line('\rx')).toBe('"\'\rx"');
+    expect(line(-36000)).toBe('-36000');
+    expect(line(0)).toBe('0');
+    expect(line('회***나')).toBe('회***나');
+  });
+
   it('줄바꿈이 든 값과 빈 값을 처리합니다', () => {
     const out = toCsv([{ key: 'a', label: 'a' }, { key: 'b', label: 'b' }], [{ a: '첫 줄\n둘째 줄', b: null }]);
     expect(out.slice(1).split('\n').slice(1).join('\n')).toBe('"첫 줄\n둘째 줄",');

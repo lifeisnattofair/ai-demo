@@ -105,6 +105,37 @@ describe('예약 내역', () => {
     expect(el.querySelector('.form-alert.ok').textContent).toContain('1매');
   });
 
+  it('머리글 체크박스는 이 쪽 선택 상태를 따르고, 유형 조건으로 숨은 행은 선택에서 빠집니다', async () => {
+    const rows = bookingRows();
+    rows[1] = { ...rows[1], program_type: 'EXPERIENCE', discounts: ['MULTICHILD'], proof: 'TODO', items: [{ id: 'i3', discount_type: 'MULTICHILD', proof_checked: false }] };
+    const api = { bookings: vi.fn().mockResolvedValue(rows), markProof: vi.fn().mockResolvedValue(null), offerings: vi.fn().mockResolvedValue([]) };
+    await renderBookings(el, { api, role: 'operator', now });
+    await settle();
+    const head = () => el.querySelector('thead input[type="checkbox"]');
+    expect(head().checked).toBe(false);
+    el.querySelector('input[aria-label="B00000001 선택"]').click();
+    expect(head().indeterminate).toBe(true);
+    el.querySelector('input[aria-label="B00000002 선택"]').click();
+    expect(head().checked).toBe(true);
+    expect(head().indeterminate).toBe(false);
+    head().click();
+    expect(el.querySelectorAll('tbody input:checked')).toHaveLength(0);
+    head().click();
+    expect(el.querySelectorAll('tbody input:checked')).toHaveLength(2);
+    expect(head().checked).toBe(true);
+
+    // 유형을 공연으로 좁히면 체험 예약(B00000002)은 선택에서 빠지고 증빙 처리 대상이 아닙니다.
+    el.querySelector('.sb-host select[name="type"]').value = 'PERFORMANCE';
+    el.querySelector('.sb-host form').dispatchEvent(new Event('submit', { cancelable: true }));
+    await settle();
+    el.querySelector('[data-act="proof"]').click();
+    await settle();
+    expect(document.querySelector('.dialog').textContent).toContain('할인 1매');
+    dialogButton('확인 처리').click();
+    await settle();
+    expect(api.markProof.mock.calls).toEqual([['i1', true]]);
+  });
+
   it('정산 담당: 선택 칸과 증빙 확인 버튼이 없습니다', async () => {
     const api = { bookings: vi.fn().mockResolvedValue(bookingRows()), offerings: vi.fn().mockResolvedValue([]) };
     await renderBookings(el, { api, role: 'finance', now });
@@ -224,6 +255,27 @@ describe('회차 취소 승인', () => {
     dialogButton('취소 요청').click();
     await settle();
     expect(api.requestOfferingCancel).toHaveBeenCalledWith('o2', '강사 사정');
+  });
+
+  it('이미 요청 중이거나 취소된 회차(OFFERING_CLOSED)면 안내하고 양식을 새로 불러옵니다', async () => {
+    const off = { id: 'o2', starts_at: '2026-12-20T10:00:00Z', status: 'OPEN', program: { title: '도자기', type: 'EXPERIENCE' } };
+    const api = {
+      cancelRequests: vi.fn().mockResolvedValue([]),
+      offerings: vi.fn().mockResolvedValueOnce([off]).mockResolvedValue([{ ...off, status: 'CANCEL_REQUESTED' }]),
+      requestOfferingCancel: vi.fn().mockRejectedValue(Object.assign(new Error('x'), { code: 'OFFERING_CLOSED' })),
+    };
+    await renderCancelRequests(el, { api, role: 'operator', now });
+    await settle();
+    const form = el.querySelector('form.cancel-form');
+    form.elements.offering.value = 'o2';
+    form.elements.reason.value = '강사 사정';
+    form.querySelector('button[type="submit"]').click();
+    await settle();
+    dialogButton('취소 요청').click();
+    await settle();
+    expect(el.querySelector('.form-alert').textContent).toBe('이미 취소 요청 중이거나 취소된 회차입니다. 목록을 새로 불러와 주세요.');
+    expect(api.offerings).toHaveBeenCalledTimes(2);
+    expect([...el.querySelectorAll('form.cancel-form option')].map((o) => o.value)).toEqual(['']);
   });
 });
 

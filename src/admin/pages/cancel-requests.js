@@ -10,6 +10,8 @@ import { renderDataTable, pageOf } from '../components/data-table.js';
 import { TYPE_LABEL, loadInto, pageHead, typeChip } from '../components/page.js';
 import { alertBox, formRow, showErrors } from '../components/form.js';
 
+export const OFFERING_CLOSED_MESSAGE = '이미 취소 요청 중이거나 취소된 회차입니다. 목록을 새로 불러와 주세요.';
+
 /** 승인 뒤 아직 환불할 예약이나 결제 중 주문이 남았는지(일괄 환불을 다시 실행해야 하는지). */
 export function needsRefundRun(r) {
   return r.status === 'APPROVED' && (r.offering_status !== 'CANCELLED' || r.confirmed_count > 0 || r.pending_payments > 0);
@@ -208,7 +210,12 @@ export async function renderCancelRequests(el, { api, role, now = clockNow, onCo
           alertBox(alertHost, '취소를 요청했습니다. 정산 담당이 승인하면 예약 전체가 전액 환불됩니다.', 'ok');
         } catch (err) {
           if (err.code === 'INVALID_REASON') showErrors(form, { reason: err.message });
-          else alertBox(alertHost, describeError(err));
+          else if (err.code === 'OFFERING_CLOSED') {
+            // 다른 담당자가 먼저 요청했거나 이미 취소된 회차: 양식과 목록을 새로 불러옵니다.
+            await drawRequestForm();
+            await load();
+            alertBox(alertHost, OFFERING_CLOSED_MESSAGE);
+          } else alertBox(alertHost, describeError(err));
         }
       });
     });
