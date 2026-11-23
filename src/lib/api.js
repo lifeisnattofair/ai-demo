@@ -90,6 +90,9 @@ async function authCall(promise) {
   return data;
 }
 
+const PROGRAM_COLUMNS = 'id, type, title, summary, description, venue, audience, poster_image, poster_tone, poster_series, poster_title, poster_sub, details, '
+  + 'offerings(id, starts_at, ends_at, capacity, sale_starts_at, sale_ends_at, status, prices:offering_prices(grade, price), lessons:course_lessons(seq, starts_at))';
+
 export const api = {
   messageFor,
 
@@ -137,7 +140,19 @@ export const api = {
   holdForPromotion: (waitlistId) => rpc('hold_for_promotion', { p_waitlist: waitlistId }),
   sweepOffering: (offeringId) => rpc('sweep_offering', { p_offering: offeringId }),
 
-  // 조회
+  // 조회: 프로그램 목록과 상세는 비회원도 봅니다.
+  async listPrograms() {
+    const { data, error } = await client().from('programs').select(PROGRAM_COLUMNS).eq('is_public', true);
+    if (error) throw fromDbError(error);
+    return data;
+  },
+  async getProgram(id) {
+    const { data, error } = await client().from('programs').select(PROGRAM_COLUMNS).eq('id', id).eq('is_public', true).maybeSingle();
+    // 주소의 id 가 uuid 형식이 아니면 없는 프로그램으로 봅니다.
+    if (error?.code === '22P02') return null;
+    if (error) throw fromDbError(error);
+    return data;
+  },
   async myBookings() {
     const { data, error } = await client()
       .from('bookings')

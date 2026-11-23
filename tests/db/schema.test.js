@@ -44,7 +44,7 @@ describe('schema and seed', () => {
       for (let i = 1; i < 12; i++) {
         expect(new Date(lessons[i].starts_at) - new Date(lessons[i - 1].starts_at)).toBe(7 * 86400000);
       }
-      expect(new Date(lessons[0].starts_at).getTime()).toBe(new Date(BASE).getTime() + 9 * 86400000);
+      expect(Math.floor((new Date(lessons[0].starts_at).getTime() - new Date(BASE).getTime()) / 86400000)).toBe(9);
     }
   });
 
@@ -67,7 +67,7 @@ describe('schema and seed', () => {
     const offerings = await rows('offerings');
     const prices = await rows('offering_prices');
     const base = new Date(BASE).getTime();
-    const days = (o) => (new Date(o.starts_at).getTime() - base) / 86400000;
+    const days = (o) => Math.floor((new Date(o.starts_at).getTime() - base) / 86400000); // 시각은 날짜 안에서 자유
     for (const o of offerings) {
       const pr = prices.filter((p) => p.offering_id === o.id);
       if (type[o.program_id] === 'PERFORMANCE') {

@@ -8,6 +8,8 @@ import { syncClock } from '../lib/clock.js';
 import { mountHeader, footerHtml } from './components/header.js';
 import { renderSignup, renderLogin, renderReset } from './pages/auth.js';
 import { renderAccount } from './pages/account.js';
+import { renderPrograms } from './pages/programs.js';
+import { renderProgramDetail } from './pages/program-detail.js';
 
 const root = document.getElementById('root');
 root.innerHTML = `<a class="skip" href="#/" data-skip>본문으로 건너뛰기</a>
@@ -19,18 +21,11 @@ const main = root.querySelector('main');
 let router;
 const go = (h) => router.go(h);
 
-function home(_params, el) {
-  el.innerHTML = `<section class="container hero-lite">
-    <p class="eyebrow">한빛아트센터</p>
-    <h1>무대와 배움이<br>가까운 곳에</h1>
-    <p>공연과 체험, 정규 강좌를 한곳에서 찾고 예약하세요.</p>
-    <a class="btn btn-primary" href="#/programs?type=PERFORMANCE">공연 보기</a>
-  </section>`;
-}
-
 router = createRouter(
   {
-    '#/': home,
+    '#/': (_p, el, query) => renderPrograms(el, { api, query }),
+    '#/programs': (_p, el, query) => renderPrograms(el, { api, query }),
+    '#/programs/:id': (p, el) => renderProgramDetail(el, { api, id: p.id }),
     '#/signup': (_p, el) => renderSignup(el, { api, go }),
     '#/login': (_p, el, query) => renderLogin(el, { api, go, query }),
     '#/reset': (_p, el) => renderReset(el, { api }),
