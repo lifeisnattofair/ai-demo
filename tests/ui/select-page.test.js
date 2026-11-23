@@ -1,0 +1,122 @@
+// @vitest-environment jsdom
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { renderSelect } from '../../src/user/pages/select.js';
+import { ApiError, messageFor } from '../../src/lib/api.js';
+
+const NOW = new Date('2026-11-23T03:00:00Z');
+const iso = (d) => new Date(NOW.getTime() + d * 86400000).toISOString();
+
+function seatRows(takenIds = []) {
+  const out = [];
+  let id = 1;
+  for (const row of 'ABCDEFGHIJ') {
+    for (let n = 1; n <= 20; n += 1) {
+      out.push({ seat_id: id, row_label: row, seat_no: n, grade: row <= 'D' ? 'R' : row <= 'G' ? 'S' : 'A', status: takenIds.includes(id) ? 'SOLD' : 'AVAILABLE' });
+      id += 1;
+    }
+  }
+  return out;
+}
+
+function fakeApi(over = {}) {
+  return {
+    messageFor,
+    getSession: vi.fn().mockResolvedValue({ user: { id: 'u1' } }),
+    getOffering: vi.fn().mockResolvedValue({
+      id: 'o1', starts_at: iso(10), ends_at: iso(10), capacity: 200, sale_starts_at: iso(-5), sale_ends_at: iso(10), status: 'OPEN',
+      prices: [{ grade: 'R', price: 40000 }, { grade: 'S', price: 30000 }, { grade: 'A', price: 20000 }],
+      program: { id: 'p1', type: 'PERFORMANCE', title: '실내악', venue: '소극장', poster_image: 'quartet', poster_tone: 'dark' },
+    }),
+    myOfferingQty: vi.fn().mockResolvedValue(0),
+    myActiveHold: vi.fn().mockResolvedValue(null),
+    offeringSeatMap: vi.fn().mockResolvedValue(seatRows()),
+    remainingCapacity: vi.fn().mockResolvedValue(10),
+    holdSeats: vi.fn().mockResolvedValue({ id: 'h1', expires_at: iso(0) }),
+    holdCapacity: vi.fn().mockResolvedValue({ id: 'h2', expires_at: iso(0) }),
+    releaseHold: vi.fn().mockResolvedValue(null),
+    ...over,
+  };
+}
+
+let el;
+beforeEach(() => {
+  document.body.innerHTML = '<main></main>';
+  el = document.querySelector('main');
+});
+const flush = () => new Promise((r) => setTimeout(r, 0));
+const run = async (api, go = vi.fn(), extra = {}) => {
+  await renderSelect(el, { api, go, offeringId: 'o1', now: () => NOW, ...extra });
+  return go;
+};
+
+describe('좌석 선택 화면', () => {
+  it('로그인하지 않았으면 로그인 화면으로 보내고 돌아올 주소를 남긴다', async () => {
+    const go = await run(fakeApi({ getSession: vi.fn().mockResolvedValue(null) }));
+    expect(go).toHaveBeenCalledWith(`#/login?next=${encodeURIComponent('#/booking/o1/select')}`);
+  });
+
+  it('좌석을 고르면 요약에 좌석과 합계가 보이고 다음을 누르면 선점 후 할인 선택으로 간다', async () => {
+    const api = fakeApi();
+    const go = await run(api);
+    el.querySelector('[aria-label="E열 9번 S석 선택 가능"]').click();
+    el.querySelector('[aria-label="E열 10번 S석 선택 가능"]').click();
+    expect(el.querySelector('.seat-chips').textContent).toContain('S석 E열 9번');
+    expect(el.querySelector('.sum-total b').textContent).toBe('60,000원');
+    el.querySelector('.summary [data-next]').click();
+    await flush();
+    expect(api.holdSeats).toHaveBeenCalledWith('o1', [89, 90]);
+    expect(go).toHaveBeenCalledWith('#/booking/h1/discount');
+  });
+
+  it('선점 실패 시 안내 문구를 보여 주고 좌석 상태를 다시 불러온다', async () => {
+    const api = fakeApi({ holdSeats: vi.fn().mockRejectedValue(new ApiError('SEAT_TAKEN')) });
+    const go = await run(api);
+    el.querySelector('[aria-label="E열 9번 S석 선택 가능"]').click();
+    api.offeringSeatMap.mockResolvedValue(seatRows([89]));
+    el.querySelector('.summary [data-next]').click();
+    await flush();
+    expect(el.querySelector('[role="alert"]').textContent).toBe('방금 다른 분이 선택한 좌석입니다. 다른 좌석을 선택해 주세요.');
+    expect(api.offeringSeatMap).toHaveBeenCalledTimes(2);
+    expect(el.querySelector('button.seat[aria-label^="E열 9번"]').getAttribute('aria-disabled')).toBe('true');
+    expect(el.querySelector('.seat-chips')).toBeNull();
+    expect(go).not.toHaveBeenCalled();
+  });
+
+  it('이미 확정한 매수만큼 선택 가능 매수가 줄어든다', async () => {
+    await run(fakeApi({ myOfferingQty: vi.fn().mockResolvedValue(1) }));
+    for (const n of [1, 2, 3, 4]) el.querySelector(`[aria-label="E열 ${n}번 S석 선택 가능"]`).click();
+    expect(el.querySelector('.seat-chips').children).toHaveLength(3);
+    expect(el.querySelector('[role="alert"]').textContent).toBe('1인 예약 한도를 넘었습니다. 남은 매수 안에서 선택해 주세요.');
+  });
+
+  it('체험은 인원을 늘려 선점하고, 한도를 넘기면 안내한다', async () => {
+    const base = fakeApi();
+    const o = await base.getOffering();
+    const api = fakeApi({
+      getOffering: vi.fn().mockResolvedValue({ ...o, prices: [{ grade: null, price: 10000 }], program: { ...o.program, type: 'EXPERIENCE' } }),
+    });
+    const go = await run(api);
+    const plus = el.querySelector('[data-step="1"]');
+    for (let i = 0; i < 5; i += 1) plus.click();
+    expect(el.querySelector('[data-qty]').textContent).toBe('4명');
+    expect(el.querySelector('[role="alert"]').textContent).toContain('1인 예약 한도');
+    el.querySelector('.summary [data-next]').click();
+    await flush();
+    expect(api.holdCapacity).toHaveBeenCalledWith('o1', 4);
+    expect(go).toHaveBeenCalledWith('#/booking/h2/discount');
+  });
+
+  it('정규 강좌는 본인 1명 신청으로 고정된다', async () => {
+    const base = fakeApi();
+    const o = await base.getOffering();
+    const api = fakeApi({
+      getOffering: vi.fn().mockResolvedValue({ ...o, prices: [{ grade: null, price: 120000 }], program: { ...o.program, type: 'COURSE' } }),
+    });
+    await run(api);
+    expect(el.textContent).toContain('본인 1명 신청');
+    expect(el.querySelector('[data-step]')).toBeNull();
+    el.querySelector('.summary [data-next]').click();
+    await flush();
+    expect(api.holdCapacity).toHaveBeenCalledWith('o1', 1);
+  });
+});

@@ -2,6 +2,7 @@ import '../styles/base.css';
 import '../styles/tokens.css';
 import '../styles/user.css';
 import '../styles/screens.css';
+import '../styles/booking.css';
 import { createRouter } from '../lib/router.js';
 import { api } from '../lib/api.js';
 import { syncClock } from '../lib/clock.js';
@@ -10,6 +11,7 @@ import { renderSignup, renderLogin, renderReset } from './pages/auth.js';
 import { renderAccount } from './pages/account.js';
 import { renderPrograms } from './pages/programs.js';
 import { renderProgramDetail } from './pages/program-detail.js';
+import { renderSelect } from './pages/select.js';
 
 const root = document.getElementById('root');
 root.innerHTML = `<a class="skip" href="#/" data-skip>본문으로 건너뛰기</a>
@@ -26,6 +28,7 @@ router = createRouter(
     '#/': (_p, el, query) => renderPrograms(el, { api, query }),
     '#/programs': (_p, el, query) => renderPrograms(el, { api, query }),
     '#/programs/:id': (p, el) => renderProgramDetail(el, { api, id: p.id }),
+    '#/booking/:offeringId/select': (p, el) => renderSelect(el, { api, go, offeringId: p.offeringId }),
     '#/signup': (_p, el) => renderSignup(el, { api, go }),
     '#/login': (_p, el, query) => renderLogin(el, { api, go, query }),
     '#/reset': (_p, el) => renderReset(el, { api }),

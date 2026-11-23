@@ -140,6 +140,26 @@ export const api = {
   holdForPromotion: (waitlistId) => rpc('hold_for_promotion', { p_waitlist: waitlistId }),
   sweepOffering: (offeringId) => rpc('sweep_offering', { p_offering: offeringId }),
 
+  // 좌석/인원 선택 화면용 조회
+  offeringSeatMap: (offeringId) => rpc('offering_seat_map', { p_offering: offeringId }),
+  myOfferingQty: async (offeringId) => Number(await rpc('my_offering_qty', { p_offering: offeringId })) || 0,
+  async myActiveHold(offeringId) {
+    const rows = await rpc('my_active_hold', { p_offering: offeringId });
+    return Array.isArray(rows) ? (rows[0] ?? null) : (rows ?? null);
+  },
+  async getOffering(id) {
+    const { data, error } = await client()
+      .from('offerings')
+      .select('id, starts_at, ends_at, capacity, sale_starts_at, sale_ends_at, status, prices:offering_prices(grade, price), '
+        + 'program:programs(id, type, title, venue, poster_image, poster_tone)')
+      .eq('id', id)
+      .maybeSingle();
+    // 주소의 id 가 uuid 형식이 아니면 없는 회차로 봅니다.
+    if (error?.code === '22P02') return null;
+    if (error) throw fromDbError(error);
+    return data;
+  },
+
   // 조회: 프로그램 목록과 상세는 비회원도 봅니다.
   async listPrograms() {
     const { data, error } = await client().from('programs').select(PROGRAM_COLUMNS).eq('is_public', true);
