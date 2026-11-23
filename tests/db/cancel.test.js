@@ -399,4 +399,30 @@ describe('lock order (offering -> holds)', () => {
     const bookings = await ok(db.from('bookings').select('id, status').eq('hold_id', hold.id));
     expect(bookings).toEqual([{ id: f.data.id, status: 'CONFIRMED' }]);
   }, 30000);
+
+  // I1: hold_seats 가 회차 잠금 없이 sweep(만료 선점 행 잠금)과 insert(FK 의 회차 KEY SHARE)를 하면,
+  // 회차를 먼저 잠그고 sweep 하는 쪽(finalize_cancel -> release_inventory, admin_upsert_offering 등)과 교착됩니다.
+  it.skipIf(!dockerOk)('hold_seats racing an offering-locked sweep (finalize_cancel/admin_upsert_offering order) does not deadlock', async () => {
+    const o = await offering('PERFORMANCE');
+    const now = await appNow();
+    const expired = await ok(db.from('holds').insert({
+      offering_id: o.id, user_id: uid[1], qty: 1, status: 'ACTIVE', expires_at: new Date(now.getTime() - 60000).toISOString(),
+    }).select().single());
+    await ok(db.from('inventory_seats').update({ status: 'HELD', hold_id: expired.id }).eq('offering_id', o.id).eq('seat_id', 7));
+
+    // 회차를 먼저 잠그고, 잠시 뒤 같은 회차를 sweep 합니다(만료 선점 행을 잠그려 함).
+    const blocker = psql(`begin; select 1 from public.offerings where id = '${o.id}' for update; select pg_sleep(2); select public.sweep_offering('${o.id}'); commit;`);
+    await pause(700);
+    const held = await m[0].rpc('hold_seats', { p_offering: o.id, p_seat_ids: [8] });
+    const blockerResult = await blocker.then(() => null, (e) => e);
+
+    expect(String(held.error?.message ?? '')).not.toMatch(/deadlock/i);
+    expect(String(blockerResult?.message ?? '')).not.toMatch(/deadlock/i);
+    expect(blockerResult).toBeNull();
+    expect(held.error).toBeNull();
+    expect(held.data.status).toBe('ACTIVE');
+    expect((await row('holds', expired.id)).status).toBe('EXPIRED');
+    expect((await seat(o, 7)).status).toBe('AVAILABLE');
+    expect((await seat(o, 8)).hold_id).toBe(held.data.id);
+  }, 30000);
 });
