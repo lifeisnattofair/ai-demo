@@ -130,6 +130,23 @@ describe('confirmPayment', () => {
     expect((await pg.get(KEY)).status).toBe('CANCELED');
   });
 
+  it('finalize fails and the auto-refund also fails -> hold stays PAYING (no unlock), logged for reconciliation', async () => {
+    const db = fakeDb({ finalizeError: new DbError('SEAT_STATE_INVALID') });
+    const pg = spyPg();
+    pg.cancel.mockRejectedValue(new DbError('PG_UNAVAILABLE'));
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const res = await confirmPayment({ db, pg }, input());
+      expect(res).toMatchObject({ status: 'CANCELLED', reason: 'FINALIZE_FAILED', refunded: false });
+      expect(pg.cancel).toHaveBeenCalledTimes(2);
+      expect(db.count('unlock_after_failure')).toBe(0);
+      expect((await pg.get(KEY)).status).toBe('DONE');
+      expect(log.mock.calls.some((c) => String(c[0]).includes('hold kept PAYING for reconciliation') && c.includes(ORDER))).toBe(true);
+    } finally {
+      log.mockRestore();
+    }
+  });
+
   it('finalize error but booking actually committed -> CONFIRMED, no cancel', async () => {
     const db = fakeDb({ finalizeError: new Error('network') });
     db.findBookingByOrder.mockResolvedValueOnce(null).mockResolvedValueOnce(BOOKING);

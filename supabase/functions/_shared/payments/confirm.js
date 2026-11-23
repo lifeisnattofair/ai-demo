@@ -186,7 +186,13 @@ export async function confirmPayment({ db, pg }, { userId, paymentKey, orderId, 
     if (lookup.booking) return { status: 'CONFIRMED', booking: lookup.booking }
 
     const refunded = await cancelCharge(pg, paymentKey)
-    await unlock()
+    if (refunded) {
+      await unlock()
+    } else {
+      // 자동 환불이 실패했으면 선점을 PAYING으로 둡니다. 풀면 다음 prepare_payment가 order_id를 덮어써
+      // 승인 기록과의 연결을 잃고 같은 좌석을 다시 팔 수 있습니다. sweep은 승인된(order_has_charge) PAYING을 건드리지 않습니다.
+      console.error('auto-refund failed; hold kept PAYING for reconciliation', orderId, paymentKey)
+    }
     return refunded
       ? { ...cancelled('FINALIZE_FAILED'), refunded }
       : { status: 'CANCELLED', reason: 'FINALIZE_FAILED', message: REFUND_PENDING_MESSAGE, refunded }
