@@ -8,7 +8,8 @@
 //
 // 멱등
 // - 이미 CANCELLED인 예약은 기록된 환불 결과를 그대로 돌려주고 결제대행사를 부르지 않습니다.
-// - 이전 시도가 PG 취소까지 마치고 확정에 실패했다면(pg.get의 cancels가 있음) PG를 다시 부르지 않고 그 취소로 확정합니다.
+// - 이전 시도가 PG 취소까지 마치고 확정에 실패했다면(cancel_rule 기록 + pg.get의 cancels가 있음) 지금 정책을 다시 보지 않고
+//   PG가 실제로 돌려준 금액과 처음 시도의 규칙(bookings.cancel_rule)으로 확정합니다.
 //
 // db 어댑터 계약
 //   db.rpc(name, args) -> data   // SQL 오류는 code(= SQL 오류 메시지)를 가진 오류로 던집니다.
@@ -65,26 +66,37 @@ function policyFor(ctx, reason, now) {
   })
 }
 
-// 환불액만큼 PG 취소. 이전 시도가 이미 취소했다면 그 거래를 씁니다.
+const lastTxKey = (p) => p.cancels[p.cancels.length - 1].transactionKey
+
+// 첫 시도: 환불액만큼 PG 취소(USER는 금액 지정, INSTITUTION은 남은 금액 전액).
 async function chargeBack(pg, ctx, reason, policy) {
-  const payment = await pg.get(ctx.paymentKey)
-  if (payment.cancels.length > 0) {
-    const refunded = payment.totalAmount - payment.balanceAmount
-    return {
-      refundAmount: refunded,
-      feeAmount: ctx.paidAmount - refunded,
-      txKey: payment.cancels[payment.cancels.length - 1].transactionKey,
-    }
-  }
+  const before = await pg.get(ctx.paymentKey)
   const opts = { cancelReason: PG_REASON[reason] }
   if (reason === 'USER') opts.cancelAmount = policy.refundAmount
   const after = await pg.cancel(ctx.paymentKey, opts)
-  const refunded = payment.balanceAmount - after.balanceAmount
-  return {
-    refundAmount: refunded,
-    feeAmount: ctx.paidAmount - refunded,
-    txKey: after.cancels[after.cancels.length - 1].transactionKey,
-  }
+  const refunded = before.balanceAmount - after.balanceAmount
+  return { refundAmount: refunded, feeAmount: ctx.paidAmount - refunded, txKey: lastTxKey(after) }
+}
+
+// 이전 시도가 남긴 PG 취소 기록. 이전 시도가 있었고(cancelRule 기록) PG에 취소가 있으면 그 결제를 돌려줍니다.
+// begin_cancel이 pg.cancel보다 먼저 cancel_rule을 남기고 abort_cancel은 이를 지우지 않으므로,
+// cancelRule이 없으면 PG 취소가 있었을 수 없습니다(그래서 첫 시도는 PG를 조회하지 않고 정책부터 봅니다).
+async function priorCharge(pg, ctx) {
+  if (!ctx.cancelRule || !ctx.paymentKey) return null
+  const payment = await pg.get(ctx.paymentKey)
+  return payment.cancels.length > 0 ? payment : null
+}
+
+async function finalize(db, bookingId, reason, rule, refund) {
+  await db.rpc('finalize_cancel', {
+    p_booking: bookingId,
+    p_refund: refund.refundAmount,
+    p_fee: refund.feeAmount,
+    p_rule: rule,
+    p_reason: reason,
+    p_tx_key: refund.txKey,
+  })
+  return done({ refundAmount: refund.refundAmount, feeAmount: refund.feeAmount, rule })
 }
 
 export async function cancelBooking({ db, pg, now }, { userId, bookingId, reason }) {
@@ -100,61 +112,72 @@ export async function cancelBooking({ db, pg, now }, { userId, bookingId, reason
     throw e
   }
 
-  if (reason === 'USER') {
-    if (ctx.ownerId !== userId) return rejected('NOT_OWNER')
-  }
+  if (reason === 'USER' && ctx.ownerId !== userId) return rejected('NOT_OWNER')
   if (ctx.status === 'CANCELLED') {
     if (ctx.refund) return done(ctx.refund)
     return { status: 'CANCELLED', refundAmount: 0, feeAmount: ctx.paidAmount, rule: null }
   }
-  if (reason === 'USER' && ctx.offeringStatus && ctx.offeringStatus !== 'OPEN') return rejected('OFFERING_CANCELLING')
 
-  const policy = policyFor(ctx, reason, now)
-  if (!policy.cancellable) return rejected('SAME_DAY')
+  // 재시도: 돈이 이미 나갔으면 지금 정책(당일, 구간 변경)과 관계없이 PG 기록과 처음 시도의 규칙으로 확정합니다.
+  const prior = await priorCharge(pg, ctx)
 
-  // 같은 예약의 동시 취소를 막습니다(부분 환불이 두 번 나가지 않도록).
-  if (!(await db.rpc('begin_cancel', { p_booking: bookingId }))) {
+  let policy = null
+  if (!prior) {
+    if (reason === 'USER' && ctx.offeringStatus && ctx.offeringStatus !== 'OPEN') return rejected('OFFERING_CANCELLING')
+    policy = policyFor(ctx, reason, now)
+    if (!policy.cancellable) return rejected('SAME_DAY')
+  }
+
+  // 같은 예약의 동시 취소를 막습니다(부분 환불이 두 번 나가지 않도록). 첫 시도는 규칙을 cancel_rule에 남깁니다.
+  // pg.cancel과 finalize_cancel 사이에서 프로세스가 죽으면 abort_cancel이 불리지 않아 표시가 남습니다.
+  // 그 5분 동안은 CANCEL_IN_PROGRESS로 거절되고, 그 뒤 재시도가 위의 prior 경로로 PG 기록대로 확정합니다.
+  if (!(await db.rpc('begin_cancel', { p_booking: bookingId, p_rule: prior ? null : policy.rule }))) {
     const again = await db.rpc('cancel_context', { p_booking: bookingId })
     if (again.status === 'CANCELLED' && again.refund) return done(again.refund)
     return rejected('CANCEL_IN_PROGRESS')
   }
 
-  const abort = async () => {
-    try {
-      await db.rpc('abort_cancel', { p_booking: bookingId })
-    } catch (e) {
-      console.error('abort_cancel failed', bookingId, errCode(e))
-    }
-  }
-
-  let refund = { refundAmount: 0, feeAmount: ctx.paidAmount, txKey: null }
   try {
+    if (prior) {
+      let payment = prior
+      let rule = ctx.cancelRule
+      // 회원 부분 환불 뒤 확정 전에 회차가 기관 취소되면 남은 금액도 돌려 드립니다.
+      if (reason === 'INSTITUTION' && payment.balanceAmount > 0) {
+        payment = await pg.cancel(ctx.paymentKey, { cancelReason: PG_REASON.INSTITUTION })
+        rule = 'INSTITUTION_FULL'
+      }
+      const refunded = payment.totalAmount - payment.balanceAmount
+      return await finalize(db, bookingId, reason, rule, {
+        refundAmount: refunded, feeAmount: ctx.paidAmount - refunded, txKey: lastTxKey(payment),
+      })
+    }
+
+    let refund = { refundAmount: 0, feeAmount: ctx.paidAmount, txKey: null }
     if (policy.refundAmount > 0) {
       if (!ctx.paymentKey) throw new CancelError('PAYMENT_NOT_FOUND')
       refund = await chargeBack(pg, ctx, reason, policy)
     }
-    await db.rpc('finalize_cancel', {
-      p_booking: bookingId,
-      p_refund: refund.refundAmount,
-      p_fee: refund.feeAmount,
-      p_rule: policy.rule,
-      p_reason: reason,
-      p_tx_key: refund.txKey,
-    })
+    return await finalize(db, bookingId, reason, policy.rule, refund)
   } catch (e) {
-    // PG 취소 뒤 확정만 실패했으면 다시 시도할 때 chargeBack이 그 취소를 이어 씁니다.
+    // PG 취소 뒤 확정만 실패했으면 다음 시도가 prior 경로로 그 취소를 이어 씁니다.
     console.error('cancelBooking failed', bookingId, errCode(e))
-    await abort()
+    try {
+      await db.rpc('abort_cancel', { p_booking: bookingId })
+    } catch (ae) {
+      console.error('abort_cancel failed', bookingId, errCode(ae))
+    }
     throw e
   }
-  return done({ refundAmount: refund.refundAmount, feeAmount: refund.feeAmount, rule: policy.rule })
 }
+
+export const PENDING_PAYMENTS_MESSAGE = (n) =>
+  `결제가 진행 중인 예약 ${n}건이 남아 있습니다. 잠시 후 일괄 취소를 다시 실행해 주세요.`
 
 export async function cancelOffering({ db, pg, now }, { userId, offeringId }) {
   if (typeof offeringId !== 'string' || offeringId.length === 0) throw new CancelError('INVALID_REQUEST')
   if ((await db.getRole(userId)) !== 'finance') throw new CancelError('FORBIDDEN')
 
-  const { bookingIds } = await db.rpc('begin_offering_cancel', { p_offering: offeringId, p_actor: userId })
+  const { bookingIds, pendingPayments } = await db.rpc('begin_offering_cancel', { p_offering: offeringId, p_actor: userId })
   const cancelled = []
   const failed = []
   for (const bookingId of bookingIds ?? []) {
@@ -167,5 +190,9 @@ export async function cancelOffering({ db, pg, now }, { userId, offeringId }) {
       failed.push({ bookingId, code, message: CANCEL_ERROR_MESSAGES[code] ?? '환불 처리 중 문제가 생겼습니다. 다시 시도해 주세요.' })
     }
   }
-  return { offeringId, cancelled, failed }
+  // 결제 중(PAYING)이던 선점은 확정될 수 있으므로 건수를 알려 다시 실행하게 합니다.
+  const pending = pendingPayments ?? 0
+  const result = { offeringId, cancelled, failed, pending }
+  if (pending > 0) result.pendingMessage = PENDING_PAYMENTS_MESSAGE(pending)
+  return result
 }

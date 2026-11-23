@@ -32,6 +32,7 @@ export const CONFIRM_ERROR_MESSAGES = {
   NOT_OWNER: '본인의 예약만 결제할 수 있습니다. 로그인한 계정을 확인해 주세요.',
   ORDER_NOT_FOUND: '주문 정보를 찾을 수 없습니다. 좌석을 다시 선택해 주세요.',
   PAYMENT_IN_PROGRESS: '같은 주문의 결제가 진행 중입니다. 잠시 후 예매 내역을 확인해 주세요.',
+  NOT_ON_SALE: '판매가 종료된 회차라 결제를 진행하지 않았습니다. 다른 회차를 선택해 주세요.',
 }
 
 export class ConfirmError extends Error {

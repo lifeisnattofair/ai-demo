@@ -3,7 +3,8 @@
 //       POST { offeringId, mode: 'INSTITUTION' }   정산 담당 회차 일괄 취소(승인된 취소 요청 필요, 전액 환불)
 //       헤더 Authorization: Bearer <사용자 JWT>
 // 응답: 200 { status: 'CANCELLED', refundAmount, feeAmount, rule } | 200 { status: 'REJECTED', message }
-//       200 { offeringId, cancelled: [...], failed: [{ bookingId, code, message }] }   (INSTITUTION)
+//       200 { offeringId, cancelled: [...], failed: [{ bookingId, code, message }], pending, pendingMessage? }   (INSTITUTION)
+//       pending > 0이면 결제 중인 주문이 남아 있으니 잠시 후 다시 호출합니다(멱등).
 //       4xx/5xx { code, message }
 // 환경 변수: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY(자동 주입), ALLOWED_ORIGIN(쉼표로 여러 개)
 // 현재 시각은 app_now()로 얻습니다. 결제는 모의 어댑터만 씁니다.

@@ -60,8 +60,13 @@ declare
   v_res public.holds;
 begin
   if v_uid is null then perform public.hold_error('UNAUTHENTICATED'); end if;
-  select * into v_h from public.holds where id = p_hold for update;
+  select * into v_h from public.holds where id = p_hold;
   if not found or v_h.user_id is distinct from v_uid then perform public.hold_error('NOT_OWNER'); end if;
+  -- 잠금 순서: 회차 -> 선점. 판매 중(OPEN)이 아니면(회차 취소 요청/취소) 결제로 넘어가지 않습니다.
+  if (select status from public.offerings where id = v_h.offering_id for update) is distinct from 'OPEN' then
+    perform public.hold_error('NOT_ON_SALE');
+  end if;
+  select * into v_h from public.holds where id = p_hold for update;
   if v_h.status <> 'ACTIVE' or v_h.expires_at <= public.app_now() then perform public.hold_error('HOLD_EXPIRED'); end if;
   if p_order_id is null or p_order_id !~ '^HB-[0-9]{8}-[A-Za-z0-9]{10}$' then
     perform public.hold_error('INVALID_REQUEST');
@@ -147,9 +152,13 @@ declare
   v_type text;
   v_changed int;
   v_res public.holds;
+  v_off_status text;
 begin
-  select * into v_h from public.holds where order_id = p_order_id for update;
+  select * into v_h from public.holds where order_id = p_order_id;
   if not found then perform public.hold_error('ORDER_NOT_FOUND'); end if;
+  -- 잠금 순서: 회차 -> 선점. begin_offering_cancel(회차를 잠그고 CANCELLED)과 직렬화됩니다.
+  select status into v_off_status from public.offerings where id = v_h.offering_id for update;
+  select * into v_h from public.holds where order_id = p_order_id for update;
   if v_h.status = 'CONSUMED' then perform public.hold_error('ALREADY_CONFIRMED'); end if;
   if v_h.status = 'PAYING' then
     -- 승인은 끝났는데 확정 결과를 모르는 채 5분 넘게 남은 결제는 다시 들어와 확정을 이어 갈 수 있습니다.
@@ -159,6 +168,8 @@ begin
     end if;
     perform public.hold_error('PAYMENT_IN_PROGRESS');
   end if;
+  -- 새 승인(ACTIVE -> PAYING)은 판매 중인 회차에서만. 위의 승인 완료 결제 재진입은 확정까지 보내고 일괄 취소가 환불합니다.
+  if v_off_status is distinct from 'OPEN' then perform public.hold_error('NOT_ON_SALE'); end if;
   if v_h.status <> 'ACTIVE' or v_h.expires_at <= public.app_now() then perform public.hold_error('HOLD_EXPIRED'); end if;
 
   select p.type into v_type
@@ -262,6 +273,13 @@ declare
 begin
   select * into v_h from public.holds where id = p_hold for update;
   if not found or v_h.status <> 'PAYING' then return false; end if;
+  -- 취소된 회차는 판매가 닫혔으므로 되살리지 않고 풉니다(대기도 begin_offering_cancel이 이미 종료).
+  if (select status from public.offerings where id = v_h.offering_id) = 'CANCELLED' then
+    update public.holds set status = 'EXPIRED', paying_since = null where id = v_h.id;
+    update public.inventory_seats set status = 'AVAILABLE', hold_id = null, waitlist_id = null
+     where hold_id = v_h.id and status = 'PAYING';
+    return true;
+  end if;
   if v_h.expires_at > public.app_now() or v_h.waitlist_id is not null then
     update public.holds set status = 'ACTIVE', paying_since = null where id = v_h.id;
     update public.inventory_seats set status = 'HELD' where hold_id = v_h.id and status = 'PAYING';
@@ -387,9 +405,12 @@ grant execute on function public.lock_for_confirm(text), public.finalize_booking
 
 -- 취소 진행 표시(동시 취소 방지). 5분이 지나면 다시 잡을 수 있습니다.
 alter table public.bookings add column if not exists cancel_started_at timestamptz;
+-- 처음 취소 시도의 환불 규칙. PG 취소 뒤 확정이 실패하면 재시도는 지금 정책이 아니라 이 규칙과 PG 기록으로 확정합니다.
+-- pg.cancel 전에 begin_cancel이 남기고 abort_cancel은 지우지 않습니다(이 값이 있어야 재시도가 PG를 조회).
+alter table public.bookings add column if not exists cancel_rule text;
 
 -- 환불 계산에 필요한 정보. 기준일은 회차 시작(정규 강좌는 첫 회).
--- {productType, paidAmount, baseAt, lessonStarts, paymentKey, status, ownerId, offeringId, offeringStatus, refund}
+-- {productType, paidAmount, baseAt, lessonStarts, paymentKey, status, ownerId, offeringId, offeringStatus, refund, cancelRule}
 -- refund는 이미 취소된 예약의 기록된 환불 결과({refundAmount, feeAmount, rule}) 또는 null입니다.
 create or replace function public.cancel_context(p_booking uuid) returns jsonb
 language plpgsql stable security definer set search_path = public as $$
@@ -407,6 +428,7 @@ begin
     'ownerId', b.user_id,
     'offeringId', o.id,
     'offeringStatus', o.status,
+    'cancelRule', b.cancel_rule,
     'refund', (select jsonb_build_object('refundAmount', r.refund_amount, 'feeAmount', r.fee_amount, 'rule', r.rule)
                  from public.refunds r where r.booking_id = b.id order by r.created_at desc, r.id limit 1))
     into v
@@ -420,10 +442,12 @@ begin
 end $$;
 
 -- 취소 시작 표시. CONFIRMED이고 다른 취소가 진행 중이 아닐 때만 true.
-create or replace function public.begin_cancel(p_booking uuid) returns boolean
+-- p_rule이 있으면(PG 취소 전 첫 시도) cancel_rule을 그 값으로, null이면(PG 기록으로 이어 확정) 기존 값을 둡니다.
+drop function if exists public.begin_cancel(uuid);
+create or replace function public.begin_cancel(p_booking uuid, p_rule text) returns boolean
 language plpgsql security definer set search_path = public as $$
 begin
-  update public.bookings set cancel_started_at = public.app_now()
+  update public.bookings set cancel_started_at = public.app_now(), cancel_rule = coalesce(p_rule, cancel_rule)
    where id = p_booking and status = 'CONFIRMED'
      and (cancel_started_at is null or cancel_started_at <= public.app_now() - interval '5 minutes');
   return found;
@@ -574,9 +598,11 @@ begin
               public.app_now());
   end if;
 
+  -- pendingPayments: 결제 중(PAYING) 선점 수. 승인되면 확정되므로 호출자가 나중에 다시 불러 환불합니다.
   return jsonb_build_object('offeringId', p_offering, 'bookingIds', coalesce((
     select jsonb_agg(id order by created_at, id) from public.bookings
-     where offering_id = p_offering and status = 'CONFIRMED'), '[]'::jsonb));
+     where offering_id = p_offering and status = 'CONFIRMED'), '[]'::jsonb),
+    'pendingPayments', (select count(*) from public.holds where offering_id = p_offering and status = 'PAYING'));
 end $$;
 
 -- 웹훅 반영. 기대 상태(p_expected)일 때만 결제 상태를 바꿉니다. 바꿨으면 true.
@@ -591,11 +617,11 @@ begin
   return found;
 end $$;
 
-revoke all on function public.cancel_context(uuid), public.begin_cancel(uuid), public.abort_cancel(uuid),
+revoke all on function public.cancel_context(uuid), public.begin_cancel(uuid, text), public.abort_cancel(uuid),
   public.finalize_cancel(uuid, int, int, text, text, text), public.begin_offering_cancel(uuid, uuid),
   public.apply_payment_status(text, text, text)
   from public, anon, authenticated;
-grant execute on function public.cancel_context(uuid), public.begin_cancel(uuid), public.abort_cancel(uuid),
+grant execute on function public.cancel_context(uuid), public.begin_cancel(uuid, text), public.abort_cancel(uuid),
   public.finalize_cancel(uuid, int, int, text, text, text), public.begin_offering_cancel(uuid, uuid),
   public.apply_payment_status(text, text, text)
   to service_role;

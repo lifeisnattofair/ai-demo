@@ -163,10 +163,38 @@ describe('user cancellation', () => {
   it('concurrent cancels: only one claim wins', async () => {
     const o = await offering('PERFORMANCE');
     const { booking } = await book(m[0], o, { seatIds: [1], amount: 40000 });
-    const claims = await Promise.all(Array.from({ length: 5 }, () => ok(db.rpc('begin_cancel', { p_booking: booking.id }))));
+    const claims = await Promise.all(Array.from({ length: 5 }, () => ok(db.rpc('begin_cancel', { p_booking: booking.id, p_rule: 'D8_PLUS' }))));
     expect(claims.filter(Boolean)).toHaveLength(1);
     await ok(db.rpc('abort_cancel', { p_booking: booking.id }));
-    expect(await ok(db.rpc('begin_cancel', { p_booking: booking.id }))).toBe(true);
+    expect(await ok(db.rpc('begin_cancel', { p_booking: booking.id, p_rule: 'D8_PLUS' }))).toBe(true);
+  });
+
+  it('begin_cancel records the rule, abort_cancel keeps it, a null rule keeps the earlier one', async () => {
+    const o = await offering('PERFORMANCE');
+    const { booking } = await book(m[0], o, { seatIds: [1], amount: 40000 });
+    expect((await ok(db.rpc('cancel_context', { p_booking: booking.id }))).cancelRule).toBeNull();
+    expect(await ok(db.rpc('begin_cancel', { p_booking: booking.id, p_rule: 'D7_4' }))).toBe(true);
+    await ok(db.rpc('abort_cancel', { p_booking: booking.id }));
+    expect((await ok(db.rpc('cancel_context', { p_booking: booking.id }))).cancelRule).toBe('D7_4');
+    expect(await ok(db.rpc('begin_cancel', { p_booking: booking.id, p_rule: null }))).toBe(true);
+    expect((await ok(db.rpc('cancel_context', { p_booking: booking.id }))).cancelRule).toBe('D7_4');
+  });
+
+  it('retry after PG refund + failed finalize, on the same day, records the PG refund under the first rule', async () => {
+    const o = await offering('PERFORMANCE');
+    const { booking, paymentKey } = await book(m[0], o, { seatIds: [1], amount: 40000 });
+    await at('2026-12-05T10:00:00+09:00'); // D-6
+    const failing = { ...adapter, rpc: (name, args) => (name === 'finalize_cancel' ? Promise.reject(new Error('boom')) : adapter.rpc(name, args)) };
+    await expect(cancelBooking({ db: failing, pg, now: await appNow() }, { userId: uid[0], bookingId: booking.id, reason: 'USER' }))
+      .rejects.toThrow('boom');
+    expect((await row('bookings', booking.id)).status).toBe('CONFIRMED');
+
+    await at('2026-12-11T00:10:00+09:00'); // 당일
+    const res = await cancelBooking({ db: adapter, pg, now: await appNow() }, { userId: uid[0], bookingId: booking.id, reason: 'USER' });
+    expect(res).toEqual({ status: 'CANCELLED', refundAmount: 36000, feeAmount: 4000, rule: 'D7_4' });
+    const [r] = await refundsOf(booking.id);
+    expect(r).toMatchObject({ refund_amount: 36000, fee_amount: 4000, rule: 'D7_4' });
+    expect((await pg.get(paymentKey)).cancels).toHaveLength(1);
   });
 
   it('capacity offering: cancelled qty frees capacity', async () => {
@@ -242,6 +270,74 @@ describe('institution bulk cancellation', () => {
     expect((await row('offerings', o.id)).status).toBe('OPEN');
     await expect(cancelOffering({ db: adapter, pg, now: await appNow() }, { userId: operatorId, offeringId: o.id }))
       .rejects.toMatchObject({ code: 'FORBIDDEN' });
+  });
+
+  // 선점 + prepare_payment까지(결제 승인 전)
+  async function prepared(client, o, seatIds, amount) {
+    const hold = await ok(client.rpc('hold_seats', { p_offering: o.id, p_seat_ids: seatIds }));
+    const oid = orderId();
+    await ok(client.rpc('prepare_payment', {
+      p_hold: hold.id, p_items: seatIds.map((seatId) => ({ seatId, discountType: 'GENERAL' })), p_amount: amount, p_order_id: oid,
+    }));
+    return { hold, oid };
+  }
+
+  it('prepare_payment and lock_for_confirm reject an offering that is no longer OPEN (NOT_ON_SALE)', async () => {
+    const o = await offering('PERFORMANCE');
+    const h1 = await ok(m[0].rpc('hold_seats', { p_offering: o.id, p_seat_ids: [1] }));
+    const p2 = await prepared(m[1], o, [2], 40000);
+    await ok(db.from('offerings').update({ status: 'CANCEL_REQUESTED' }).eq('id', o.id));
+
+    expect(await failCode(m[0].rpc('prepare_payment', {
+      p_hold: h1.id, p_items: [{ seatId: 1, discountType: 'GENERAL' }], p_amount: 40000, p_order_id: orderId(),
+    }))).toBe('NOT_ON_SALE');
+    expect(await failCode(db.rpc('lock_for_confirm', { p_order_id: p2.oid }))).toBe('NOT_ON_SALE');
+    expect((await row('holds', p2.hold.id)).status).toBe('ACTIVE');
+    expect((await seat(o, 2)).status).toBe('HELD');
+
+    // 승인 전 거절이므로 결제대행사 승인도 일어나지 않습니다.
+    const { confirmPayment } = await import('../../supabase/functions/_shared/payments/confirm.js');
+    await expect(confirmPayment({ db: { ...adapter, findBookingByOrder: async () => null }, pg }, {
+      userId: uid[1], paymentKey: `pk_${p2.oid}`, orderId: p2.oid, amount: 40000,
+    })).rejects.toMatchObject({ code: 'NOT_ON_SALE' });
+    expect(await pg.get(`pk_${p2.oid}`).catch((e) => e.code)).toBe('NOT_FOUND_PAYMENT');
+  });
+
+  it('a payment in progress during bulk cancel is reported as pending, and a re-run refunds it once confirmed', async () => {
+    const o = await offering('PERFORMANCE');
+    const a = await book(m[0], o, { seatIds: [1], amount: 40000 });
+    const p = await prepared(m[1], o, [2], 40000);
+    await ok(db.rpc('lock_for_confirm', { p_order_id: p.oid })); // PAYING
+    await approve(o);
+
+    const first = await cancelOffering({ db: adapter, pg, now: await appNow() }, { userId: financeId, offeringId: o.id });
+    expect(first.cancelled.map((c) => c.bookingId)).toEqual([a.booking.id]);
+    expect(first.pending).toBe(1);
+    expect(first.pendingMessage).toContain('1건');
+    expect((await row('holds', p.hold.id)).status).toBe('PAYING');
+
+    // 승인된 결제는 확정까지 갑니다(돈이 이미 나갔으므로).
+    const paymentKey = `pk_${p.oid}`;
+    const payment = await pg.confirm({ paymentKey, orderId: p.oid, amount: 40000 });
+    const late = await ok(db.rpc('finalize_booking', { p_order_id: p.oid, p_payment_key: paymentKey, p_raw: payment }));
+    expect(late.status).toBe('CONFIRMED');
+
+    const second = await cancelOffering({ db: adapter, pg, now: await appNow() }, { userId: financeId, offeringId: o.id });
+    expect(second).toMatchObject({ pending: 0, failed: [] });
+    expect(second.cancelled).toEqual([{ bookingId: late.id, status: 'CANCELLED', refundAmount: 40000, feeAmount: 0, rule: 'INSTITUTION_FULL' }]);
+    expect(await pg.get(paymentKey)).toMatchObject({ status: 'CANCELED' });
+    expect(await seat(o, 2)).toMatchObject({ status: 'AVAILABLE', waitlist_id: null });
+  });
+
+  it('a failed payment on a cancelled offering is released, not re-activated', async () => {
+    const o = await offering('PERFORMANCE');
+    const p = await prepared(m[1], o, [2], 40000);
+    await ok(db.rpc('lock_for_confirm', { p_order_id: p.oid }));
+    await approve(o);
+    await ok(db.rpc('begin_offering_cancel', { p_offering: o.id, p_actor: financeId }));
+    await ok(db.rpc('unlock_after_failure', { p_order_id: p.oid })); // 만료 전이지만 회차가 취소됨
+    expect((await row('holds', p.hold.id)).status).toBe('EXPIRED');
+    expect(await seat(o, 2)).toMatchObject({ status: 'AVAILABLE', hold_id: null });
   });
 });
 

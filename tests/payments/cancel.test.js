@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { createMockGateway, memoryStore } from '../../supabase/functions/_shared/payments/gateway.js';
 import {
-  CANCEL_REJECT_MESSAGES, cancelBooking, cancelOffering,
+  CANCEL_REJECT_MESSAGES, PENDING_PAYMENTS_MESSAGE, cancelBooking, cancelOffering,
 } from '../../supabase/functions/_shared/payments/cancel.js';
 
 const USER = 'user-a';
@@ -30,8 +30,10 @@ class DbError extends Error {
   }
 }
 
-function fakeDb({ context = ctx(), contexts, claim = true, finalizeError, role = 'finance', offeringBookings = [] } = {}) {
+// context 객체는 DB 행처럼 상태를 가집니다(begin_cancel이 cancelRule을 남김). 여러 시도에 같은 객체를 넘기면 재시도를 흉내 냅니다.
+function fakeDb({ context = ctx(), contexts, claim = true, finalizeError, role = 'finance', offeringBookings = [], pendingPayments = 0 } = {}) {
   const calls = [];
+  const find = (id) => (contexts ? contexts[id] : context);
   return {
     calls,
     count: (name) => calls.filter((c) => c.name === name).length,
@@ -39,18 +41,21 @@ function fakeDb({ context = ctx(), contexts, claim = true, finalizeError, role =
     async rpc(name, args) {
       calls.push({ name, args });
       if (name === 'cancel_context') {
-        const c = contexts ? contexts[args.p_booking] : context;
+        const c = find(args.p_booking);
         if (!c) throw new DbError('BOOKING_NOT_FOUND');
         if (c instanceof Error) throw c;
         return structuredClone(c);
       }
-      if (name === 'begin_cancel') return claim;
+      if (name === 'begin_cancel') {
+        if (claim) find(args.p_booking).cancelRule = args.p_rule ?? find(args.p_booking).cancelRule;
+        return claim;
+      }
       if (name === 'abort_cancel') return null;
       if (name === 'finalize_cancel') {
         if (finalizeError) throw finalizeError;
         return BOOKING;
       }
-      if (name === 'begin_offering_cancel') return { offeringId: args.p_offering, bookingIds: offeringBookings };
+      if (name === 'begin_offering_cancel') return { offeringId: args.p_offering, bookingIds: offeringBookings, pendingPayments };
       throw new Error(`unexpected rpc ${name}`);
     },
     getRole: vi.fn(async () => role),
@@ -136,20 +141,71 @@ describe('cancelBooking (USER)', () => {
     expect(pg.cancel).not.toHaveBeenCalled();
   });
 
-  it('retry after pg cancel succeeded but finalize failed reuses the pg cancel (no second refund)', async () => {
+  // 첫 시도: D-7에 PG 36000 환불 뒤 finalize 실패. 같은 예약 행(context)으로 다시 시도합니다.
+  async function failAfterPgCancel() {
     const pg = await paidGateway();
-    const db1 = fakeDb({ finalizeError: new DbError('boom') });
-    const now = kst('2026-12-04T10:00:00');
-    await expect(cancelBooking({ db: db1, pg, now }, { userId: USER, bookingId: 'b-1', reason: 'USER' })).rejects.toBeTruthy();
+    const row = ctx();
+    const db1 = fakeDb({ context: row, finalizeError: new DbError('boom') });
+    await expect(cancelBooking({ db: db1, pg, now: kst('2026-12-04T10:00:00') }, { userId: USER, bookingId: 'b-1', reason: 'USER' }))
+      .rejects.toBeTruthy();
     expect(db1.count('abort_cancel')).toBe(1);
-    const tx = (await pg.get(KEY)).cancels[0].transactionKey;
+    expect(db1.args('begin_cancel')).toEqual({ p_booking: 'b-1', p_rule: 'D7_4' });
+    expect(row.cancelRule).toBe('D7_4');
+    return { pg, row, tx: (await pg.get(KEY)).cancels[0].transactionKey };
+  }
 
-    const db2 = fakeDb();
-    const res = await cancelBooking({ db: db2, pg, now }, { userId: USER, bookingId: 'b-1', reason: 'USER' });
-    expect(res).toMatchObject({ status: 'CANCELLED', refundAmount: 36000, feeAmount: 4000 });
+  it('retry after pg cancel succeeded but finalize failed reuses the pg cancel (no second refund)', async () => {
+    const { pg, row, tx } = await failAfterPgCancel();
+    const db2 = fakeDb({ context: row });
+    const res = await cancelBooking({ db: db2, pg, now: kst('2026-12-04T10:05:00') }, { userId: USER, bookingId: 'b-1', reason: 'USER' });
+    expect(res).toEqual({ status: 'CANCELLED', refundAmount: 36000, feeAmount: 4000, rule: 'D7_4' });
     expect(pg.cancel).toHaveBeenCalledTimes(1);
-    expect(db2.args('finalize_cancel')).toMatchObject({ p_refund: 36000, p_fee: 4000, p_tx_key: tx });
+    expect(db2.args('begin_cancel')).toEqual({ p_booking: 'b-1', p_rule: null });
+    expect(db2.args('finalize_cancel')).toMatchObject({ p_refund: 36000, p_fee: 4000, p_rule: 'D7_4', p_tx_key: tx });
     expect((await pg.get(KEY)).balanceAmount).toBe(4000);
+  });
+
+  it('retry on the same day still finalizes with the PG refund and the original rule (D7_4)', async () => {
+    const { pg, row, tx } = await failAfterPgCancel();
+    const db2 = fakeDb({ context: row });
+    const res = await cancelBooking({ db: db2, pg, now: kst('2026-12-11T09:00:00') }, { userId: USER, bookingId: 'b-1', reason: 'USER' });
+    expect(res).toEqual({ status: 'CANCELLED', refundAmount: 36000, feeAmount: 4000, rule: 'D7_4' });
+    expect(pg.cancel).toHaveBeenCalledTimes(1);
+    expect(db2.args('finalize_cancel')).toEqual({
+      p_booking: 'b-1', p_refund: 36000, p_fee: 4000, p_rule: 'D7_4', p_reason: 'USER', p_tx_key: tx,
+    });
+  });
+
+  it('retry while the offering is being cancelled still finalizes the money already refunded', async () => {
+    const { pg, row } = await failAfterPgCancel();
+    row.offeringStatus = 'CANCEL_REQUESTED';
+    const db2 = fakeDb({ context: row });
+    const res = await cancelBooking({ db: db2, pg, now: kst('2026-12-05T10:00:00') }, { userId: USER, bookingId: 'b-1', reason: 'USER' });
+    expect(res).toMatchObject({ status: 'CANCELLED', refundAmount: 36000, rule: 'D7_4' });
+  });
+
+  it('institution cancel after a half-done user cancel refunds the remaining balance too', async () => {
+    const { pg, row } = await failAfterPgCancel();
+    row.offeringStatus = 'CANCELLED';
+    const db2 = fakeDb({ context: row });
+    const res = await cancelBooking({ db: db2, pg, now: kst('2026-12-10T10:00:00') }, { userId: FINANCE, bookingId: 'b-1', reason: 'INSTITUTION' });
+    expect(res).toEqual({ status: 'CANCELLED', refundAmount: 40000, feeAmount: 0, rule: 'INSTITUTION_FULL' });
+    expect(pg.cancel).toHaveBeenCalledTimes(2);
+    expect(pg.cancel.mock.calls[1][1]).not.toHaveProperty('cancelAmount');
+    expect((await pg.get(KEY)).status).toBe('CANCELED');
+  });
+
+  it('a started attempt that never reached the PG re-evaluates the current policy', async () => {
+    const pg = await paidGateway();
+    pg.cancel.mockRejectedValueOnce(Object.assign(new Error('x'), { code: 'NETWORK' }));
+    const row = ctx();
+    await expect(cancelBooking({ db: fakeDb({ context: row }), pg, now: kst('2026-12-04T10:00:00') }, { userId: USER, bookingId: 'b-1', reason: 'USER' }))
+      .rejects.toBeTruthy();
+    expect(row.cancelRule).toBe('D7_4');
+    const db2 = fakeDb({ context: row });
+    const res = await cancelBooking({ db: db2, pg, now: kst('2026-12-08T10:00:00') }, { userId: USER, bookingId: 'b-1', reason: 'USER' });
+    expect(res).toMatchObject({ refundAmount: 28000, feeAmount: 12000, rule: 'D3_1' });
+    expect(db2.args('begin_cancel')).toEqual({ p_booking: 'b-1', p_rule: 'D3_1' });
   });
 
   it('pg cancel failure releases the claim and rethrows', async () => {
@@ -206,6 +262,18 @@ describe('cancelOffering', () => {
     expect(res.cancelled[1]).toMatchObject({ refundAmount: 30000, feeAmount: 0, rule: 'INSTITUTION_FULL' });
     expect(res.failed).toEqual([{ bookingId: 'b2', code: 'NOT_FOUND_PAYMENT', message: expect.any(String) }]);
     expect(pg.cancel).toHaveBeenCalledTimes(2);
+    expect(res.pending).toBe(0);
+    expect(res).not.toHaveProperty('pendingMessage');
+  });
+
+  it('surfaces payments still in progress as pending so finance runs it again', async () => {
+    const db = fakeDb({ offeringBookings: [], pendingPayments: 2 });
+    const pg = await paidGateway();
+    const res = await cancelOffering({ db, pg, now: new Date() }, { userId: FINANCE, offeringId: 'off-1' });
+    expect(res).toEqual({
+      offeringId: 'off-1', cancelled: [], failed: [], pending: 2, pendingMessage: PENDING_PAYMENTS_MESSAGE(2),
+    });
+    expect(res.pendingMessage).toBe('결제가 진행 중인 예약 2건이 남아 있습니다. 잠시 후 일괄 취소를 다시 실행해 주세요.');
   });
 
   it('non-finance users are FORBIDDEN before any DB change', async () => {
