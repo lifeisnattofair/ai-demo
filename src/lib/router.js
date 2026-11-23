@@ -97,5 +97,11 @@ export function createRouter(routes, el) {
       if (window.location.hash !== path) window.location.hash = path;
       return p;
     },
+    // 방문 기록을 늘리지 않고 주소를 바꿉니다(예전 주소 별칭, 뒤로 가기로 다시 돌아오면 안 되는 이동).
+    replace(path) {
+      const p = render(path);
+      if (window.location.hash !== path) window.history.replaceState(window.history.state, '', path);
+      return p;
+    },
   };
 }

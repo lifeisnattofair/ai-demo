@@ -67,4 +67,14 @@ describe('createRouter', () => {
     expect(document.activeElement).toBe(el);
     el.remove();
   });
+
+  it('replace() 는 방문 기록을 늘리지 않고 그 주소를 렌더링합니다', async () => {
+    const handler = vi.fn();
+    const router = createRouter({ '#/me/bookings': handler }, el);
+    const before = window.history.length;
+    await router.replace('#/me/bookings');
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(window.location.hash).toBe('#/me/bookings');
+    expect(window.history.length).toBe(before);
+  });
 });
