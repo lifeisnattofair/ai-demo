@@ -5,3 +5,7 @@ node_modules/
 .netlify/
 design/mockups/assets/photos/candidates/*.jpg
 .claude/worktrees/
+.superpowers/
+dist/
+supabase/.temp/
+supabase/functions/.env
