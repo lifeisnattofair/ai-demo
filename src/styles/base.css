@@ -21,8 +21,3 @@
   font-display: swap;
   src: url("/fonts/PretendardGOV-Bold.subset.woff2") format("woff2");
 }
-
-body {
-  margin: 0;
-  font-family: "Pretendard GOV", system-ui, sans-serif;
-}
