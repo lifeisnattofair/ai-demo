@@ -40,6 +40,7 @@
     </ol>
   </div>
 </div>
+<div class="m-timer" role="timer" aria-live="off"><span>남은 선점 시간</span><b>08:42</b></div>
 
 <main id="main" class="container booking">
   <section class="panel" aria-labelledby="seat-title">
@@ -63,7 +64,8 @@
       </div>
       <div class="hall">
         <div class="stage">STAGE</div>
-        <div class="rows" id="rows"></div>
+        <div class="hall-scroll"><div class="rows" id="rows"></div></div>
+        <p class="scroll-hint">좌석도는 좌우로 밀어서 볼 수 있습니다.</p>
         <div class="hall-foot"><span>출입구</span><span>휠체어석 J열 양끝</span><span>출입구</span></div>
       </div>
     </div>
@@ -90,6 +92,11 @@
     </div>
   </aside>
 </main>
+
+<div class="mobile-bar">
+  <div class="mb-info">S석 2매<b>60,000원</b></div>
+  <a class="btn btn-primary" href="user-checkout.html">다음: 할인 선택</a>
+</div>
 
 <footer class="site-footer">
   <div class="container">
@@ -129,6 +136,9 @@
     row.insertAdjacentHTML('beforeend', '<span class="lbl" aria-hidden="true">' + r + '</span>');
     el.appendChild(row);
   }
+  // 좁은 화면에서는 무대 중앙이 먼저 보이게
+  const sc = document.querySelector('.hall-scroll');
+  sc.scrollLeft = (sc.scrollWidth - sc.clientWidth) / 2;
 </script>
 </body>
 </html>

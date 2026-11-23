@@ -79,7 +79,7 @@ select.ctl { appearance: none; padding-right: 28px; background: #fff url("data:i
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--c-line); flex-wrap: wrap; }
 .toolbar .total { font-size: 13px; color: var(--c-text-2); }
 .toolbar .total b { color: var(--c-action-text); font-variant-numeric: tabular-nums; }
-.toolbar .tools { display: flex; align-items: center; gap: 6px; }
+.toolbar .tools { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .table-scroll { overflow-x: auto; }
 .grid-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1100px; }
 .grid-table th { position: sticky; top: 0; background: #f8f9fa; font-weight: 700; color: var(--c-text-2); text-align: center; padding: 10px 10px; border-bottom: 1px solid var(--c-line); white-space: nowrap; }
@@ -110,6 +110,7 @@ select.ctl { appearance: none; padding-right: 28px; background: #fff url("data:i
 /* 정산 */
 .filter-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; background: #fff; border: 1px solid var(--c-line); border-radius: var(--r-md); padding: 12px 16px; }
 .filter-bar .fl { font-size: 13px; font-weight: 700; color: var(--c-text-2); margin-right: 2px; }
+.filter-bar .fg { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
 .filter-bar .sep { width: 1px; height: 20px; background: var(--c-line-soft); margin: 0 4px; }
 .filter-bar .push { margin-left: auto; display: flex; gap: 6px; }
 .kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
@@ -122,20 +123,28 @@ select.ctl { appearance: none; padding-right: 28px; background: #fff url("data:i
 .kpi.net { background: var(--c-ink); border-color: var(--c-ink); }
 .kpi.net .k-label, .kpi.net .k-note { color: #cdd1d5; }
 .kpi.net .k-value { color: #fff; }
-.two-col { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; }
+.two-col { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 12px; margin-top: 12px; align-items: stretch; }
+.two-col .card { display: flex; flex-direction: column; }
+.two-col .card .chart { flex: 1; }
 .card { background: #fff; border: 1px solid var(--c-line); border-radius: var(--r-md); }
 .card-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; border-bottom: 1px solid var(--c-line-soft); }
 .card-head h2 { margin: 0; font-size: 15px; color: var(--c-ink); }
 .card-head small { font-size: 12px; color: var(--c-text-3); }
-.chart { display: grid; grid-template-columns: 56px 1fr; gap: 8px; padding: 16px 16px 12px; }
-.chart .axis { display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; color: var(--c-text-3); text-align: right; height: 180px; font-variant-numeric: tabular-nums; }
-.chart .plot { position: relative; height: 180px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; align-items: end; border-bottom: 1px solid var(--c-line); background: repeating-linear-gradient(to top, transparent 0, transparent 59px, var(--c-line-soft) 59px, var(--c-line-soft) 60px); }
-.chart .bar { position: relative; background: var(--c-action); border-radius: 3px 3px 0 0; min-height: 2px; }
+.chart { display: grid; grid-template-columns: 56px 1fr; grid-template-rows: minmax(180px, 1fr) auto; gap: 8px; padding: 28px 16px 12px; }
+.chart .axis { display: flex; flex-direction: column; justify-content: space-between; font-size: 11px; line-height: 1; color: var(--c-text-3); text-align: right; font-variant-numeric: tabular-nums; margin: -5px 0 -5px; }
+.chart .plot { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; align-items: end; border-bottom: 1px solid var(--c-line); background-image: linear-gradient(var(--c-line-soft), var(--c-line-soft)), linear-gradient(var(--c-line-soft), var(--c-line-soft)), linear-gradient(var(--c-line-soft), var(--c-line-soft)); background-size: 100% 1px; background-repeat: no-repeat; background-position: 0 0, 0 33.333%, 0 66.666%; }
+.chart .plot .bar { align-self: end; }
+.chart .bar { position: relative; background: var(--c-action); border-radius: 3px 3px 0 0; min-height: 2px; max-width: 56px; width: 100%; justify-self: center; }
 .chart .bar.refund { position: absolute; left: 0; right: 0; bottom: 0; background: #f48771; border-radius: 0; }
 .chart .bar span { position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); font-size: 11px; color: var(--c-text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .chart .xl { grid-column: 2; display: grid; grid-template-columns: repeat(7, 1fr); gap: 14px; font-size: 11px; color: var(--c-text-3); text-align: center; }
-.chart-legend { display: flex; gap: 14px; padding: 0 16px 14px 80px; font-size: 12px; color: var(--c-text-2); }
-.chart-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+.chart-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); margin: 4px 16px 16px; border-top: 1px solid var(--c-line-soft); }
+.chart-stats div { padding: 12px 0 0; }
+.chart-stats div + div { padding-left: 16px; border-left: 1px solid var(--c-line-soft); margin-top: 12px; padding-top: 0; }
+.chart-stats div:first-child { margin-top: 0; }
+.chart-stats dt { font-size: 12px; color: var(--c-text-3); }
+.chart-stats dd { margin: 2px 0 0; font-size: 15px; font-weight: 700; color: var(--c-ink); font-variant-numeric: tabular-nums; }
+.chart-stats dd small { font-size: 12px; font-weight: 400; color: var(--c-text-3); margin-left: 4px; }
 .share { list-style: none; margin: 0; padding: 8px 16px 14px; }
 .share li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; padding: 8px 0; border-bottom: 1px solid var(--c-line-soft); font-size: 13px; }
 .share li:last-child { border-bottom: 0; }
@@ -178,5 +187,6 @@ select.ctl { appearance: none; padding-right: 28px; background: #fff url("data:i
   .chart { grid-template-columns: 44px 1fr; }
   .chart .plot, .chart .xl { gap: 6px; }
   .chart .bar span { display: none; }
-  .chart-legend { padding-left: 16px; }
+  .chart-stats { grid-template-columns: 1fr; }
+  .chart-stats div + div { border-left: 0; padding-left: 0; margin-top: 0; padding-top: 8px; }
 }

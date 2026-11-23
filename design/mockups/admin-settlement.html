@@ -47,13 +47,11 @@
     </div>
 
     <div class="filter-bar">
-      <span class="fl">기간</span>
-      <label class="sr-only" for="f1">시작일</label><input class="ctl date" id="f1" value="2026-12-01"><span>-</span><label class="sr-only" for="f2">종료일</label><input class="ctl date" id="f2" value="2026-12-07">
+      <span class="fg"><span class="fl">기간</span><label class="sr-only" for="f1">시작일</label><input class="ctl date" id="f1" value="2026-12-01"><span>-</span><label class="sr-only" for="f2">종료일</label><input class="ctl date" id="f2" value="2026-12-07"></span>
       <span class="sep" aria-hidden="true"></span>
-      <label class="fl" for="fp">프로그램</label><select class="ctl" id="fp"><option>전체 프로그램</option></select>
+      <span class="fg"><label class="fl" for="fp">프로그램</label><select class="ctl" id="fp"><option>전체 프로그램</option></select></span>
       <span class="sep" aria-hidden="true"></span>
-      <span class="fl">집계</span>
-      <span class="seg" role="group" aria-label="집계 기준"><button type="button" aria-pressed="true">일별</button><button type="button" aria-pressed="false">프로그램별</button><button type="button" aria-pressed="false">결제 수단별</button></span>
+      <span class="fg"><span class="fl">집계</span><span class="seg" role="group" aria-label="집계 기준"><button type="button" aria-pressed="true">일별</button><button type="button" aria-pressed="false">프로그램별</button><button type="button" aria-pressed="false">결제 수단별</button></span></span>
       <div class="push"><button class="btn btn-dark" type="button">조회</button><button class="btn" type="button"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>CSV 다운로드</button></div>
     </div>
 
@@ -80,6 +78,11 @@
           </div>
           <div class="xl" aria-hidden="true"><span>12.1 화</span><span>12.2 수</span><span>12.3 목</span><span>12.4 금</span><span>12.5 토</span><span>12.6 일</span><span>12.7 월</span></div>
         </div>
+        <dl class="chart-stats">
+          <div><dt>일평균 순매출</dt><dd>1,396,857원</dd></div>
+          <div><dt>최고</dt><dd>2,178,000원<small>12. 5.(토)</small></dd></div>
+          <div><dt>최저</dt><dd>613,000원<small>12. 7.(월)</small></dd></div>
+        </dl>
       </section>
 
       <section class="card" aria-labelledby="c2">
@@ -98,7 +101,7 @@
     <section class="result" aria-label="일별 정산표">
       <div class="toolbar"><span class="total">일별 정산 <b>7</b>일</span><span class="muted" style="font-size:12px">순매출은 결제 금액에서 환불 금액을 뺀 값입니다. 취소 수수료는 결제 금액에 포함되어 있습니다.</span></div>
       <div class="table-scroll">
-        <table class="grid-table" style="min-width:860px">
+        <table class="grid-table" style="min-width:640px">
           <caption class="sr-only">일별 정산표</caption>
           <thead><tr><th scope="col">일자</th><th scope="col" class="r">결제 건수</th><th scope="col" class="r">결제 금액</th><th scope="col" class="r">환불 건수</th><th scope="col" class="r">환불 금액</th><th scope="col" class="r">취소 수수료</th><th scope="col" class="r">순매출</th></tr></thead>
           <tbody>
