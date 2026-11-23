@@ -1,0 +1,526 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>요구사항정의서</title>
+<style>/* 공공 사업 산출물 공통 양식 (A4) */
+@page {
+  size: A4;
+  margin: 24mm 18mm 20mm 18mm;
+  @top-left { content: string(project); font: 400 7.5pt "Malgun Gothic"; color: #5b6472; vertical-align: bottom; padding-bottom: 3mm; border-bottom: 0.4pt solid #b9c0ca; }
+  @top-right { content: string(docname); font: 400 7.5pt "Malgun Gothic"; color: #5b6472; vertical-align: bottom; padding-bottom: 3mm; border-bottom: 0.4pt solid #b9c0ca; }
+  @bottom-center { content: "- " counter(page) " -"; font: 400 8pt "Malgun Gothic"; color: #3a4250; }
+  @bottom-right { content: string(docno); font: 400 7pt "Malgun Gothic"; color: #8a929e; }
+}
+@page landscape { size: A4 landscape; margin: 22mm 16mm 18mm 16mm; }
+@page cover {
+  @top-left { content: none; border: 0; }
+  @top-right { content: none; border: 0; }
+  @bottom-center { content: none; }
+  @bottom-right { content: none; }
+}
+
+:root {
+  --ink: #1b1f24;
+  --ink-2: #3a4250;
+  --muted: #6b7380;
+  --rule: #9aa3ae;
+  --rule-soft: #d3d8de;
+  --head: #edf0f4;
+  --navy: #1d3557;
+}
+* { box-sizing: border-box; }
+html { font-family: "Malgun Gothic", "맑은 고딕", sans-serif; font-size: 9.5pt; color: var(--ink); line-height: 1.6; word-break: keep-all; overflow-wrap: anywhere; }
+body { margin: 0; }
+.run-project, .run-docname, .run-docno { position: absolute; width: 0; height: 0; overflow: hidden; font-size: 0; }
+.run-project { string-set: project content(text); }
+.run-docname { string-set: docname content(text); }
+.run-docno { string-set: docno content(text); }
+
+/* 표지 */
+.cover { page: cover; height: 248mm; display: flex; flex-direction: column; break-after: page; }
+.cover .docno { font-size: 8.5pt; color: var(--muted); letter-spacing: 0.02em; }
+.cover .title-block { margin-top: 62mm; }
+.cover .project { font-size: 13pt; font-weight: 700; color: var(--ink-2); }
+.cover h1 { font-size: 30pt; font-weight: 700; letter-spacing: -0.01em; margin: 6mm 0 0; color: var(--navy); }
+.cover .subtitle { margin-top: 4mm; font-size: 11pt; color: var(--muted); }
+.cover table.meta { margin-top: auto; width: 100%; border-collapse: collapse; font-size: 9pt; }
+.cover table.meta th, .cover table.meta td { border-top: 0.5pt solid var(--rule); border-bottom: 0.5pt solid var(--rule); padding: 2.4mm 3mm; text-align: left; }
+.cover table.meta th { width: 30mm; background: var(--head); font-weight: 700; color: var(--ink-2); }
+.cover .issuer { margin-top: 12mm; text-align: center; font-size: 14pt; font-weight: 700; letter-spacing: 0.06em; color: var(--ink); }
+
+/* 일반 */
+.front { break-after: page; }
+h2.front-title { font-size: 15pt; margin: 0 0 6mm; color: var(--navy); }
+h2.chapter { break-before: page; font-size: 15pt; font-weight: 700; margin: 0 0 5mm; padding-bottom: 2.5mm; border-bottom: 0.8pt solid var(--ink); color: var(--navy); }
+h2.chapter.first { break-before: auto; }
+h3 { font-size: 11.5pt; font-weight: 700; margin: 7mm 0 3mm; color: var(--ink); break-after: avoid; }
+h4 { font-size: 10pt; font-weight: 700; margin: 5mm 0 2mm; color: var(--ink-2); break-after: avoid; }
+p { margin: 0 0 2.5mm; }
+ul { margin: 0 0 3mm; padding-left: 5mm; }
+li { margin: 0.6mm 0; }
+li::marker { color: var(--muted); }
+td ul { margin: 0; padding-left: 4.5mm; }
+strong { font-weight: 700; }
+code { font-family: "Malgun Gothic", sans-serif; font-size: 0.95em; }
+
+table.doc { width: 100%; border-collapse: collapse; margin: 1mm 0 4mm; font-size: 8.8pt; break-inside: auto; }
+table.doc thead { display: table-header-group; }
+table.doc th, table.doc td { border: 0.5pt solid var(--rule); padding: 1.6mm 2.2mm; vertical-align: top; text-align: left; }
+table.doc th { background: var(--head); font-weight: 700; color: var(--ink-2); text-align: center; white-space: nowrap; }
+table.doc tr { break-inside: avoid; }
+table.doc td.num, table.doc th.num { text-align: right; }
+table.doc td.center { text-align: center; white-space: nowrap; }
+
+/* 목차 */
+.toc ol { list-style: none; padding: 0; margin: 0; }
+.toc li { display: flex; align-items: baseline; margin: 1.6mm 0; }
+.toc li.l2 { font-weight: 700; margin-top: 3.2mm; }
+.toc li.l3 { padding-left: 7mm; color: var(--ink-2); }
+.toc li a { color: inherit; text-decoration: none; flex: 0 1 auto; }
+.toc li .leader { flex: 1 1 auto; border-bottom: 0.5pt dotted var(--rule); margin: 0 2mm; transform: translateY(-1mm); }
+.toc li a.pg::after { content: target-counter(attr(href url), page); }
+
+/* 요구사항 상세 카드 */
+table.req { width: 100%; border-collapse: collapse; margin: 0 0 4mm; font-size: 8.8pt; break-inside: avoid; }
+table.req th, table.req td { border: 0.5pt solid var(--rule); padding: 1.6mm 2.4mm; vertical-align: top; text-align: left; }
+table.req th { width: 30mm; white-space: nowrap; background: var(--head); font-weight: 700; color: var(--ink-2); }
+table.req tr.id td { font-weight: 700; }
+table.req td.split { width: 36mm; }
+
+/* 목표 시스템 구성도 */
+.flow { border: 0.5pt solid var(--rule); padding: 4mm; margin: 2mm 0 5mm; break-inside: avoid; }
+.flow .lane { display: grid; grid-template-columns: 26mm 1fr; gap: 3mm; align-items: center; margin: 2mm 0; }
+.flow .actor { font-weight: 700; font-size: 8.8pt; color: var(--ink-2); text-align: center; background: var(--head); border: 0.5pt solid var(--rule); padding: 2mm 1mm; }
+.flow .steps { display: flex; flex-wrap: wrap; align-items: center; gap: 1.2mm; font-size: 8.4pt; }
+.flow .step { border: 0.5pt solid var(--rule); padding: 1.3mm 2.2mm; background: #fff; white-space: nowrap; }
+.flow .arrow { color: var(--muted); }
+.flow .sub { font-size: 8pt; color: var(--muted); padding-left: 29mm; margin-top: -0.5mm; }
+.note { font-size: 8.2pt; color: var(--muted); }
+
+/* 가로 문서(점검표) */
+.landscape { page: landscape; }
+</style>
+<script>window.PagedConfig = { auto: true, after: () => { window.__pagedDone = true; } };</script>
+<script src="file:///E:/ai-demo/tools/deliverables/node_modules/pagedjs/dist/paged.polyfill.js"></script></head><body>
+<section class="cover"><span class="run-project">한빛아트센터 공연·교육 프로그램 통합 예약 플랫폼 구축</span><span class="run-docname">요구사항정의서 v1.1</span><span class="run-docno">HB-PMO-REQ-01</span>
+<div class="docno">문서번호 HB-PMO-REQ-01</div>
+<div class="title-block"><div class="project">한빛아트센터 공연·교육 프로그램 통합 예약 플랫폼 구축</div><h1>요구사항정의서</h1><div class="subtitle">제안요청 내용 및 상세 요구사항</div></div>
+<table class="meta"><tbody>
+<tr><th>문서 버전</th><td>v1.1</td><th>작성일</th><td>2026. 11. 23.</td></tr>
+<tr><th>발주기관</th><td colspan="3">(가상) 한빛시 문화재단 한빛아트센터</td></tr>
+<tr><th>작성</th><td>서비스 기획</td><th>보안 등급</th><td>일반</td></tr>
+</tbody></table>
+<div class="issuer">한빛시 문화재단</div></section><section class="front"><h2 class="front-title">개정 이력</h2>
+<table class="doc"><thead><tr><th>버전</th><th>일자</th><th>개정 내용</th><th>작성</th><th>검토/승인</th></tr></thead><tbody>
+<tr><td class="center">v0.9</td><td class="center">2026. 11. 23.</td><td>최초 작성(요구사항 협의 결과 반영)</td><td class="center">서비스 기획</td><td class="center">-</td></tr>
+<tr><td class="center">v1.0</td><td class="center">2026. 11. 23.</td><td>설계 검토 의견 반영(대기 승격 수량, 시연 환경 분리, 금액 처리 기준), SFR-026 추가</td><td class="center">서비스 기획</td><td class="center">발주기관 승인</td></tr>
+<tr><td class="center">v1.1</td><td class="center">2026. 11. 23.</td><td>결제 연계를 결제대행 어댑터 구조로 변경하고 프로토타입은 모의 어댑터 적용(SFR-010, SIR-001~003, COR-002)</td><td class="center">서비스 기획</td><td class="center">발주기관 승인</td></tr>
+</tbody></table></section><section class="front toc"><h2 class="front-title">목 차</h2><ol><li class="l2"><a href="#h1">Ⅰ. 사업 개요</a><span class="leader"></span><a class="pg" href="#h1"></a></li><li class="l3"><a href="#h2">1. 추진 배경 및 필요성</a><span class="leader"></span><a class="pg" href="#h2"></a></li><li class="l3"><a href="#h3">2. 사업 목적</a><span class="leader"></span><a class="pg" href="#h3"></a></li><li class="l3"><a href="#h4">3. 사업 범위 (1차 사업)</a><span class="leader"></span><a class="pg" href="#h4"></a></li><li class="l3"><a href="#h5">4. 단계별 추진 (향후 과제)</a><span class="leader"></span><a class="pg" href="#h5"></a></li><li class="l2"><a href="#h6">Ⅱ. 현황 및 문제점</a><span class="leader"></span><a class="pg" href="#h6"></a></li><li class="l2"><a href="#h7">Ⅲ. 목표 시스템 개요</a><span class="leader"></span><a class="pg" href="#h7"></a></li><li class="l3"><a href="#h8">정책 요약 (요구사항 전반에 적용)</a><span class="leader"></span><a class="pg" href="#h8"></a></li><li class="l2"><a href="#h9">Ⅳ. 제안요청 내용 (상세 요구사항)</a><span class="leader"></span><a class="pg" href="#h9"></a></li><li class="l3"><a href="#h10">요구사항 총괄표</a><span class="leader"></span><a class="pg" href="#h10"></a></li><li class="l3"><a href="#h11">1. 기능 요구사항 (SFR)</a><span class="leader"></span><a class="pg" href="#h11"></a></li><li class="l3"><a href="#h12">2. 성능 요구사항 (PER)</a><span class="leader"></span><a class="pg" href="#h12"></a></li><li class="l3"><a href="#h13">3. 보안 요구사항 (SER)</a><span class="leader"></span><a class="pg" href="#h13"></a></li><li class="l3"><a href="#h14">4. 데이터 요구사항 (DAR)</a><span class="leader"></span><a class="pg" href="#h14"></a></li><li class="l3"><a href="#h15">5. 인터페이스 요구사항 (SIR)</a><span class="leader"></span><a class="pg" href="#h15"></a></li><li class="l3"><a href="#h16">6. 품질 요구사항 (QUR)</a><span class="leader"></span><a class="pg" href="#h16"></a></li><li class="l3"><a href="#h17">7. 제약사항 (COR)</a><span class="leader"></span><a class="pg" href="#h17"></a></li><li class="l2"><a href="#h18">Ⅴ. 범위 밖 (Out of scope)</a><span class="leader"></span><a class="pg" href="#h18"></a></li><li class="l2"><a href="#h19">Ⅵ. 검수(완료) 기준</a><span class="leader"></span><a class="pg" href="#h19"></a></li></ol></section><h2 class="chapter first" id="h1">Ⅰ. 사업 개요</h2><h3 id="h2">1. 추진 배경 및 필요성</h3><ul>
+<li>한빛아트센터는 공연 예매를 외부 예매처에 맡기고, 교육 프로그램 신청은 전화와 온라인 설문(구글폼)으로 받고 있다.</li>
+<li>창구가 둘로 나뉘어 회차별 정원/잔여석, 예약자 정보, 결제/환불 내역이 서로 다른 곳에 흩어져 있다. 그래서 다음 문제가 생긴다.<ul>
+<li>교육 정원 초과 접수나 중복 신청을 담당자가 수작업으로 확인한다.</li>
+<li>취소/환불 기준을 창구마다 다르게 안내하고, 대기자에게 일일이 전화로 연락한다.</li>
+<li>월별 정산 때 외부 예매처 자료와 계좌 입금 내역을 손으로 대조한다.</li>
+</ul>
+</li>
+</ul>
+<h3 id="h3">2. 사업 목적</h3><ul>
+<li>교육 프로그램과 기관 자체 기획공연의 예약, 결제, 취소, 환불을 하나의 회원 기반 플랫폼으로 통합한다.</li>
+<li>취소 수수료, 대기 승격, 할인, 1인 한도 정책을 시스템 규칙으로 일관되게 적용한다.</li>
+<li>운영 담당과 정산 담당이 같은 데이터로 회차 운영과 정산을 처리한다.</li>
+</ul>
+<h3 id="h4">3. 사업 범위 (1차 사업)</h3><table class="doc"><thead><tr><th class="">구분</th><th class="">범위</th></tr></thead><tbody><tr><td class="">대상 상품</td><td class="">기관 자체 기획공연(지정석), 교육 체험(단회차), 교육 정규 강좌(다회차, 과정 단위)</td></tr><tr><td class="">사용자 기능</td><td class="">회원 가입/로그인, 프로그램 목록/상세, 회차 선택, 좌석/인원 선택, 할인 선택, 결제, 예약 확인, 취소/환불, 대기 신청/승격 결제, 알림함</td></tr><tr><td class="">관리자 기능</td><td class="">프로그램, 회차, 정원, 좌석 등급 관리, 예약 내역, 결제/환불 내역, 기관 사유 회차 취소와 일괄 환불, 정산 현황</td></tr><tr><td class="">연계</td><td class="">결제대행(프로토타입은 모의 연동, 실사업 시 결제대행사 연동), 회원 인증</td></tr><tr><td class="">데이터</td><td class="">초기 데이터 등록(가상 프로그램, 회차, 좌석)</td></tr></tbody></table><h3 id="h5">4. 단계별 추진 (향후 과제)</h3><ul>
+<li><strong>2차 사업(범위 밖)</strong>: 대관공연 판매 이관, 외부 예매처 계약 종료에 따른 전면 전환.</li>
+<li>1차 사업에서 대관공연은 기존 외부 예매처를 그대로 쓴다.</li>
+</ul>
+<h2 class="chapter" id="h6">Ⅱ. 현황 및 문제점</h2><table class="doc"><thead><tr><th class="">업무</th><th class="">현재 방식</th><th class="">문제점</th></tr></thead><tbody><tr><td class="">공연 예매</td><td class="">외부 예매처 위탁</td><td class="">예매자 정보/판매 현황을 기관이 실시간으로 보지 못함, 수수료 부담</td></tr><tr><td class="">교육 신청</td><td class="">전화/온라인 설문</td><td class="">정원 관리 수작업, 중복/초과 접수, 결제는 계좌이체 확인</td></tr><tr><td class="">취소/환불</td><td class="">창구별 개별 안내</td><td class="">기준 불일치, 환불 금액 수기 계산</td></tr><tr><td class="">대기자</td><td class="">엑셀 명단 + 전화 연락</td><td class="">연락 누락, 처리 지연</td></tr><tr><td class="">정산</td><td class="">예매처 자료와 입금 내역 수기 대조</td><td class="">월말 업무 집중, 오류 가능성</td></tr></tbody></table><h2 class="chapter" id="h7">Ⅲ. 목표 시스템 개요</h2><div class="flow">
+<div class="lane"><div class="actor">사용자(회원)</div><div class="steps"><span class="step">프로그램 목록</span><span class="arrow">→</span><span class="step">상세, 회차</span><span class="arrow">→</span><span class="step">좌석/인원</span><span class="arrow">→</span><span class="step">할인</span><span class="arrow">→</span><span class="step">결제</span><span class="arrow">→</span><span class="step">예약 확인</span><span class="arrow">→</span><span class="step">취소, 환불</span></div></div><div class="sub">매진 시: 대기 신청 → 승격 알림 → 24시간 안에 결제</div>
+<div class="lane"><div class="actor">운영 담당</div><div class="steps"><span class="step">프로그램 관리</span><span class="arrow">→</span><span class="step">회차, 정원, 좌석 등급</span><span class="arrow">→</span><span class="step">예약 내역</span><span class="arrow">→</span><span class="step">회차 취소 요청</span></div></div>
+<div class="lane"><div class="actor">정산 담당</div><div class="steps"><span class="step">결제, 환불 내역</span><span class="arrow">→</span><span class="step">회차 취소 승인(일괄 환불)</span><span class="arrow">→</span><span class="step">정산 현황(CSV)</span></div></div>
+<div class="lane"><div class="actor">외부 연계</div><div class="steps"><span class="step">결제대행 어댑터(승인, 취소, 조회, 웹훅)</span><span class="arrow">→</span><span class="step">회원 인증</span></div></div><div class="sub">프로토타입은 모의 결제 어댑터를 사용하며, 실사업 시 결제대행사 어댑터로 교체</div>
+</div><h3 id="h8">정책 요약 (요구사항 전반에 적용)</h3><p><strong>취소 수수료 (공연/체험, 정규 강좌 개강 전)</strong> - 기준일은 관람일 또는 개강일, 한국 표준시(KST) 달력 날짜 기준</p>
+<table class="doc"><thead><tr><th class="">취소 시점</th><th class="">수수료</th><th class="">환불액</th></tr></thead><tbody><tr><td class="center">기준일 8일 전까지</td><td class="">없음</td><td class="">결제액 전액</td></tr><tr><td class="center">D-7 ~ D-4</td><td class="">결제액의 10%</td><td class="">90%</td></tr><tr><td class="center">D-3 ~ D-1</td><td class="">결제액의 30%</td><td class="">70%</td></tr><tr><td class="center">당일(D-0) 이후</td><td class="">-</td><td class="">취소 불가</td></tr></tbody></table><p><strong>정규 강좌 개강 후 중도 취소</strong> - 평생교육 시설 반환 기준을 준용. 경과 비율 = 시작된 회차 수 ÷ 총 회차 수, 「전」은 미만(정확히 1/3이면 1/2 구간). 첫 회차 시작 전에는 위 개강 전 표를 적용</p>
+<table class="doc"><thead><tr><th class="">경과 시점(총 회차 대비)</th><th class="">환불액</th></tr></thead><tbody><tr><td class="">1/3 경과 전</td><td class="">결제액의 2/3</td></tr><tr><td class="">1/2 경과 전</td><td class="">결제액의 1/2</td></tr><tr><td class="">1/2 경과 후</td><td class="">환불 없음</td></tr></tbody></table><p><strong>기타 정책</strong></p>
+<table class="doc"><thead><tr><th class="">정책</th><th class="">내용</th></tr></thead><tbody><tr><td class="">회원 전용</td><td class="">모든 예약은 로그인 회원만 가능</td></tr><tr><td class="">1인 한도</td><td class="">공연 회차당 4매, 체험 회차당 4명, 정규 강좌 같은 과정 본인 1건</td></tr><tr><td class="">선점</td><td class="">좌석/정원 선택 시 10분 선점, 미결제 시 자동 해제</td></tr><tr><td class="">동시 결제</td><td class="">같은 좌석/정원은 1건만 확정, 승인 직전 재검증 실패 시 결제 즉시 취소</td></tr><tr><td class="">할인</td><td class="">장애인 50%(본인 + 동반 1인), 국가유공자 50%(본인 + 동반 1인), 다자녀 30%(예약 전 매수). 매수별 1개만 적용, 중복 불가. 정규 강좌는 본인 할인만. 예약 시 유형만 선택, 증빙은 현장 확인, 미지참 시 차액 현장 결제</td></tr><tr><td class="">대기</td><td class="">매진 시 매수 지정 대기 신청 → 취소분을 순번대로 모아 1순위 수량이 차면 승격 알림(공연은 취소 좌석 그대로 배정) → 24시간 내 미결제 시 다음 순위. 기준일 D-2 이내 취소분/기한 만료는 일반 판매 전환. 정규 강좌는 개강 전까지만 대기 유지, 개강 후 추가 모집 없음</td></tr><tr><td class="">기관 사유 취소</td><td class="">회차 폐지 시 정산 담당 승인으로 해당 회차 예약 전액 일괄 환불</td></tr></tbody></table><h2 class="chapter" id="h9">Ⅳ. 제안요청 내용 (상세 요구사항)</h2><h3 id="h10">요구사항 총괄표</h3><table class="doc"><thead><tr><th class="">분류</th><th class="">코드</th><th class="num">개수</th></tr></thead><tbody><tr><td class="">기능</td><td class="">SFR</td><td class="num">26</td></tr><tr><td class="">성능</td><td class="">PER</td><td class="num">4</td></tr><tr><td class="">보안</td><td class="">SER</td><td class="num">8</td></tr><tr><td class="">데이터</td><td class="">DAR</td><td class="num">6</td></tr><tr><td class="">인터페이스</td><td class="">SIR</td><td class="num">6</td></tr><tr><td class="">품질</td><td class="">QUR</td><td class="num">7</td></tr><tr><td class="">제약</td><td class="">COR</td><td class="num">7</td></tr><tr><td class=""><strong>합계</strong></td><td class=""></td><td class="num"><strong>64</strong></td></tr></tbody></table><p>검수 기준 열의 <code>AC-n</code>은 Ⅵ장 완료 조건 번호입니다.</p>
+<h3 id="h11">1. 기능 요구사항 (SFR)</h3><h4>1-1. 사용자 - 회원</h4><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-001</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">회원 가입/로그인</td></tr>
+<tr><th>세부 내용</th><td colspan="3">이메일/비밀번호 가입, 약관/개인정보 수집 동의(필수/선택 구분), 모의 본인인증(이름/휴대폰 입력 후 인증 완료 처리), 로그인/로그아웃, 비밀번호 재설정(검수 환경에서 검수, 공개 시연 환경은 이메일 확인 생략)</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-002</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">회원 정보</td></tr>
+<tr><th>세부 내용</th><td colspan="3">이름, 휴대폰, 이메일 조회/수정, 회원 탈퇴(진행 중 예약이 있으면 탈퇴 제한 안내)</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><h4>1-2. 사용자 - 탐색/예약</h4><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-003</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">프로그램 목록</td></tr>
+<tr><th>세부 내용</th><td colspan="3">유형(공연, 체험, 정규 강좌), 기간, 대상 필터, 판매 상태(예매 예정/예매 중/매진(대기 가능)/마감) 표시</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-004</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">프로그램 상세/회차 선택</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>소개, 장소, 대상, 가격, 취소 규정 표시, 회차별 일시와 잔여석(정원) 표시</li><li>정규 강좌는 과정 전체 일정(총 회차/기간) 표시</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-005</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">공연 좌석 선택</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>소공연장 좌석 배치도(약 200석, 등급별 가격)에서 지정석 선택</li><li>판매/선점 좌석은 선택 불가 표시</li><li>키보드/스크린리더 사용자용 좌석 목록(열, 번호, 등급) 대체 제공</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치<br>AC-7 접근성 자동 점검 오류 0건, 키보드만으로 예약 완료</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-006</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">교육 인원/과정 신청</td></tr>
+<tr><th>세부 내용</th><td colspan="3">체험은 회차별 인원 선택, 정규 강좌는 과정 단위 본인 1건 신청</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-007</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">선점과 만료</td></tr>
+<tr><th>세부 내용</th><td colspan="3">좌석/정원 선택 시 10분 선점, 남은 시간 표시, 만료 시 자동 해제 후 선택 화면으로 안내</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-4 선점 10분 경과 시 자동 해제, 다른 회원이 선택 가능</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-008</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">1인 한도 검증</td></tr>
+<tr><th>세부 내용</th><td colspan="3">회원의 기존 확정/선점 수량을 합산해 한도 초과 시 선택 차단 및 안내</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-009</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">할인 선택/금액 계산</td></tr>
+<tr><th>세부 내용</th><td colspan="3">매수별 할인 유형 선택(일반, 장애인, 장애인 동반, 국가유공자, 국가유공자 동반, 다자녀), 동반 할인은 본인 할인 매수 이하로 제한, 결제 전 금액 내역 표시, 현장 증빙 안내</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-010</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">결제</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>사이트 안의 결제 단계(결제 수단 선택, 결제 약관 동의, 결제하기)에서 결제</li><li>결제 실패나 사용자 취소 시 선점 유지 상태로 복귀</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-011</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">결제 승인/동시 결제 처리</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>서버에서 선점 유효성/금액 재검증 후 승인</li><li>재검증 실패 또는 확정 충돌 시 결제 즉시 취소하고 사용자에게 사유 안내</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-3 같은 좌석 동시 결제 시 1건만 확정, 나머지 결제는 자동 취소</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><h4>1-3. 사용자 - 예약 관리</h4><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-012</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">예약 확인</td></tr>
+<tr><th>세부 내용</th><td colspan="3">내 예약 목록(예정, 지난, 취소), 예약 상세(예약번호, 좌석/인원, 할인, 결제액, 취소 가능 기한과 예상 환불액)</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-013</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">예약 취소/환불(기준일 전)</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>취소 시점별 수수료 표에 따라 환불액 계산/표시 후 확인 시 취소/환불 처리</li><li>예약 단위 전체 취소</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-014</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">정규 강좌 중도 취소</td></tr>
+<tr><th>세부 내용</th><td colspan="3">개강 후 경과 비율에 따른 환불액 계산(2/3, 1/2, 0), 1/2 경과 후 취소 시 환불 없음 안내</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-2 정규 강좌 개강 후 1/3 전/1/2 전/이후 세 시점의 환불액이 기준과 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-015</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">대기 신청</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>매진 회차(과정)에 매수(인원)를 지정해 대기 신청/취소, 대기 순번 표시</li><li>한도 정책은 대기에도 적용(정규 강좌 1명)</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-5 취소분 발생 시 대기 1순위 승격 알림, 24시간 경과 시 2순위로 이동</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-016</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">대기 승격/결제 기한</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>취소분을 순번대로 모아 1순위 신청 수량이 차면 승격 알림(부족 시 건너뛰지 않고 대기), 공연은 취소된 좌석 그대로 배정. 24시간 내 미결제 시 다음 순위로 이동</li><li>기준일 D-2 이내 취소분이나 D-2 이내에 끝난 기한 만료는 일반 판매로 전환</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-5 취소분 발생 시 대기 1순위 승격 알림, 24시간 경과 시 2순위로 이동</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-017</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">알림함</td></tr>
+<tr><th>세부 내용</th><td colspan="3">결제 완료, 취소, 환불, 대기 승격/기한 만료/회차 취소 알림을 화면 내 알림함에 표시, 발송 로그(채널: 문자/알림톡 모의) 기록</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-5 취소분 발생 시 대기 1순위 승격 알림, 24시간 경과 시 2순위로 이동</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><h4>1-4. 관리자</h4><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-018</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">관리자 로그인/역할</td></tr>
+<tr><th>세부 내용</th><td colspan="3">운영 담당/정산 담당 역할 구분, 역할별 메뉴/기능 접근 제한</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-019</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">프로그램 관리</td></tr>
+<tr><th>세부 내용</th><td colspan="3">프로그램 등록, 수정, 공개/비공개, 유형, 가격, 할인 적용 여부/취소 규정 지정</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-020</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">회차, 정원, 좌석 관리</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>회차 일시/정원 등록, 공연 좌석 등급/가격 지정, 판매 기간 설정</li><li>등록 즉시 사용자 화면 반영</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-021</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">예약 내역 관리</td></tr>
+<tr><th>세부 내용</th><td colspan="3">회차별 예약자 목록/검색, 할인 증빙 현장 확인 여부 기록, 대기자 목록/순번 조회</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-022</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">결제/환불 내역</td></tr>
+<tr><th>세부 내용</th><td colspan="3">결제/환불 건 조회(기간, 프로그램, 상태), 결제대행사 거래 번호 확인</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-023</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">회차 취소/일괄 환불</td></tr>
+<tr><th>세부 내용</th><td colspan="3">운영 담당이 회차 취소 요청 → 정산 담당 승인 시 해당 회차 전 예약 전액 환불, 대상자 알림</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-024</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">정산 현황</td></tr>
+<tr><th>세부 내용</th><td colspan="3">일별/프로그램별 결제액, 환불액, 취소 수수료 수입, 순매출(결제 − 환불) 집계, CSV 내려받기</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-025</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">검수용 시계</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>검수 환경에서만 기준 시각을 앞당겨 선점 만료/대기 기한/취소 구간을 재현하는 관리자 기능</li><li>공개 시연(운영) 환경에서는 비활성</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-4 선점 10분 경과 시 자동 해제, 다른 회원이 선택 가능<br>AC-5 취소분 발생 시 대기 1순위 승격 알림, 24시간 경과 시 2순위로 이동</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SFR-026</td><th>요구사항 분류</th><td>기능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">시연 데이터 초기화</td></tr>
+<tr><th>세부 내용</th><td colspan="3">공개 시연 환경에서 운영 담당이 예약, 대기, 알림 데이터를 초기 데이터 상태로 되돌림, 실행 이력 기록</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">화면 설계서, 프로그램 소스, 단위/통합 테스트 결과서</td></tr>
+</tbody></table><h3 id="h12">2. 성능 요구사항 (PER)</h3><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">PER-001</td><th>요구사항 분류</th><td>성능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">응답 시간</td></tr>
+<tr><th>세부 내용</th><td colspan="3">목록/상세 화면 3초 이내 표시(일반 회선 기준)</td></tr>
+<tr><th>검수 기준</th><td colspan="3">목표치(프로토타입 미측정)</td></tr>
+<tr><th>산출 정보</th><td colspan="3">성능 목표 정의(PER-004는 동시성 시험 결과서)</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">PER-002</td><th>요구사항 분류</th><td>성능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">동시 접속</td></tr>
+<tr><th>세부 내용</th><td colspan="3">예매 오픈 시 동시 접속 500명 처리</td></tr>
+<tr><th>검수 기준</th><td colspan="3">목표치(프로토타입 미측정)</td></tr>
+<tr><th>산출 정보</th><td colspan="3">성능 목표 정의(PER-004는 동시성 시험 결과서)</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">PER-003</td><th>요구사항 분류</th><td>성능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">결제 승인 처리</td></tr>
+<tr><th>세부 내용</th><td colspan="3">결제 인증 완료 후 확정까지 5초 이내</td></tr>
+<tr><th>검수 기준</th><td colspan="3">목표치(프로토타입 미측정)</td></tr>
+<tr><th>산출 정보</th><td colspan="3">성능 목표 정의(PER-004는 동시성 시험 결과서)</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">PER-004</td><th>요구사항 분류</th><td>성능 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">선점/확정 정합성</td></tr>
+<tr><th>세부 내용</th><td colspan="3">같은 좌석/정원에 동시 요청이 들어와도 중복 확정 0건</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-3 (실측)</td></tr>
+<tr><th>산출 정보</th><td colspan="3">성능 목표 정의(PER-004는 동시성 시험 결과서)</td></tr>
+</tbody></table><h3 id="h13">3. 보안 요구사항 (SER)</h3><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SER-001</td><th>요구사항 분류</th><td>보안 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">인증</td></tr>
+<tr><th>세부 내용</th><td colspan="3">비밀번호 8자 이상 영문/숫자 조합, 로그인 실패 반복 시 지연, 세션 만료</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">보안 점검 결과, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SER-002</td><th>요구사항 분류</th><td>보안 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">접근 통제</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>회원은 본인 예약만, 운영/정산 담당은 역할별 데이터만 접근</li><li>데이터베이스 행 단위 접근 정책 적용</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">보안 점검 결과, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SER-003</td><th>요구사항 분류</th><td>보안 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">비밀값 관리</td></tr>
+<tr><th>세부 내용</th><td colspan="3">결제 비밀 키/DB 서비스 키는 서버 환경 변수로만 보관, 브라우저 코드와 저장소에 포함 금지</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-9 저장소에 결제 키/서비스 키 없음, 민감정보 미수집</td></tr>
+<tr><th>산출 정보</th><td colspan="3">보안 점검 결과, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SER-004</td><th>요구사항 분류</th><td>보안 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">개인정보 최소 수집</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>이름, 휴대폰, 이메일만 수집</li><li>장애/보훈 여부 등 민감정보와 증빙 파일은 수집하지 않음(할인 유형 선택값만 저장)</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-9 저장소에 결제 키/서비스 키 없음, 민감정보 미수집</td></tr>
+<tr><th>산출 정보</th><td colspan="3">보안 점검 결과, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SER-005</td><th>요구사항 분류</th><td>보안 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">개인정보 표시 제한</td></tr>
+<tr><th>세부 내용</th><td colspan="3">관리자 목록에서 이름/휴대폰 일부 가림, 상세 조회 시에만 전체 표시</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">보안 점검 결과, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SER-006</td><th>요구사항 분류</th><td>보안 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">관리자 작업 이력</td></tr>
+<tr><th>세부 내용</th><td colspan="3">프로그램/회차 변경, 회차 취소, 환불 승인 이력(누가, 언제, 무엇) 기록</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">보안 점검 결과, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SER-007</td><th>요구사항 분류</th><td>보안 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">결제 위변조 방지</td></tr>
+<tr><th>세부 내용</th><td colspan="3">결제 금액은 서버에서 재계산해 승인 요청 금액과 대조, 웹훅 수신 시 결제대행사 조회 API로 상태 재확인</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-3 같은 좌석 동시 결제 시 1건만 확정, 나머지 결제는 자동 취소</td></tr>
+<tr><th>산출 정보</th><td colspan="3">보안 점검 결과, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SER-008</td><th>요구사항 분류</th><td>보안 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">시큐어 코딩</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>입력값 검증, 출력 인코딩(XSS 방지), 오류 메시지에 내부 정보 노출 금지</li><li>행정안전부 시큐어코딩 가이드 준용</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">QA</td></tr>
+<tr><th>산출 정보</th><td colspan="3">보안 점검 결과, 테스트 결과서</td></tr>
+</tbody></table><h3 id="h14">4. 데이터 요구사항 (DAR)</h3><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">DAR-001</td><th>요구사항 분류</th><td>데이터 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">데이터 모델</td></tr>
+<tr><th>세부 내용</th><td colspan="3">회원, 프로그램, 회차, 좌석/좌석 등급, 선점, 예약/예약 항목, 결제, 환불, 대기, 알림, 관리자 이력 테이블과 테이블 정의서 작성</td></tr>
+<tr><th>검수 기준</th><td colspan="3">산출물</td></tr>
+<tr><th>산출 정보</th><td colspan="3">테이블 정의서, 코드 정의서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">DAR-002</td><th>요구사항 분류</th><td>데이터 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">코드 정의</td></tr>
+<tr><th>세부 내용</th><td colspan="3">예약 상태(선점, 확정, 취소, 만료), 결제 상태, 대기 상태(대기, 승격, 만료, 완료), 할인 유형, 프로그램 유형 코드 정의서</td></tr>
+<tr><th>검수 기준</th><td colspan="3">산출물</td></tr>
+<tr><th>산출 정보</th><td colspan="3">테이블 정의서, 코드 정의서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">DAR-003</td><th>요구사항 분류</th><td>데이터 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">금액 처리</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>금액은 원 단위 정수로 저장/계산</li><li>환불액 = 결제액 × 환불 비율의 원 미만 버림, 수수료 = 결제액 − 환불액</li><li>계산 규칙 문서화</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치<br>AC-2 정규 강좌 개강 후 1/3 전/1/2 전/이후 세 시점의 환불액이 기준과 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">테이블 정의서, 코드 정의서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">DAR-004</td><th>요구사항 분류</th><td>데이터 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">시간 기준</td></tr>
+<tr><th>세부 내용</th><td colspan="3">모든 일시는 UTC로 저장하고, D-day/경과 비율 판단은 한국 표준시(KST) 달력 날짜 기준</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치<br>AC-2 정규 강좌 개강 후 1/3 전/1/2 전/이후 세 시점의 환불액이 기준과 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">테이블 정의서, 코드 정의서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">DAR-005</td><th>요구사항 분류</th><td>데이터 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">보관 기간</td></tr>
+<tr><th>세부 내용</th><td colspan="3">결제/환불 기록은 전자상거래법 기준 5년 보관 대상으로 표시(프로토타입은 삭제 기능 없음)</td></tr>
+<tr><th>검수 기준</th><td colspan="3">산출물</td></tr>
+<tr><th>산출 정보</th><td colspan="3">테이블 정의서, 코드 정의서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">DAR-006</td><th>요구사항 분류</th><td>데이터 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">초기 데이터</td></tr>
+<tr><th>세부 내용</th><td colspan="3">가상 프로그램(공연 2, 체험 2, 정규 강좌 2), 회차, 좌석 배치, 관리자 계정 시드 데이터 등록</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-6 관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td></tr>
+<tr><th>산출 정보</th><td colspan="3">테이블 정의서, 코드 정의서</td></tr>
+</tbody></table><h3 id="h15">5. 인터페이스 요구사항 (SIR)</h3><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SIR-001</td><th>요구사항 분류</th><td>인터페이스 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">결제 요청 화면</td></tr>
+<tr><th>세부 내용</th><td colspan="3">결제대행사 결제창 자리에 사이트 안의 결제 단계를 두고, 결제 요청 후 성공/실패 결과 화면으로 복귀</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">인터페이스 정의서, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SIR-002</td><th>요구사항 분류</th><td>인터페이스 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">결제 승인 연계</td></tr>
+<tr><th>세부 내용</th><td colspan="3">서버 함수에서 결제대행 어댑터의 승인을 호출(프로토타입은 모의 어댑터)</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치<br>AC-3 같은 좌석 동시 결제 시 1건만 확정, 나머지 결제는 자동 취소</td></tr>
+<tr><th>산출 정보</th><td colspan="3">인터페이스 정의서, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SIR-003</td><th>요구사항 분류</th><td>인터페이스 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">결제 취소 연계</td></tr>
+<tr><th>세부 내용</th><td colspan="3">어댑터로 전액/부분 취소(환불액 지정)를 호출하고 취소 결과 저장</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치<br>AC-2 정규 강좌 개강 후 1/3 전/1/2 전/이후 세 시점의 환불액이 기준과 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">인터페이스 정의서, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SIR-004</td><th>요구사항 분류</th><td>인터페이스 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">결제 웹훅</td></tr>
+<tr><th>세부 내용</th><td colspan="3">결제 상태 변경 웹훅 수신, 중복 수신에도 결과가 한 번만 반영(멱등 처리)</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-3 같은 좌석 동시 결제 시 1건만 확정, 나머지 결제는 자동 취소</td></tr>
+<tr><th>산출 정보</th><td colspan="3">인터페이스 정의서, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SIR-005</td><th>요구사항 분류</th><td>인터페이스 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">회원 인증</td></tr>
+<tr><th>세부 내용</th><td colspan="3">인증 서비스 연동(이메일 가입, 로그인, 비밀번호 재설정)</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">인터페이스 정의서, 테스트 결과서</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">SIR-006</td><th>요구사항 분류</th><td>인터페이스 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">본인인증(모의)</td></tr>
+<tr><th>세부 내용</th><td colspan="3">실제 본인인증 대신 모의 화면으로 대체, 실사업 시 본인확인기관 연동 지점 명시</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td></tr>
+<tr><th>산출 정보</th><td colspan="3">인터페이스 정의서, 테스트 결과서</td></tr>
+</tbody></table><h3 id="h16">6. 품질 요구사항 (QUR)</h3><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">QUR-001</td><th>요구사항 분류</th><td>품질 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">웹 접근성</td></tr>
+<tr><th>세부 내용</th><td colspan="3">한국형 웹 콘텐츠 접근성 지침(KWCAG) 2.2 준수, 자동 점검 오류 0건, 키보드만으로 예약 완료</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-7 접근성 자동 점검 오류 0건, 키보드만으로 예약 완료</td></tr>
+<tr><th>산출 정보</th><td colspan="3">접근성 점검 결과, 테스트 결과서, 요구사항 추적표</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">QUR-002</td><th>요구사항 분류</th><td>품질 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">디자인 시스템</td></tr>
+<tr><th>세부 내용</th><td colspan="3">대한민국 정부 디자인 시스템(KRDS) 컴포넌트/토큰 적용</td></tr>
+<tr><th>검수 기준</th><td colspan="3">QA</td></tr>
+<tr><th>산출 정보</th><td colspan="3">접근성 점검 결과, 테스트 결과서, 요구사항 추적표</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">QUR-003</td><th>요구사항 분류</th><td>품질 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">반응형</td></tr>
+<tr><th>세부 내용</th><td colspan="3">PC(1440px)와 모바일(390px)에서 가로 넘침 없이 전 기능 사용</td></tr>
+<tr><th>검수 기준</th><td colspan="3">QA</td></tr>
+<tr><th>산출 정보</th><td colspan="3">접근성 점검 결과, 테스트 결과서, 요구사항 추적표</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">QUR-004</td><th>요구사항 분류</th><td>품질 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">브라우저 지원</td></tr>
+<tr><th>세부 내용</th><td colspan="3">Chrome, Edge, Safari 최신 버전</td></tr>
+<tr><th>검수 기준</th><td colspan="3">QA</td></tr>
+<tr><th>산출 정보</th><td colspan="3">접근성 점검 결과, 테스트 결과서, 요구사항 추적표</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">QUR-005</td><th>요구사항 분류</th><td>품질 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">정책 로직 검증</td></tr>
+<tr><th>세부 내용</th><td colspan="3">수수료, 환불, 선점 만료/대기 승격, 한도, 할인 계산을 단위 테스트로 먼저 정의(TDD)하고 전부 통과</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-1 기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치<br>AC-2 정규 강좌 개강 후 1/3 전/1/2 전/이후 세 시점의 환불액이 기준과 일치<br>AC-4 선점 10분 경과 시 자동 해제, 다른 회원이 선택 가능<br>AC-5 취소분 발생 시 대기 1순위 승격 알림, 24시간 경과 시 2순위로 이동</td></tr>
+<tr><th>산출 정보</th><td colspan="3">접근성 점검 결과, 테스트 결과서, 요구사항 추적표</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">QUR-006</td><th>요구사항 분류</th><td>품질 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">요구사항 추적성</td></tr>
+<tr><th>세부 내용</th><td colspan="3">모든 요구사항 ID를 구현 계획, 테스트, QA 항목 중 하나 이상과 연결한 추적표 유지</td></tr>
+<tr><th>검수 기준</th><td colspan="3">AC-8 모든 요구사항 ID가 구현 계획, 테스트, QA 항목 중 하나 이상과 연결</td></tr>
+<tr><th>산출 정보</th><td colspan="3">접근성 점검 결과, 테스트 결과서, 요구사항 추적표</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">QUR-007</td><th>요구사항 분류</th><td>품질 요구사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">오류 안내</td></tr>
+<tr><th>세부 내용</th><td colspan="3">결제 실패/한도 초과/선점 만료/매진 시 원인과 다음 행동을 쉬운 말로 안내</td></tr>
+<tr><th>검수 기준</th><td colspan="3">QA</td></tr>
+<tr><th>산출 정보</th><td colspan="3">접근성 점검 결과, 테스트 결과서, 요구사항 추적표</td></tr>
+</tbody></table><h3 id="h17">7. 제약사항 (COR)</h3><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">COR-001</td><th>요구사항 분류</th><td>제약사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">가상 데이터</td></tr>
+<tr><th>세부 내용</th><td colspan="3">가상 기관/가상 프로그램/테스트 계정만 사용, 실제 개인정보/고객사 자료 사용 금지</td></tr>
+<tr><th>검수 기준</th><td colspan="3">사업 수행 전 과정에서 준수 여부 확인</td></tr>
+<tr><th>산출 정보</th><td colspan="3">사업 수행 계획서, 산출물 목록</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">COR-002</td><th>요구사항 분류</th><td>제약사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">결제 모의 연동</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>실결제와 외부 결제대행사 키를 쓰지 않음</li><li>결제대행 연계는 어댑터(승인, 취소, 조회)로 분리하고 프로토타입은 모의 어댑터만 사용</li><li>실사업 시 어댑터 교체로 결제대행사 연동</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">사업 수행 전 과정에서 준수 여부 확인</td></tr>
+<tr><th>산출 정보</th><td colspan="3">사업 수행 계획서, 산출물 목록</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">COR-003</td><th>요구사항 분류</th><td>제약사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">키 관리</td></tr>
+<tr><th>세부 내용</th><td colspan="3">키는 환경 변수로만 관리, <code>.env</code>는 저장소 제외, <code>.env.example</code>에 변수 이름만 기재</td></tr>
+<tr><th>검수 기준</th><td colspan="3">사업 수행 전 과정에서 준수 여부 확인</td></tr>
+<tr><th>산출 정보</th><td colspan="3">사업 수행 계획서, 산출물 목록</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">COR-004</td><th>요구사항 분류</th><td>제약사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">호스팅</td></tr>
+<tr><th>세부 내용</th><td colspan="3">정적 화면은 GitHub Pages, DB, 인증, 서버 함수는 Supabase 무료 플랜</td></tr>
+<tr><th>검수 기준</th><td colspan="3">사업 수행 전 과정에서 준수 여부 확인</td></tr>
+<tr><th>산출 정보</th><td colspan="3">사업 수행 계획서, 산출물 목록</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">COR-005</td><th>요구사항 분류</th><td>제약사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">기술 구성</td></tr>
+<tr><th>세부 내용</th><td colspan="3">화면: Vite + 바닐라 JavaScript + KRDS HTML 컴포넌트 키트 / 서버 함수: Supabase Edge Functions / DB: PostgreSQL</td></tr>
+<tr><th>검수 기준</th><td colspan="3">사업 수행 전 과정에서 준수 여부 확인</td></tr>
+<tr><th>산출 정보</th><td colspan="3">사업 수행 계획서, 산출물 목록</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">COR-006</td><th>요구사항 분류</th><td>제약사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">실사업 전환 기준</td></tr>
+<tr><th>세부 내용</th><td colspan="3"><ul><li>실제 발주 시에는 전자정부 표준프레임워크 기반, 공개SW 또는 국산 DBMS(MariaDB, PostgreSQL, Tibero 등) 적용을 전제로 함</li><li>전환 대응표는 설계 문서에 둠</li></ul></td></tr>
+<tr><th>검수 기준</th><td colspan="3">사업 수행 전 과정에서 준수 여부 확인</td></tr>
+<tr><th>산출 정보</th><td colspan="3">사업 수행 계획서, 산출물 목록</td></tr>
+</tbody></table><table class="req"><tbody>
+<tr class="id"><th>요구사항 고유번호</th><td class="split">COR-007</td><th>요구사항 분류</th><td>제약사항</td></tr>
+<tr><th>요구사항 명칭</th><td colspan="3">개발 방식</td></tr>
+<tr><th>세부 내용</th><td colspan="3">요구사항 → 구현 계획(추적표) → 격리 작업공간에서 테스트 우선 개발 → QA 문서/브라우저 검수 → 리뷰 순으로 진행, 단계별 산출물 기록</td></tr>
+<tr><th>검수 기준</th><td colspan="3">사업 수행 전 과정에서 준수 여부 확인</td></tr>
+<tr><th>산출 정보</th><td colspan="3">사업 수행 계획서, 산출물 목록</td></tr>
+</tbody></table><h2 class="chapter" id="h18">Ⅴ. 범위 밖 (Out of scope)</h2><table class="doc"><thead><tr><th class="">구분</th><th class="">항목</th><th class="">프로토타입 대체</th></tr></thead><tbody><tr><td class="">사업</td><td class="">대관공연 판매, 외부 예매처 연동</td><td class="">2차 사업 과제로 명시</td></tr><tr><td class="">사업</td><td class="">기존 구글폼/전화 접수 데이터 이관</td><td class="">초기 데이터 등록(DAR-006)</td></tr><tr><td class="">결제</td><td class="">실결제, 외부 결제대행사 연동, 빌링키 자동결제, 현금영수증/세금계산서</td><td class="">모의 결제 어댑터</td></tr><tr><td class="">정산</td><td class="">실제 입금/회계 시스템 연계</td><td class="">정산 현황 조회와 CSV</td></tr><tr><td class="">인증</td><td class="">본인확인기관(PASS 등) 연동, 소셜 로그인</td><td class="">모의 인증, 이메일 로그인</td></tr><tr><td class="">알림</td><td class="">문자/알림톡 실제 발송</td><td class="">화면 내 알림함과 발송 로그</td></tr><tr><td class="">기타</td><td class="">모바일 티켓/QR 입장 확인, 할인 증빙 파일 업로드, 다국어</td><td class="">-</td></tr><tr><td class="">기타</td><td class="">예약 일부 매수만 취소(부분 취소)</td><td class="">예약 단위 전체 취소</td></tr></tbody></table><h2 class="chapter" id="h19">Ⅵ. 검수(완료) 기준</h2><table class="doc"><thead><tr><th class="">번호</th><th class="">검수 항목</th><th class="">확인 방법</th></tr></thead><tbody><tr><td class="center">AC-1</td><td class="">기본 흐름: 회원 가입 → 공연 지정석 선택 → 결제(모의 결제) → 예약 확인 → 취소, 환불액이 수수료 표와 일치</td><td class="">브라우저 검수 + 단위 테스트</td></tr><tr><td class="center">AC-2</td><td class="">정규 강좌 개강 후 1/3 전/1/2 전/이후 세 시점의 환불액이 기준과 일치</td><td class="">단위 테스트 + 검수용 시계</td></tr><tr><td class="center">AC-3</td><td class="">같은 좌석 동시 결제 시 1건만 확정, 나머지 결제는 자동 취소</td><td class="">동시 요청 통합 테스트</td></tr><tr><td class="center">AC-4</td><td class="">선점 10분 경과 시 자동 해제, 다른 회원이 선택 가능</td><td class="">검수용 시계</td></tr><tr><td class="center">AC-5</td><td class="">취소분 발생 시 대기 1순위 승격 알림, 24시간 경과 시 2순위로 이동</td><td class="">검수용 시계</td></tr><tr><td class="center">AC-6</td><td class="">관리자가 등록한 회차/정원이 즉시 사용자 화면에 반영, 정산 순매출 = 결제 합계 − 환불 합계</td><td class="">브라우저 검수 + 집계 대조</td></tr><tr><td class="center">AC-7</td><td class="">접근성 자동 점검 오류 0건, 키보드만으로 예약 완료</td><td class="">자동 점검 도구 + 수동 검수</td></tr><tr><td class="center">AC-8</td><td class="">모든 요구사항 ID가 구현 계획, 테스트, QA 항목 중 하나 이상과 연결</td><td class="">추적표</td></tr><tr><td class="center">AC-9</td><td class="">저장소에 결제 키/서비스 키 없음, 민감정보 미수집</td><td class="">비밀값 점검 + 데이터 모델 확인</td></tr></tbody></table></body></html>

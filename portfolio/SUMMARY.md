@@ -12,6 +12,7 @@
   - 기술 판단: AI 기본 조합(Next.js, React, Tailwind) 대신 Vite + 바닐라 JS + KRDS, GitHub Pages + Supabase(PostgreSQL). 실사업 전환표(전자정부 표준프레임워크 + MariaDB/Tibero) 포함
   - 검토자(builder check) 질문 6개 → AI 판단 3건, 사용자 결정 3건 반영
 - **1.5단계 디자인 콘셉트**: 완료. 사용자 화면은 「포스터가 색, UI는 무채색 + 행동 색 하나」, 관리자 화면은 공공 관리자 표준 틀(좌측 메뉴, 조회 → 목록 → 상세). 설계 문서 5-9절
+- **1단계 산출물 문서**: `deliverables/01_요구사항정의서_v1.1.pdf`, `01_기획점검표_v1.0.pdf`, `02_요구사항추적표_v1.0.xlsx` (공공 양식, md 원본에서 자동 생성). 캡처 `portfolio/shots/deliverables/`
 - **2단계 구현 계획 (writing-plans)**: 작성 완료, 사용자 검토 대기
   - 산출물: `docs/superpowers/plans/2026-11-23-booking-platform.md`(Task 18개, 요구사항 추적표 64행)
 
