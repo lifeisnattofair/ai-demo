@@ -12,6 +12,9 @@ import { renderAccount } from './pages/account.js';
 import { renderPrograms } from './pages/programs.js';
 import { renderProgramDetail } from './pages/program-detail.js';
 import { renderSelect } from './pages/select.js';
+import { renderDiscount } from './pages/discount.js';
+import { renderPayment } from './pages/payment.js';
+import { renderPaymentSuccess, renderPaymentFail } from './pages/payment-result.js';
 
 const root = document.getElementById('root');
 root.innerHTML = `<a class="skip" href="#/" data-skip>본문으로 건너뛰기</a>
@@ -29,6 +32,10 @@ router = createRouter(
     '#/programs': (_p, el, query) => renderPrograms(el, { api, query }),
     '#/programs/:id': (p, el) => renderProgramDetail(el, { api, id: p.id }),
     '#/booking/:offeringId/select': (p, el) => renderSelect(el, { api, go, offeringId: p.offeringId }),
+    '#/booking/:holdId/discount': (p, el) => renderDiscount(el, { api, go, holdId: p.holdId }),
+    '#/booking/:holdId/pay': (p, el) => renderPayment(el, { api, go, holdId: p.holdId }),
+    '#/payment/success': (_p, el, query) => renderPaymentSuccess(el, { api, go, query }),
+    '#/payment/fail': (_p, el, query) => renderPaymentFail(el, { query }),
     '#/signup': (_p, el) => renderSignup(el, { api, go }),
     '#/login': (_p, el, query) => renderLogin(el, { api, go, query }),
     '#/reset': (_p, el) => renderReset(el, { api }),

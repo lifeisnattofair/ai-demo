@@ -9,12 +9,13 @@ const KINDS = {
   cards: () => `<div class="sk-cards">${rows(6, () => '<div><div class="sk-poster sk-block"></div><div class="sk-line sk-block"></div><div class="sk-line short sk-block"></div></div>')}</div>`,
   detail: () => '<div class="sk-detail"><div class="sk-poster sk-block"></div><div><div class="sk-line sk-block"></div><div class="sk-line short sk-block"></div>'
     + `${rows(5, () => '<div class="sk-line sk-block"></div>')}</div></div>`,
+  form: () => `<div class="sk-line sk-block"></div>${rows(3, () => '<div class="sk-form-row sk-block"></div>')}`,
   table: () => rows(8, () => '<div class="sk-line sk-block"></div>'),
 };
 
 /**
  * @param {HTMLElement} el 스켈레톤을 넣을 요소
- * @param {'seat-map'|'cards'|'detail'|'table'} kind
+ * @param {'seat-map'|'cards'|'detail'|'table'|'form'} kind
  * @param {{delayMs?:number}} [opts]
  * @returns {() => void} 불러오기가 끝나면 부릅니다(타이머, 스켈레톤, aria-busy 를 정리).
  */

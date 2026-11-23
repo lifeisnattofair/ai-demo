@@ -147,6 +147,13 @@ export const api = {
     const rows = await rpc('my_active_hold', { p_offering: offeringId });
     return Array.isArray(rows) ? (rows[0] ?? null) : (rows ?? null);
   },
+  async getMyHold(holdId) {
+    const rows = await rpc('get_my_hold', { p_hold: holdId });
+    return Array.isArray(rows) ? (rows[0] ?? null) : (rows ?? null);
+  },
+  async myBookingItems(bookingId) {
+    return (await rpc('my_booking_items', { p_booking: bookingId })) ?? [];
+  },
   async getOffering(id) {
     const { data, error } = await client()
       .from('offerings')

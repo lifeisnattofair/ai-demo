@@ -114,6 +114,57 @@
 .skeleton .sk-line.short { width: 40%; }
 .skeleton .sk-detail { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sp-6); }
 .skeleton .sk-shape[hidden] { display: none; }
+.skeleton .sk-form-row { height: 64px; margin-top: var(--sp-4); border-radius: var(--r-md); }
+
+/* 할인 선택, 결제 단계 */
+.booking > div > .panel + .panel { margin-top: var(--sp-4); }
+.ticket-rows { display: grid; gap: var(--sp-3); }
+.ticket-row { display: grid; grid-template-columns: 120px minmax(0, 1fr) 120px; gap: var(--sp-4); align-items: center; padding: var(--sp-3) 0; border-bottom: 1px solid var(--c-line-soft); }
+.ticket-row:last-child { border-bottom: 0; }
+.ticket-row .seatname { font-weight: 700; color: var(--c-ink); }
+.ticket-row .seatname small { display: block; font-weight: 400; color: var(--c-text-3); font-size: var(--fs-xsmall); }
+.ticket-row .select { width: 100%; height: 44px; }
+.ticket-row .amt { text-align: right; font-variant-numeric: tabular-nums; font-weight: 700; }
+.ticket-row .amt s { display: block; font-weight: 400; font-size: var(--fs-xsmall); color: var(--c-text-3); }
+.ticket-rows + .booking-live, .ticket-rows + .note { margin-top: var(--sp-4); }
+.booking-live + .note { margin-top: var(--sp-4); }
+.select { cursor: pointer; transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease; }
+.select:hover { border-color: var(--c-text-3); }
+.select:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 1px; border-color: var(--c-action); }
+.select:disabled { cursor: not-allowed; background-color: var(--c-surface-2); color: var(--c-text-3); }
+.btn-text { transition: color .15s ease, background-color .15s ease; border-radius: var(--r-sm); }
+.btn-text:hover { color: var(--c-action-hover); text-decoration: underline; text-underline-offset: 3px; }
+.btn-text:active { color: var(--c-action-press); }
+
+.methods { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+.method { position: relative; display: flex; flex-direction: column; gap: 4px; padding: var(--sp-4); border: 1px solid var(--c-line); border-radius: var(--r-md); cursor: pointer; background: #fff; transition: border-color .15s ease, box-shadow .15s ease, background-color .15s ease, transform .15s ease; }
+.method input { position: absolute; opacity: 0; inset: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+.method b { color: var(--c-ink); }
+.method small { font-size: var(--fs-xsmall); color: var(--c-text-3); }
+.method:hover { border-color: var(--c-text-3); background: var(--c-surface-2); }
+.method:active { transform: translateY(1px); }
+.method:has(input:checked) { border-color: var(--c-action); box-shadow: inset 0 0 0 1px var(--c-action); background: var(--c-action-soft); }
+.method:has(input:focus-visible) { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+.card-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-4); margin-top: var(--sp-5); }
+.card-fields[hidden] { display: none; }
+.check { transition: color .15s ease; }
+.check:hover { color: var(--c-ink); }
+.check input { cursor: pointer; }
+.check input:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+.sum-cancel { margin-top: var(--sp-5); padding-top: var(--sp-4); border-top: 1px solid var(--c-line-soft); }
+.summary [data-pay][aria-disabled="true"], .summary [data-next][aria-disabled="true"] { opacity: .5; }
+.mobile-bar [data-pay][aria-disabled="true"], .mobile-bar [data-next][aria-disabled="true"] { opacity: .5; }
+
+/* 결제 결과 */
+.result { padding-top: var(--sp-8); padding-bottom: var(--sp-8); display: grid; gap: var(--sp-5); max-width: 720px; }
+.result p { margin: 0; color: var(--c-text-2); }
+.result .result-note { font-size: var(--fs-small); color: var(--c-text-3); }
+.result-list { margin: 0; border: 1px solid var(--c-line); border-radius: var(--r-lg); background: #fff; }
+.result-list div { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: var(--sp-4); padding: var(--sp-4) var(--sp-5); border-bottom: 1px solid var(--c-line-soft); }
+.result-list div:last-child { border-bottom: 0; }
+.result-list dt { color: var(--c-text-3); font-size: var(--fs-small); }
+.result-list dd { margin: 0; color: var(--c-ink); font-weight: 500; overflow-wrap: anywhere; }
+.result-actions { display: flex; flex-wrap: wrap; gap: var(--sp-3); }
 
 @media (max-width: 1100px) {
   .booking { grid-template-columns: minmax(0, 1fr) 320px; }
@@ -128,6 +179,13 @@
   .steps li { font-size: 0; gap: 0; }
   .steps li[aria-current="step"] { font-size: var(--fs-xsmall); gap: 8px; }
   .mobile-bar .btn { white-space: nowrap; }
+  .methods { grid-template-columns: 1fr; }
+  .ticket-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .ticket-row .select { grid-column: 1 / -1; grid-row: 2; }
+}
+@media (max-width: 560px) {
+  .card-fields { grid-template-columns: 1fr; }
+  .result-list div { grid-template-columns: 1fr; gap: var(--sp-1); }
 }
 @media (max-width: 560px) {
   .row { --seat: 20px; gap: 3px; }
@@ -141,6 +199,8 @@
   .seat, .btn, .stepper button, .seat-chip button, .view-toggle button { transition: none; }
   .seat:not(.sold):not(.sel):hover, .btn-primary:hover { transform: none; }
   .btn-primary:active, .btn-secondary:active, .stepper button:active, .seat-chip button:active, .seat.sel:active { transform: none; }
+  .method, .select, .btn-text, .check { transition: none; }
+  .method:active { transform: none; }
   .spinner { animation: none; border-right-color: currentColor; border-style: dotted; }
   .skeleton .sk-block { animation: none; }
 }
