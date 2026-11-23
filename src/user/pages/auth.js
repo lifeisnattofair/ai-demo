@@ -1,6 +1,7 @@
-// 가입(계정 정보, 약관 동의, 본인 인증), 로그인, 비밀번호 재설정 화면
+// 가입(계정 정보, 약관 동의, 연락처 입력), 로그인, 비밀번호 재설정 화면
 import { api as defaultApi, describeError } from '../../lib/api.js';
 import { withBusy } from '../../components/button-busy.js';
+import { bindTermViews, termRowHtml } from '../components/terms.js';
 
 const PW_MESSAGE = '비밀번호는 영문과 숫자를 함께 8자 이상 입력해 주세요.';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -62,7 +63,7 @@ function clearFormError(form) {
   q(form, '.form-error')?.remove();
 }
 
-const STEP_LABELS = ['계정 정보', '약관 동의', '본인 인증'];
+const STEP_LABELS = ['계정 정보', '약관 동의', '연락처 입력'];
 
 function stepper(current) {
   return `<ol class="steps" aria-label="가입 단계">${STEP_LABELS.map((label, i) => {
@@ -139,14 +140,15 @@ export function renderSignup(el, deps = {}) {
       ${stepper(1)}
       <div class="agree" id="step-consent">
         <label class="check all"><input type="checkbox" id="agree-all"><span>전체 동의</span></label>
-        <label class="check"><input type="checkbox" id="agree-terms" data-required><span>[필수] 이용약관에 동의합니다.</span></label>
-        <label class="check"><input type="checkbox" id="agree-privacy" data-required><span>[필수] 개인정보 수집과 이용에 동의합니다. 수집 항목은 이메일, 이름, 휴대폰 번호입니다.</span></label>
+        ${termRowHtml({ key: 'service', label: '[필수] 이용약관에 동의합니다.', inputAttrs: 'id="agree-terms" data-required' })}
+        ${termRowHtml({ key: 'privacy', label: '[필수] 개인정보 수집과 이용에 동의합니다. 수집 항목은 이메일, 이름, 휴대폰 번호입니다.', inputAttrs: 'id="agree-privacy" data-required' })}
         <label class="check"><input type="checkbox" id="agree-marketing"><span>[선택] 공연과 강좌 소식 수신에 동의합니다.</span></label>
       </div>
       <div class="auth-actions">
         <button class="btn btn-secondary" type="button" id="consent-back">이전</button>
         <button class="btn btn-primary" type="button" id="consent-next" disabled>다음</button>
       </div>`);
+    bindTermViews(q(el, '#step-consent'));
     const boxes = [...el.querySelectorAll('#step-consent input[type="checkbox"]:not(#agree-all)')];
     const all = q(el, '#agree-all');
     const next = q(el, '#consent-next');
@@ -170,16 +172,16 @@ export function renderSignup(el, deps = {}) {
   }
 
   function verifyStep() {
-    el.innerHTML = shell('본인 인증', `
+    el.innerHTML = shell('연락처 입력', `
       ${stepper(2)}
       <form class="auth-form" id="step-verify" novalidate>
         ${field('name', '이름', 'text', 'autocomplete="name" required')}
         ${field('phone', '휴대폰 번호', 'tel', 'autocomplete="tel" inputmode="numeric" placeholder="01012345678" required')}
         <div class="auth-actions">
           <button class="btn btn-secondary" type="button" id="verify-back">이전</button>
-          <button class="btn btn-primary" type="submit">인증 완료</button>
+          <button class="btn btn-primary" type="submit">입력 완료</button>
         </div>
-      </form>`, '예매와 취소 안내를 위해 이름과 휴대폰 번호를 확인합니다.');
+      </form>`, '예매와 취소 안내를 받을 이름과 휴대폰 번호를 입력해 주세요.');
     q(el, '#verify-back').addEventListener('click', consentStep);
     const form = q(el, 'form');
     form.addEventListener('submit', async (e) => {

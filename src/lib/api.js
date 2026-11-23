@@ -56,7 +56,10 @@ async function invoke(name, body) {
     let payload = null;
     try { payload = await error.context?.json?.(); } catch { /* 본문이 JSON 이 아닐 수 있습니다. */ }
     const code = payload?.code ?? 'UNKNOWN';
-    throw new ApiError(code, payload?.message ?? messageFor(code));
+    // 함수가 정해 둔 한국어 안내만 화면에 씁니다. 실행 환경의 영어 원문은 콘솔에만 남깁니다.
+    const own = typeof payload?.message === 'string' && /[가-힣]/.test(payload.message) ? payload.message : null;
+    if (!own && payload?.message) console.error(`[${name}] ${code}: ${payload.message}`);
+    throw new ApiError(code, own ?? messageFor(code));
   }
   return data;
 }
@@ -82,6 +85,11 @@ function authMessage(error) {
 export function describeError(err) {
   if (err instanceof ApiError) return err.message;
   return authMessage(err);
+}
+
+/** 코드별로 정해 둔 안내가 있는 오류인지(없으면 화면은 일반 안내를 씁니다). */
+export function isKnownError(err) {
+  return err instanceof ApiError && err.code !== 'UNKNOWN' && err.message !== GENERIC && /[가-힣]/.test(err.message);
 }
 
 async function authCall(promise) {

@@ -1,12 +1,12 @@
-// 프로그램 목록과 등록/수정(운영 담당). 조회 조건 -> 건수와 등록/엑셀 -> 목록 -> 편집(설계 5-9).
+// 프로그램 목록과 등록/수정(운영 담당). 조회 조건 -> 건수와 등록/CSV -> 목록 -> 편집(설계 5-9).
 import { escapeHtml, kstDate, kstDateTime, kstShortDateTime, kstDayKey } from '../../lib/format.js';
-import { toCsv, downloadCsv } from '../../lib/csv.js';
+import { exportCsv } from '../../lib/csv.js';
 import { withBusy } from '../../components/button-busy.js';
 import { now as clockNow } from '../../lib/clock.js';
 import { renderSearchBox } from '../components/search-box.js';
 import { renderDataTable, pageOf } from '../components/data-table.js';
 import { TYPE_LABEL, TYPE_OPTIONS, loadInto, offeringState, pageHead, typeChip } from '../components/page.js';
-import { formRow, readForm, showErrors, alertBox } from '../components/form.js';
+import { formRow, readForm, showErrors, alertBox, noticeNear } from '../components/form.js';
 import { RULE_TEXT } from '../../user/components/refund-preview.js';
 
 // 취소 규정은 상품 유형별로 정해진 정책입니다(Ruling R23). 양식에서는 읽기 전용으로 보여 줍니다.
@@ -35,9 +35,9 @@ export async function renderPrograms(el, { api, query }) {
     <div class="sb-host"></div>
     <section class="result" aria-label="조회 결과">
       <div class="toolbar">
-        <span class="total" aria-live="polite">총 <b class="num">0</b>건</span>
+        <span class="total" aria-live="polite" hidden>총 <b class="num">0</b>건</span>
         <div class="tools">
-          <button class="btn" type="button" data-act="csv">${DOWNLOAD_ICON}엑셀 다운로드</button>
+          <button class="btn" type="button" data-act="csv">${DOWNLOAD_ICON}CSV 다운로드</button>
           <label class="sr-only" for="ps">페이지당 건수</label><select class="ctl" id="ps"><option value="20">20건씩</option><option value="50">50건씩</option></select>
           <a class="btn btn-primary" href="#/programs/new">프로그램 등록</a>
         </div>
@@ -65,6 +65,7 @@ export async function renderPrograms(el, { api, query }) {
 
   function draw() {
     const rows = filtered();
+    el.querySelector('.total').hidden = false;
     el.querySelector('.total b').textContent = rows.length.toLocaleString('en-US');
     const page = pageOf(rows, state.page, state.pageSize).map((r, i) => ({ ...r, no: rows.length - ((state.page - 1) * state.pageSize + i) }));
     renderDataTable(tb, {
@@ -83,15 +84,16 @@ export async function renderPrograms(el, { api, query }) {
   ], (v) => { state.filters = v; state.page = 1; draw(); });
 
   el.querySelector('#ps').addEventListener('change', (e) => { state.pageSize = Number(e.target.value); state.page = 1; draw(); });
-  el.querySelector('[data-act="csv"]').addEventListener('click', () => {
-    downloadCsv(`프로그램목록_${kstDayKey(clockNow()).replace(/-/g, '')}.csv`, toCsv([
+  const csvBtn = el.querySelector('[data-act="csv"]');
+  csvBtn.addEventListener('click', () => {
+    exportCsv(`프로그램목록_${kstDayKey(clockNow()).replace(/-/g, '')}.csv`, [
       { key: 'type', label: '유형', value: (r) => TYPE_LABEL[r.type] },
       { key: 'title', label: '프로그램명' },
       { key: 'venue', label: '장소' },
       { key: 'count', label: '회차 수', value: (r) => r.offerings.length },
       { key: 'is_public', label: '공개', value: (r) => (r.is_public ? '공개' : '비공개') },
       { key: 'created_at', label: '등록일', value: (r) => kstDate(r.created_at) },
-    ], filtered()));
+    ], filtered(), (m) => noticeNear(csvBtn, m));
   });
 
   const rows = await loadInto(tb, 'table', () => api.programs());

@@ -1,6 +1,7 @@
 // 대기자 관리(운영 담당): 회차별 대기 순번, 신청 수량과 배정 수량, 승격 결제 기한. 개인정보는 가림(SFR-021).
 import { kstDateTime, kstDayKey, kstShortDateTime } from '../../lib/format.js';
-import { toCsv, downloadCsv } from '../../lib/csv.js';
+import { exportCsv } from '../../lib/csv.js';
+import { noticeNear } from '../components/form.js';
 import { withBusy } from '../../components/button-busy.js';
 import { now as clockNow } from '../../lib/clock.js';
 import { renderSearchBox } from '../components/search-box.js';
@@ -41,9 +42,9 @@ export async function renderWaitlist(el, { api, query, now = clockNow }) {
     <div class="sb-host"></div>
     <section class="result" aria-label="조회 결과">
       <div class="toolbar">
-        <span class="total" aria-live="polite">총 <b class="num">0</b>건</span>
+        <span class="total" aria-live="polite" hidden>총 <b class="num">0</b>건</span>
         <div class="tools">
-          <button class="btn" type="button" data-act="csv">${DOWNLOAD_ICON}엑셀 다운로드</button>
+          <button class="btn" type="button" data-act="csv">${DOWNLOAD_ICON}CSV 다운로드</button>
           <label class="sr-only" for="ps">페이지당 건수</label><select class="ctl" id="ps"><option value="20">20건씩</option><option value="50">50건씩</option></select>
         </div>
       </div>
@@ -73,6 +74,7 @@ export async function renderWaitlist(el, { api, query, now = clockNow }) {
 
   function draw() {
     const rows = filtered();
+    el.querySelector('.total').hidden = false;
     el.querySelector('.total b').textContent = rows.length.toLocaleString('en-US');
     renderDataTable(tb, {
       caption: '대기자 목록', columns, rows: pageOf(rows, state.page, state.pageSize), total: rows.length, page: state.page, pageSize: state.pageSize,
@@ -95,7 +97,7 @@ export async function renderWaitlist(el, { api, query, now = clockNow }) {
   el.querySelector('#ps').addEventListener('change', (e) => { state.pageSize = Number(e.target.value); state.page = 1; draw(); });
   const csvBtn = el.querySelector('[data-act="csv"]');
   csvBtn.addEventListener('click', () => withBusy(csvBtn, async () => {
-    downloadCsv(`대기자목록_${kstDayKey(now()).replace(/-/g, '')}.csv`, toCsv([
+    exportCsv(`대기자목록_${kstDayKey(now()).replace(/-/g, '')}.csv`, [
       { key: 'position', label: '순번', value: (r) => r.position ?? '' },
       { key: 'type', label: '유형', value: (r) => TYPE_LABEL[r.program_type] },
       { key: 'program_title', label: '프로그램' },
@@ -107,7 +109,7 @@ export async function renderWaitlist(el, { api, query, now = clockNow }) {
       { key: 'status', label: '상태', value: (r) => WAIT_STATUS[r.status]?.text },
       { key: 'created_at', label: '신청 일시', value: (r) => kstDateTime(r.created_at) },
       { key: 'deadline_at', label: '결제 기한', value: (r) => (r.status === 'PROMOTED' && r.deadline_at ? kstDateTime(r.deadline_at) : '') },
-    ], filtered()));
+    ], filtered(), (m) => noticeNear(csvBtn, m));
   }));
   draw();
 }

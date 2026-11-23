@@ -37,7 +37,7 @@ export async function renderAccount(el, deps = {}) {
           <dt>이메일</dt><dd>${escapeHtml(email)}</dd>
           <dt>이름</dt><dd>${escapeHtml(profile.name ?? '-')}</dd>
           <dt>휴대폰 번호</dt><dd class="num">${profile.phone ? escapeHtml(formatPhone(profile.phone)) : '-'}</dd>
-          <dt>본인 인증</dt><dd>${profile.verified_at ? `완료 (${escapeHtml(kstDate(profile.verified_at))})` : '미완료'}</dd>
+          <dt>연락처 입력</dt><dd>${profile.verified_at ? `완료 (${escapeHtml(kstDate(profile.verified_at))})` : '미완료'}</dd>
         </dl>
       </div>
     </div>

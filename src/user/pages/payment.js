@@ -9,6 +9,7 @@ import {
   bootCheckout, checkDiscounts, discountSummary, loadDiscounts, messagePage, priceTickets,
 } from '../components/checkout-data.js';
 import { cancelSchedule, mountShell, summaryListHtml } from '../components/checkout-shell.js';
+import { bindTermViews, termRowHtml } from '../components/terms.js';
 
 const METHODS = [
   ['CARD', '신용/체크카드', '국내 모든 카드'],
@@ -18,10 +19,11 @@ const METHODS = [
 const CARD_COMPANIES = ['한빛카드', '누리카드', '하나로카드'];
 const INSTALLMENTS = ['일시불', '2개월', '3개월'];
 const TERMS = [
-  '[필수] 예매 및 취소 수수료 규정 확인',
-  '[필수] 개인정보 제3자 제공(결제대행) 동의',
-  '[필수] 결제 대행 서비스 이용약관 동의',
+  ['booking', '[필수] 예매 및 취소 수수료 규정 확인'],
+  ['pgPrivacy', '[필수] 개인정보 제3자 제공(결제대행) 동의'],
+  ['pgService', '[필수] 결제 대행 서비스 이용약관 동의'],
 ];
+const CARD_MISSING = '카드사를 선택해 주세요.';
 // 선점이 이미 풀렸거나 회차가 닫힌 경우에는 「선점이 유지됩니다」 안내를 하지 않습니다.
 const HOLD_LOST = ['HOLD_EXPIRED', 'NOT_ON_SALE', 'NOT_OWNER'];
 const ALNUM = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -80,7 +82,7 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
           ${METHODS.map(([v, name, sub]) => `<label class="method"><input type="radio" name="pm" value="${v}"><b>${name}</b><small>${sub}</small></label>`).join('')}
         </div>
         <div class="card-fields" data-card hidden>
-          <div class="field"><label for="card">카드사</label><select class="select" id="card"><option value="">카드사를 선택하세요</option>${CARD_COMPANIES.map((c) => `<option>${c}</option>`).join('')}</select></div>
+          <div class="field"><label for="card">카드사</label><select class="select" id="card"><option value="">카드사를 선택하세요</option>${CARD_COMPANIES.map((c) => `<option>${c}</option>`).join('')}</select><p class="field-error" id="card-error" hidden>${CARD_MISSING}</p></div>
           <div class="field"><label for="inst">할부</label><select class="select" id="inst">${INSTALLMENTS.map((c) => `<option>${c}</option>`).join('')}</select></div>
         </div>
       </div>
@@ -89,7 +91,7 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
       <div class="panel-head"><h2 id="ag-title">약관 동의</h2></div>
       <div class="panel-body agree">
         <label class="check all"><input type="checkbox">전체 동의</label>
-        ${TERMS.map((t) => `<label class="check"><input type="checkbox" data-term>${t}</label>`).join('')}
+        ${TERMS.map(([key, label]) => termRowHtml({ key, label, inputAttrs: 'data-term' })).join('')}
       </div>
     </section>`;
 
@@ -111,8 +113,33 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
   const cardBox = shell.main.querySelector('[data-card]');
   const termBoxes = [...shell.main.querySelectorAll('[data-term]')];
   const allBox = shell.main.querySelector('.check.all input');
+  const cardSel = shell.main.querySelector('#card');
+  const cardErr = shell.main.querySelector('#card-error');
   let method = null;
   let paying = false;
+  bindTermViews(shell.main);
+
+  function showCardError(on) {
+    cardErr.hidden = !on;
+    if (on) {
+      cardSel.setAttribute('aria-invalid', 'true');
+      cardSel.setAttribute('aria-describedby', 'card-error');
+    } else {
+      cardSel.removeAttribute('aria-invalid');
+      cardSel.removeAttribute('aria-describedby');
+    }
+  }
+
+  // 입력 누락 안내: 경고 한 줄만 보입니다(선점 안내나 돌아가기 링크는 붙이지 않습니다).
+  function sayMissing(text) {
+    if (live.dataset.key === `missing|${text}`) return;
+    live.dataset.key = `missing|${text}`;
+    const err = document.createElement('p');
+    err.className = 'form-error';
+    err.setAttribute('role', 'alert');
+    err.textContent = text;
+    live.replaceChildren(err);
+  }
 
   function say(code, text) {
     if (!text) { live.replaceChildren(); delete live.dataset.key; return; }
@@ -139,8 +166,19 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
     live.replaceChildren(err, help);
   }
 
+  const cardMissing = () => method === 'CARD' && !cardSel.value;
   function ready() {
-    return method != null && termBoxes.every((b) => b.checked);
+    return method != null && !cardMissing() && termBoxes.every((b) => b.checked);
+  }
+  // 누락이 풀렸으면 떠 있던 누락 안내를 지웁니다.
+  function clearResolved() {
+    if (!cardMissing()) showCardError(false);
+    const key = live.dataset.key ?? '';
+    if (!key.startsWith('missing|')) return;
+    const text = key.slice('missing|'.length);
+    if ((text === '결제 수단을 선택해 주세요.' && method != null)
+      || (text === CARD_MISSING && !cardMissing())
+      || (text === '필수 약관에 모두 동의해 주세요.' && termBoxes.every((b) => b.checked))) say('', '');
   }
   function sync() {
     const on = ready() && !paying;
@@ -159,6 +197,7 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
     } else if (t === allBox) {
       termBoxes.forEach((b) => { b.checked = allBox.checked; });
     }
+    clearResolved();
     sync();
   });
 
@@ -166,7 +205,12 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
     const btn = e.target.closest('[data-pay]');
     if (!btn || paying) return;
     if (!ready()) {
-      say('', method == null ? '결제 수단을 선택해 주세요.' : '필수 약관에 모두 동의해 주세요.');
+      if (method == null) sayMissing('결제 수단을 선택해 주세요.');
+      else if (cardMissing()) {
+        sayMissing(CARD_MISSING);
+        showCardError(true);
+        cardSel.focus();
+      } else sayMissing('필수 약관에 모두 동의해 주세요.');
       return;
     }
     paying = true;

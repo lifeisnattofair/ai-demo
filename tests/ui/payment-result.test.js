@@ -65,6 +65,29 @@ describe('결제 성공 페이지', () => {
     expect(el.querySelector('a[href="#/me/bookings"]')).not.toBeNull();
   });
 
+  it('알 수 없는 서버 오류는 원문 대신 정해 둔 안내와 결과 다시 확인 버튼을 보인다', async () => {
+    const err = new ApiError('BOOT_ERROR', messageFor('BOOT_ERROR'));
+    const confirmPayment = vi.fn().mockRejectedValueOnce(err).mockResolvedValueOnce({ status: 'CONFIRMED', booking });
+    const a = api({ confirmPayment });
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await run(a);
+    expect(el.textContent).toContain('결제 결과를 아직 확인하지 못했습니다. 잠시 후 내 예약에서 다시 확인해 주세요.');
+    expect(el.textContent).not.toMatch(/Worker|boot/i);
+    const again = [...el.querySelectorAll('button')].find((b) => b.textContent === '결과 다시 확인');
+    expect(again).toBeTruthy();
+    again.click();
+    await new Promise((r) => setTimeout(r, 0));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(confirmPayment).toHaveBeenCalledTimes(2);
+    expect(el.textContent).toContain('B2611230001');
+    spy.mockRestore();
+  });
+
+  it('완료 화면의 둘러보기 버튼은 다음 행동을 말한다', async () => {
+    await run(api());
+    expect(el.textContent).not.toContain('프로그램 둘러보기');
+  });
+
   it('쿼리가 모자라면 승인을 요청하지 않고 안내한다', async () => {
     const a = api();
     await run(a, new URLSearchParams({ orderId: 'x' }));

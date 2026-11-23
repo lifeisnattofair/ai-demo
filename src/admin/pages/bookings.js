@@ -1,8 +1,8 @@
-// 예약 내역(운영/정산 담당): 조회 조건 -> 건수와 증빙 확인/엑셀 -> 목록(개인정보 가림) -> 예약번호를 누르면 상세(VIEW_PII)
+// 예약 내역(운영/정산 담당): 조회 조건 -> 건수와 증빙 확인/CSV -> 목록(개인정보 가림) -> 예약번호를 누르면 상세(VIEW_PII)
 // 증빙 확인(할인 매수의 현장 확인 기록)은 운영 담당만 합니다(Ruling R22). 디자인: design/mockups/admin-bookings.html
 import { DISCOUNT_LABELS } from '@policy/pricing.js';
 import { kstDateTime, kstDayKey, kstShortDateTime, won } from '../../lib/format.js';
-import { toCsv, downloadCsv } from '../../lib/csv.js';
+import { exportCsv } from '../../lib/csv.js';
 import { withBusy } from '../../components/button-busy.js';
 import { confirmDialog } from '../../components/dialog.js';
 import { now as clockNow } from '../../lib/clock.js';
@@ -10,7 +10,7 @@ import { describeError } from '../../lib/api.js';
 import { quickRange, renderSearchBox } from '../components/search-box.js';
 import { renderDataTable, pageOf } from '../components/data-table.js';
 import { TYPE_LABEL, TYPE_OPTIONS, loadInto, pageHead, typeChip } from '../components/page.js';
-import { alertBox } from '../components/form.js';
+import { alertBox, noticeNear } from '../components/form.js';
 
 export const DOWNLOAD_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>';
 
@@ -83,10 +83,10 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
     <div class="alert-host"></div>
     <section class="result" aria-label="조회 결과">
       <div class="toolbar">
-        <span class="total" aria-live="polite">총 <b class="num">0</b>건 <span class="muted sub"></span></span>
+        <span class="total" aria-live="polite" hidden>총 <b class="num">0</b>건 <span class="muted sub"></span></span>
         <div class="tools">
           ${canProof ? '<button class="btn" type="button" data-act="proof">증빙 확인 처리</button>' : ''}
-          <button class="btn" type="button" data-act="csv">${DOWNLOAD_ICON}엑셀 다운로드</button>
+          <button class="btn" type="button" data-act="csv">${DOWNLOAD_ICON}CSV 다운로드</button>
           <label class="sr-only" for="ps">페이지당 건수</label><select class="ctl" id="ps"><option value="20">20건씩</option><option value="50">50건씩</option></select>
         </div>
       </div>
@@ -194,6 +194,7 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
     pruneSelection();
     const rows = visible();
     const confirmed = rows.filter((r) => r.status === 'CONFIRMED').length;
+    el.querySelector('.total').hidden = false;
     el.querySelector('.total b').textContent = rows.length.toLocaleString('en-US');
     el.querySelector('.total .sub').textContent = rows.length ? `(확정 ${confirmed.toLocaleString('en-US')}, 취소 ${(rows.length - confirmed).toLocaleString('en-US')})` : '';
     const page = pageOf(rows, state.page, state.pageSize).map((r, i) => ({ ...r, no: rows.length - ((state.page - 1) * state.pageSize + i) }));
@@ -216,6 +217,8 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
     draw();
   }
 
+  // 첫 목록 조회는 선택지 조회를 기다리지 않고 바로 시작해 스켈레톤을 먼저 보입니다(감사 #18).
+  const firstLoad = load();
   // 프로그램/회차 선택지는 회차 목록으로 만듭니다(실패해도 목록 조회는 됩니다).
   try { state.offerings = (await api.offerings()) ?? []; } catch { state.offerings = []; }
   const programs = [...new Map(state.offerings.map((o) => [o.program_id, o.program])).entries()]
@@ -258,7 +261,7 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
 
   const csvBtn = el.querySelector('[data-act="csv"]');
   csvBtn.addEventListener('click', () => withBusy(csvBtn, async () => {
-    downloadCsv(`예약내역_${today.replace(/-/g, '')}.csv`, toCsv([
+    exportCsv(`예약내역_${today.replace(/-/g, '')}.csv`, [
       { key: 'booking_no', label: '예약번호' },
       { key: 'type', label: '유형', value: (r) => TYPE_LABEL[r.program_type] },
       { key: 'program_title', label: '프로그램' },
@@ -271,7 +274,7 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
       { key: 'status', label: '상태', value: (r) => STATUS_CHIP[r.status]?.text },
       { key: 'proof', label: '증빙', value: proofText },
       { key: 'created_at', label: '예약 일시', value: (r) => kstDateTime(r.created_at) },
-    ], visible()));
+    ], visible(), (m) => noticeNear(csvBtn, m));
   }));
 
   const proofBtn = el.querySelector('[data-act="proof"]');
@@ -305,5 +308,5 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
     else alertBox(alertHost, `할인 ${done}매의 증빙 확인을 기록했습니다.`, 'ok');
   }));
 
-  await load();
+  await firstLoad;
 }

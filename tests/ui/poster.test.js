@@ -32,6 +32,19 @@ describe('renderPoster', () => {
     expect(text).toContain('소극장');
   });
 
+  it('사진에는 틀 비율 크기(1200x1600)를 적고, 기본은 지연 로딩, 첫 화면용은 바로 높은 우선순위로 불러옵니다', () => {
+    renderPoster(el, BASE);
+    let img = el.querySelector('img');
+    expect(img.getAttribute('width')).toBe('1200');
+    expect(img.getAttribute('height')).toBe('1600');
+    expect(img.getAttribute('loading')).toBe('lazy');
+    expect(img.getAttribute('fetchpriority')).toBeNull();
+    renderPoster(el, BASE, { priority: true });
+    img = el.querySelector('img');
+    expect(img.getAttribute('loading')).toBe('eager');
+    expect(img.getAttribute('fetchpriority')).toBe('high');
+  });
+
   it('제목의 줄바꿈은 br 로 나뉘고 HTML 은 해석하지 않습니다', () => {
     renderPoster(el, { ...BASE, title: '<b>현의</b>\n대화' });
     const title = el.querySelector('.p-title');

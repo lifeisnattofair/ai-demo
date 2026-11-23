@@ -43,12 +43,25 @@ export function showErrors(form, errs) {
 }
 
 // 화면 위 알림(오류는 alert, 완료는 status). 초점을 옮겨 낭독기가 읽게 합니다.
+// tone: 'err'(오류, alert) | 'ok'(완료, status) | 'info'(안내, status)
 export function alertBox(host, message, tone = 'err') {
   const box = document.createElement('p');
-  box.className = `form-alert${tone === 'ok' ? ' ok' : ''}`;
-  box.setAttribute('role', tone === 'ok' ? 'status' : 'alert');
+  box.className = `form-alert${tone === 'err' ? '' : ` ${tone}`}`;
+  box.setAttribute('role', tone === 'err' ? 'alert' : 'status');
   box.tabIndex = -1;
   box.textContent = message;
   host.replaceChildren(box);
   box.focus();
+}
+
+// 목록 위 안내: 조회 결과(.result) 바로 앞의 알림 자리를 쓰고, 없으면 만듭니다(CSV 0건 안내 등).
+export function noticeNear(anchor, message, tone = 'info') {
+  const section = anchor.closest('.result') ?? anchor.parentElement;
+  let host = section.previousElementSibling;
+  if (!host?.classList.contains('alert-host')) {
+    host = document.createElement('div');
+    host.className = 'alert-host';
+    section.before(host);
+  }
+  alertBox(host, message, tone);
 }

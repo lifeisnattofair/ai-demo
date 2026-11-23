@@ -1,6 +1,6 @@
 // 회차/좌석 관리(운영 담당): 회차 목록, 회차 등록/수정(일정, 정원, 가격, 수업 일정), 좌석 현황, 예약자(가림 처리)
 import { escapeHtml, fromKstInput, kstDateTime, kstDayKey, kstShortDateTime, toKstInput, won } from '../../lib/format.js';
-import { toCsv, downloadCsv } from '../../lib/csv.js';
+import { exportCsv } from '../../lib/csv.js';
 import { withBusy } from '../../components/button-busy.js';
 import { confirmDialog } from '../../components/dialog.js';
 import { now as clockNow } from '../../lib/clock.js';
@@ -8,7 +8,7 @@ import { describeError } from '../../lib/api.js';
 import { renderSearchBox } from '../components/search-box.js';
 import { renderDataTable, pageOf } from '../components/data-table.js';
 import { TYPE_LABEL, TYPE_OPTIONS, loadInto, offeringState, pageHead, typeChip } from '../components/page.js';
-import { alertBox, formRow, showErrors } from '../components/form.js';
+import { alertBox, formRow, noticeNear, showErrors } from '../components/form.js';
 
 const DOWNLOAD_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>';
 const WEEK = 7 * 24 * 60 * 60 * 1000;
@@ -47,9 +47,9 @@ export async function renderOfferings(el, { api, query }) {
     <div class="sb-host"></div>
     <section class="result" aria-label="조회 결과">
       <div class="toolbar">
-        <span class="total" aria-live="polite">총 <b class="num">0</b>건</span>
+        <span class="total" aria-live="polite" hidden>총 <b class="num">0</b>건</span>
         <div class="tools">
-          <button class="btn" type="button" data-act="csv">${DOWNLOAD_ICON}엑셀 다운로드</button>
+          <button class="btn" type="button" data-act="csv">${DOWNLOAD_ICON}CSV 다운로드</button>
           <label class="sr-only" for="ps">페이지당 건수</label><select class="ctl" id="ps"><option value="20">20건씩</option><option value="50">50건씩</option></select>
           <a class="btn btn-primary" href="#/offerings/new">회차 등록</a>
         </div>
@@ -82,6 +82,7 @@ export async function renderOfferings(el, { api, query }) {
 
   function draw() {
     const rows = filtered();
+    el.querySelector('.total').hidden = false;
     el.querySelector('.total b').textContent = rows.length.toLocaleString('en-US');
     const page = pageOf(rows, state.page, state.pageSize).map((r, i) => ({ ...r, no: (state.page - 1) * state.pageSize + i + 1 }));
     renderDataTable(tb, {
@@ -112,8 +113,9 @@ export async function renderOfferings(el, { api, query }) {
   ], (v) => { state.filters = v; state.page = 1; draw(); });
 
   el.querySelector('#ps').addEventListener('change', (e) => { state.pageSize = Number(e.target.value); state.page = 1; draw(); });
-  el.querySelector('[data-act="csv"]').addEventListener('click', () => {
-    downloadCsv(`회차목록_${kstDayKey(clockNow()).replace(/-/g, '')}.csv`, toCsv([
+  const csvBtn = el.querySelector('[data-act="csv"]');
+  csvBtn.addEventListener('click', () => {
+    exportCsv(`회차목록_${kstDayKey(clockNow()).replace(/-/g, '')}.csv`, [
       { key: 'type', label: '유형', value: (r) => TYPE_LABEL[r.program?.type] },
       { key: 'title', label: '프로그램', value: (r) => r.program?.title },
       { key: 'starts_at', label: '회차 일시', value: (r) => kstDateTime(r.starts_at) },
@@ -124,7 +126,7 @@ export async function renderOfferings(el, { api, query }) {
       { key: 'waiting', label: '대기', value: (r) => stat(r, 'waiting') },
       { key: 'remaining', label: '잔여', value: (r) => stat(r, 'remaining') },
       { key: 'status', label: '상태', value: (r) => offeringState(r, nowMs).text },
-    ], filtered()));
+    ], filtered(), (m) => noticeNear(csvBtn, m));
   });
   draw();
 }

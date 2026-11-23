@@ -142,7 +142,7 @@ export async function renderWaitlist(el, deps = {}) {
         title: '대기 신청한 내역이 없습니다.',
         body: '매진된 회차에서 대기 신청을 하면 이곳에서 순번과 결제 기한을 확인할 수 있습니다.',
         href: '#/programs',
-        label: '프로그램 둘러보기',
+        label: '예매할 공연, 강좌 찾기',
       }));
       return;
     }

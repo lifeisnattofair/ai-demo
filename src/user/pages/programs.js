@@ -8,14 +8,11 @@ import {
   renderProgramCard, sortPrograms, statusMark, typeMark,
 } from '../components/program-card.js';
 import { renderPoster } from '../components/poster.js';
+import { pageTitle } from '../../lib/router.js';
 
 const TYPES = [['ALL', '전체'], ['PERFORMANCE', '공연'], ['EXPERIENCE', '체험'], ['COURSE', '정규 강좌']];
-const QUICK = [
-  ['#/programs?type=PERFORMANCE', '공연 예매', '지정석 선택, 1인 4매'],
-  ['#/programs?type=EXPERIENCE', '체험 신청', '회차별 인원 신청'],
-  ['#/programs?type=COURSE', '정규 강좌 수강 신청', '12주 과정, 개강 전 신청'],
-  ['#/me/bookings', '내 예약 확인', '예약 내역, 취소, 환불'],
-];
+// 유형별 바로가기는 아래 목록 필터와 같은 곳으로 가서 두지 않습니다(DESIGN.md). 내 예약만 첫 화면에서 바로 갑니다.
+const TYPE_TITLE = { PERFORMANCE: '공연 목록', EXPERIENCE: '체험 목록', COURSE: '정규 강좌 목록' };
 // 날짜 키(KST)와 제목. 날짜 표기는 format.js 로 만듭니다.
 const NOTICES = [
   ['2026-11-20', '겨울 시즌 공연, 교육 프로그램 예약을 한곳에서 받습니다'],
@@ -62,7 +59,7 @@ function renderFeature(host, program, status) {
   // 제목 링크와 같은 곳으로 가는 중복 링크라서 보조기기와 탭 이동에서는 뺍니다.
   posterLink.setAttribute('aria-hidden', 'true');
   posterLink.tabIndex = -1;
-  renderPoster(posterLink, posterProps(program));
+  renderPoster(posterLink, posterProps(program), { priority: true });
 
   const info = node('div', 'f-info');
   const dl = node('dl');
@@ -120,13 +117,13 @@ async function loadRemaining(api, programs) {
 export async function renderPrograms(el, { api, query = new URLSearchParams(), now = clockNow }) {
   el.innerHTML = `<section class="hero">
     <div class="container hero-grid">
-      <div>
+      <div class="hero-intro">
         <h1>무대와 배움이<br>가까운 곳에</h1>
         <p>공연과 체험, 정규 강좌를 한곳에서 찾고 예약하세요. 회원이면 좌석 선택부터 취소, 환불까지 직접 하실 수 있습니다.</p>
+        <a class="hero-mine" href="#/me/bookings">내 예약 확인</a>
       </div>
       <article class="hero-feature" data-feature></article>
     </div>
-    <div class="container"><nav class="quick" aria-label="바로가기"></nav></div>
   </section>
   <section class="section" aria-labelledby="list-title">
     <div class="container">
@@ -138,15 +135,6 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
     <div class="container"><h2 id="notice-title">공지사항</h2><ul></ul></div>
   </section>`;
 
-  const quick = el.querySelector('.quick');
-  for (const [href, label, hint] of QUICK) {
-    const a = node('a');
-    a.href = href;
-    const span = node('span', '', label);
-    span.append(node('small', '', hint));
-    a.append(span);
-    quick.append(a);
-  }
   const notices = el.querySelector('.notice-strip ul');
   for (const [dt, text] of NOTICES) {
     const li = node('li');
@@ -180,8 +168,9 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
 
   release();
   const statusOf = (p) => programStatus(p, now(), remaining);
+  let featured = null;
   if (programs.length) {
-    const featured = pickFeatured(programs, statusOf);
+    featured = pickFeatured(programs, statusOf);
     renderFeature(feature, featured, statusOf(featured));
   } else {
     feature.remove();
@@ -210,8 +199,13 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
   const results = node('div');
   list.replaceChildren(filters, results);
 
+  const hero = el.querySelector('.hero');
   function draw() {
     for (const b of seg.children) b.setAttribute('aria-pressed', String(b.dataset.type === state.type));
+    // 유형을 고른 목록은 문서 제목에 유형을 넣습니다(예: 공연 목록 | 한빛아트센터).
+    if (TYPE_TITLE[state.type]) hero.dataset.title = TYPE_TITLE[state.type];
+    else delete hero.dataset.title;
+    if (el.isConnected && document.title) document.title = pageTitle(el);
     const shown = programs.filter((p) =>
       (state.type === 'ALL' || p.type === state.type)
       && (!state.month || monthsOf(p).includes(state.month))
@@ -233,7 +227,9 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
     }
     const grid = node('ul', 'grid');
     grid.setAttribute('role', 'list');
-    for (const p of shown) grid.append(renderProgramCard(p, statusOf(p)));
+    // 추천 프로그램은 바로 위 첫 화면에 이미 보이므로 목록에서는 맨 뒤에 둡니다(같은 포스터가 한 화면에 두 번 나오지 않게).
+    const ordered = featured && shown.includes(featured) ? [...shown.filter((p) => p !== featured), featured] : shown;
+    for (const p of ordered) grid.append(renderProgramCard(p, statusOf(p)));
     results.replaceChildren(grid);
   }
 

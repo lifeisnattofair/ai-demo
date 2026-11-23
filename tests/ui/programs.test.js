@@ -42,7 +42,7 @@ function program(id, type, title, extra = {}) {
     poster_series: '시리즈',
     poster_title: '제목\n둘째 줄',
     poster_sub: '부제',
-    details: { runtime: '100분', intro: ['소개 문단입니다.'], items_title: '프로그램', items: [{ name: '곡 하나', note: '약 20분' }], people: [{ name: '한지민', role: '바이올린' }], guide: '안내 문구입니다.' },
+    details: { runtime: '100분', intro: ['소개 문단입니다.'], items_title: '프로그램', items: [{ name: '곡 하나', note: '약 20분' }], people: [{ name: '윤서진', role: '바이올린' }], guide: '안내 문구입니다.' },
     offerings: [],
     ...extra,
   };
@@ -170,9 +170,18 @@ describe('프로그램 목록', () => {
     expect(card('겨울 실내악 시리즈 「현의 대화」').querySelector('.status').textContent).toBe('예매 중');
   });
 
+  it('추천 프로그램은 첫 화면에 보이므로 목록에서는 맨 뒤에 둡니다', async () => {
+    await open();
+    const featuredHref = el.querySelector('.hero-feature h2 a').getAttribute('href');
+    const cards = [...el.querySelectorAll('.grid .card')];
+    expect(cards).toHaveLength(6);
+    expect(cards[0].getAttribute('href')).not.toBe(featuredHref);
+    expect(cards.at(-1).getAttribute('href')).toBe(featuredHref);
+  });
+
   it('카드는 상세 주소로 연결되고 가격과 기간이 보입니다', async () => {
     await open();
-    const card = el.querySelector('.grid .card');
+    const card = el.querySelector('.grid .card[href="#/programs/p1"]');
     expect(card.getAttribute('href')).toBe('#/programs/p1');
     expect(card.querySelector('.c-price').textContent).toBe('20,000원부터');
     expect(card.querySelector('.c-meta').textContent).toBe('2026.12.03 - 12.04 소극장');
@@ -320,7 +329,7 @@ describe('프로그램 상세', () => {
     await open('p1');
     expect(texts(el.querySelectorAll('.tabs a'))).toEqual(['공연 소개', '프로그램', '출연', '취소/환불 규정', '관람 안내']);
     expect(el.querySelector('#intro').textContent).toContain('소개 문단입니다.');
-    expect(el.querySelector('#cast').textContent).toContain('한지민');
+    expect(el.querySelector('#cast').textContent).toContain('윤서진');
   });
 
   it('출연 정보가 없으면 출연 탭도 없습니다', async () => {
@@ -399,11 +408,28 @@ describe('메인 화면 다듬기(15A)', () => {
     expect(el.querySelectorAll('.grid .card')).toHaveLength(6);
   });
 
-  it('제목 위 작은 라벨과 바로가기 화살표가 없고, 내 예약 바로가기는 새 주소로 갑니다', async () => {
+  it('제목 위 작은 라벨이 없고, 목록 필터와 겹치는 유형 바로가기 없이 내 예약 확인만 둡니다', async () => {
     await open();
     expect(el.querySelector('.eyebrow')).toBeNull();
-    expect(el.querySelector('.quick svg')).toBeNull();
-    expect([...el.querySelectorAll('.quick a')].map((a) => a.getAttribute('href'))).toContain('#/me/bookings');
+    expect(el.querySelector('.quick')).toBeNull();
+    const hero = el.querySelector('.hero');
+    expect([...hero.querySelectorAll('a')].filter((a) => /type=/.test(a.getAttribute('href')))).toHaveLength(0);
+    expect(hero.querySelector('a[href="#/me/bookings"]').textContent).toBe('내 예약 확인');
+  });
+
+  it('유형을 고르면 문서 제목에 유형 목록이 들어갑니다', async () => {
+    document.title = '무대와 배움이 가까운 곳에 | 한빛아트센터';
+    await open('type=PERFORMANCE');
+    expect(el.querySelector('[data-title]').dataset.title).toBe('공연 목록');
+    expect(document.title).toBe('공연 목록 | 한빛아트센터');
+    [...el.querySelectorAll('.seg button')].find((b) => b.textContent === '전체').click();
+    expect(el.querySelector('[data-title]')).toBeNull();
+    expect(document.title).toBe('무대와 배움이 가까운 곳에 | 한빛아트센터');
+  });
+
+  it('카드 목록은 글머리 기호 없는 목록 클래스를 씁니다', async () => {
+    await open();
+    expect(el.querySelector('ul.grid').getAttribute('role')).toBe('list');
   });
 
   it('공지 날짜는 0을 채운 점 형식이고 오늘보다 늦지 않습니다', async () => {

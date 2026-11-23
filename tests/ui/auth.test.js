@@ -98,7 +98,32 @@ describe('가입 폼', () => {
     expect(el.querySelector('#consent-next').disabled).toBe(false);
   });
 
-  it('인증 완료 시 가입과 본인 확인을 순서대로 호출합니다', async () => {
+  it('필수 약관에는 보기 버튼이 있고, 누르면 본문 대화상자가 열리며 체크는 그대로입니다', () => {
+    renderSignup(el, { api: fakeApi(), go: vi.fn() });
+    fillAccount(el);
+    const views = [...el.querySelectorAll('#step-consent [data-term-view]')];
+    expect(views.map((b) => b.dataset.termView)).toEqual(['service', 'privacy']);
+    views[1].click();
+    const dlg = document.querySelector('[role="dialog"]');
+    expect(dlg.querySelector('h2').textContent).toBe('개인정보 수집과 이용');
+    expect(dlg.textContent).toContain('이메일, 이름, 휴대폰 번호');
+    expect(el.querySelector('#agree-privacy').checked).toBe(false);
+    dlg.querySelector('button').click();
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+  });
+
+  it('3단계는 연락처 입력이고 인증을 한 것처럼 보이는 문구가 없습니다', () => {
+    renderSignup(el, { api: fakeApi(), go: vi.fn() });
+    fillAccount(el);
+    el.querySelector('#agree-all').click();
+    el.querySelector('#consent-next').click();
+    expect(el.querySelector('.auth-title').textContent).toBe('연락처 입력');
+    expect(el.querySelector('[type="submit"]').textContent).toBe('입력 완료');
+    expect(el.querySelector('.steps').textContent).not.toContain('인증');
+    expect(el.textContent).not.toMatch(/인증/);
+  });
+
+  it('입력 완료 시 가입과 연락처 저장을 순서대로 호출합니다', async () => {
     const api = fakeApi();
     const go = vi.fn();
     renderSignup(el, { api, go });

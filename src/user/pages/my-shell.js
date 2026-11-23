@@ -29,7 +29,8 @@ export async function mountMyPage(el, { api, go, active, next }) {
   const wrap = node('div', 'container mypage');
   const nav = node('nav', 'side-nav');
   nav.setAttribute('aria-label', '마이페이지');
-  nav.innerHTML = `<h2>마이페이지</h2><ul>${MENU.map(([key, label, href, count]) => `<li><a href="${href}"${key === active ? ' aria-current="page"' : ''}>${escapeHtml(label)}${count ? `<em data-count="${count}" hidden></em>` : ''}</a></li>`).join('')}</ul>`;
+  // 메뉴 이름은 nav 의 aria-label 로 전달하고, 보이는 글자는 제목 요소로 두지 않습니다(h1 보다 앞선 h2 방지).
+  nav.innerHTML = `<p class="side-title" aria-hidden="true">마이페이지</p><ul>${MENU.map(([key, label, href, count]) => `<li><a href="${href}"${key === active ? ' aria-current="page"' : ''}>${escapeHtml(label)}${count ? `<em data-count="${count}" hidden></em>` : ''}</a></li>`).join('')}</ul>`;
   const main = node('div', 'my-main');
   const content = node('div', 'my-content');
   main.append(content);

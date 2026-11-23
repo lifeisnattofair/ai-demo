@@ -1,7 +1,8 @@
 // 결제/환불 내역(정산 담당, SFR-022): 기간, 프로그램, 상태로 조회하고 결제대행 거래 번호를 확인합니다.
 // 결제 원본(raw)은 「원본」을 누를 때만 admin_payment_raw 로 열고 작업 이력(VIEW_PAYMENT_RAW)에 남깁니다.
 import { kstDateTime, kstDayKey, kstShortDateTime, won } from '../../lib/format.js';
-import { toCsv, downloadCsv } from '../../lib/csv.js';
+import { exportCsv } from '../../lib/csv.js';
+import { noticeNear } from '../components/form.js';
 import { withBusy } from '../../components/button-busy.js';
 import { confirmDialog } from '../../components/dialog.js';
 import { now as clockNow } from '../../lib/clock.js';
@@ -62,9 +63,9 @@ export async function renderPayments(el, { api, now = clockNow }) {
     <section class="result" aria-label="조회 결과">
       <div class="toolbar">
         <span class="seg" role="group" aria-label="내역 종류">${TABS.map((t) => `<button type="button" data-tab="${t.key}" aria-pressed="${t.key === state.tab}">${t.label}</button>`).join('')}</span>
-        <span class="total" aria-live="polite">총 <b class="num">0</b>건 <span class="muted sub"></span></span>
+        <span class="total" aria-live="polite" hidden>총 <b class="num">0</b>건 <span class="muted sub"></span></span>
         <div class="tools">
-          <button class="btn" type="button" data-act="csv">${DOWNLOAD_ICON}엑셀 다운로드</button>
+          <button class="btn" type="button" data-act="csv">${DOWNLOAD_ICON}CSV 다운로드</button>
           <label class="sr-only" for="ps">페이지당 건수</label><select class="ctl" id="ps"><option value="20">20건씩</option><option value="50">50건씩</option></select>
         </div>
       </div>
@@ -134,6 +135,7 @@ export async function renderPayments(el, { api, now = clockNow }) {
   function draw() {
     const rows = rowsOf();
     const sum = rows.reduce((a, r) => a + (state.tab === 'payments' ? r.amount : r.refund_amount), 0);
+    el.querySelector('.total').hidden = false;
     el.querySelector('.total b').textContent = rows.length.toLocaleString('en-US');
     el.querySelector('.total .sub').textContent = rows.length ? `(${state.tab === 'payments' ? '결제' : '환불'} 합계 ${won(sum)})` : '';
     for (const b of el.querySelectorAll('[data-tab]')) b.setAttribute('aria-pressed', String(b.dataset.tab === state.tab));
@@ -195,7 +197,7 @@ export async function renderPayments(el, { api, now = clockNow }) {
     const key = (d) => (d ? d.replace(/-/g, '') : '전체');
     const range = `${key(state.range.from)}-${key(state.range.to)}`;
     if (state.tab === 'payments') {
-      downloadCsv(`결제내역_${range}.csv`, toCsv([
+      exportCsv(`결제내역_${range}.csv`, [
         { key: 'approved_at', label: '승인 일시', value: (r) => (r.approved_at ? kstDateTime(r.approved_at) : '') },
         { key: 'order_id', label: '주문번호' },
         { key: 'payment_key', label: '결제대행 거래 번호' },
@@ -206,9 +208,9 @@ export async function renderPayments(el, { api, now = clockNow }) {
         { key: 'amount', label: '결제 금액' },
         { key: 'refunded_amount', label: '환불 금액' },
         { key: 'status', label: '상태', value: (r) => PAYMENT_STATUS[r.status]?.text },
-      ], rowsOf()));
+      ], rowsOf(), (m) => noticeNear(csvBtn, m));
     } else {
-      downloadCsv(`환불내역_${range}.csv`, toCsv([
+      exportCsv(`환불내역_${range}.csv`, [
         { key: 'created_at', label: '환불 일시', value: (r) => kstDateTime(r.created_at) },
         { key: 'pg_transaction_key', label: '결제대행 취소 거래 번호' },
         { key: 'payment_key', label: '원 결제 거래 번호' },
@@ -220,7 +222,7 @@ export async function renderPayments(el, { api, now = clockNow }) {
         { key: 'fee_amount', label: '취소 수수료' },
         { key: 'reason', label: '사유', value: (r) => REFUND_REASON[r.reason]?.text },
         { key: 'rule', label: '적용 규정', value: (r) => RULE_SHORT[r.rule] ?? r.rule ?? '' },
-      ], rowsOf()));
+      ], rowsOf(), (m) => noticeNear(csvBtn, m));
     }
   }));
 

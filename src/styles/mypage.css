@@ -5,7 +5,7 @@
 .my-main, .my-content { min-width: 0; }
 
 /* 왼쪽 메뉴 */
-.side-nav h2 { font-size: var(--fs-h3); margin: 0 0 var(--sp-3); color: var(--c-ink); }
+.side-nav .side-title { font-size: var(--fs-h3); font-weight: 700; margin: 0 0 var(--sp-3); color: var(--c-ink); }
 .side-nav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .side-nav a { display: flex; align-items: center; justify-content: space-between; gap: 6px; white-space: nowrap; min-height: var(--h-control); padding: 0 var(--sp-3); border-radius: var(--r-md); color: var(--c-text-2); font-size: var(--fs-small); }
 .side-nav a:hover { background: var(--c-surface-2); color: var(--c-ink); }
@@ -104,6 +104,7 @@
 .dialog:focus { outline: none; }
 .dialog-title { margin: 0 0 var(--sp-3); font-size: var(--fs-h3); color: var(--c-ink); }
 .dialog-body p { margin: 0; color: var(--c-ink); }
+.dialog-body p + p { margin-top: var(--sp-2); }
 .dialog-body .dialog-detail { margin-top: var(--sp-2); font-size: var(--fs-small); color: var(--c-text-3); overflow-wrap: anywhere; }
 .dialog-actions { display: flex; justify-content: flex-end; gap: var(--sp-2); margin-top: var(--sp-5); }
 @keyframes dlg-fade { from { opacity: 0; } }
@@ -112,10 +113,10 @@
 @media (max-width: 860px) {
   .mypage { grid-template-columns: 1fr; gap: var(--sp-4); }
   .side-nav ul { display: flex; overflow-x: auto; gap: var(--sp-4); border-bottom: 1px solid var(--c-line-soft); }
-  .side-nav a { padding: 0; border-radius: 0; margin-bottom: -1px; border-bottom: 2px solid transparent; gap: 6px; }
+  .side-nav a { min-width: 44px; justify-content: center; padding: 0; border-radius: 0; margin-bottom: -1px; border-bottom: 2px solid transparent; gap: 6px; }
   .side-nav a:hover { background: none; border-bottom-color: var(--c-line); }
   .side-nav a[aria-current="page"] { background: none; border-bottom-color: var(--c-ink); }
-  .side-nav h2 { display: none; }
+  .side-nav .side-title { display: none; }
 }
 
 @media (max-width: 560px) {

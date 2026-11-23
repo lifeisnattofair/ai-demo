@@ -68,6 +68,17 @@ describe('createRouter', () => {
     el.remove();
   });
 
+  it('제목의 줄바꿈 자리는 띄어 쓰고, 화면이 정한 data-title 이 있으면 그것을 씁니다', async () => {
+    const router = createRouter({
+      '#/a': (_p, e) => { e.innerHTML = '<h1>무대와 배움이<br>가까운 곳에</h1>'; },
+      '#/b': (_p, e) => { e.innerHTML = '<section data-title="공연 목록"><h1>무대</h1></section>'; },
+    }, el);
+    await router.go('#/a');
+    expect(document.title).toBe('무대와 배움이 가까운 곳에 | 한빛아트센터');
+    await router.go('#/b');
+    expect(document.title).toBe('공연 목록 | 한빛아트센터');
+  });
+
   it('replace() 는 방문 기록을 늘리지 않고 그 주소를 렌더링합니다', async () => {
     const handler = vi.fn();
     const router = createRouter({ '#/me/bookings': handler }, el);

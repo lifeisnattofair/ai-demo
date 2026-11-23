@@ -2,7 +2,7 @@
 // 일별 순매출 그래프, 프로그램별 순매출, 일별/프로그램별 정산표(합계 행), CSV 내려받기.
 // 순매출 = 결제 금액 - 환불 금액. 취소 수수료는 결제 금액에 이미 들어 있습니다. 디자인: design/mockups/admin-settlement.html
 import { dayKeyLabel, dayKeysBetween, escapeHtml, kstDateTime, kstDayKey, won } from '../../lib/format.js';
-import { toCsv, downloadCsv } from '../../lib/csv.js';
+import { NO_ROWS_MESSAGE, toCsv, downloadCsv } from '../../lib/csv.js';
 import { withBusy } from '../../components/button-busy.js';
 import { showSkeleton } from '../../components/skeleton.js';
 import { now as clockNow } from '../../lib/clock.js';
@@ -168,16 +168,24 @@ export async function renderSettlement(el, { api, now = clockNow }) {
       foot: totalsRow(s.totals),
       empty: '이 기간에 결제나 환불이 없습니다.',
     });
+    syncView();
+  }
+
+  // 집계 보기 눌림 표시는 자료가 없을 때도 바로 바꿉니다(감사 #26).
+  function syncView() {
     for (const b of form.querySelectorAll('[data-view]')) b.setAttribute('aria-pressed', String(b.dataset.view === state.view));
   }
+  const hasData = () => state.rows.some((r) => !state.program || r.program_id === state.program);
 
   function draw() {
     const s = summarizeSettlement(state.rows, state);
     state.summary = s;
     drawKpis(s.totals);
-    if (!state.rows.some((r) => !state.program || r.program_id === state.program)) {
+    if (!hasData()) {
+      const byDay = state.view === 'day';
       bodyHost.innerHTML = `<div class="result"><div class="empty-state"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
-          <p>이 기간에 결제나 환불이 없습니다.</p><p class="sub">기간이나 프로그램을 바꿔 다시 조회해 주세요.</p></div></div>`;
+          <p>${byDay ? '이 기간에 결제나 환불이 없습니다.' : '프로그램별 자료가 없습니다.'}</p><p class="sub">${byDay ? '' : '이 기간에 결제나 환불이 없습니다. '}기간이나 프로그램을 바꿔 다시 조회해 주세요.</p></div></div>`;
+      syncView();
       return;
     }
     bodyHost.innerHTML = `<div class="two-col">
@@ -230,13 +238,16 @@ export async function renderSettlement(el, { api, now = clockNow }) {
   for (const b of form.querySelectorAll('[data-view]')) {
     b.addEventListener('click', () => {
       state.view = b.dataset.view;
-      drawTable();
+      syncView();
+      if (bodyHost.querySelector('.st-table')) drawTable();
+      else if (state.summary) draw();
     });
   }
 
   const csvBtn = form.querySelector('[data-act="csv"]');
   csvBtn.addEventListener('click', () => withBusy(csvBtn, async () => {
     if (!state.summary) { alertBox(alertHost, '정산 자료를 불러온 뒤 내려받을 수 있습니다. 잠시 후 다시 눌러 주세요.'); return; }
+    if (!hasData()) { alertBox(alertHost, NO_ROWS_MESSAGE, 'info'); return; }
     const s = state.summary;
     const byDay = state.view === 'day';
     const amount = AMOUNT_COLUMNS.map((c) => ({ key: c.key, label: c.label }));

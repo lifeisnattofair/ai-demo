@@ -80,8 +80,7 @@ export function createRouter(routes, el) {
 
   // 화면이 바뀌면 문서 제목을 갱신하고 초점을 본문으로 옮겨 스크린리더가 새 화면을 읽게 합니다.
   function afterRender() {
-    const name = el.querySelector('h1')?.textContent?.trim();
-    document.title = name ? `${name} | 한빛아트센터` : '한빛아트센터';
+    document.title = pageTitle(el);
     if (el.hasAttribute('tabindex')) el.focus({ preventScroll: true });
   }
 
@@ -104,4 +103,22 @@ export function createRouter(routes, el) {
       return p;
     },
   };
+}
+
+/**
+ * 문서 제목: 화면이 정한 data-title(필터를 반영한 목록 등)이 먼저이고, 없으면 h1 글자입니다.
+ * h1 안의 줄바꿈(<br>) 자리는 띄어 씁니다.
+ */
+export function pageTitle(root) {
+  const own = root.querySelector('[data-title]')?.dataset.title?.trim();
+  let name = own;
+  if (!name) {
+    const h1 = root.querySelector('h1');
+    if (h1) {
+      const copy = h1.cloneNode(true);
+      copy.querySelectorAll('br').forEach((br) => br.replaceWith(' '));
+      name = copy.textContent.replace(/\s+/g, ' ').trim();
+    }
+  }
+  return name ? `${name} | 한빛아트센터` : '한빛아트센터';
 }

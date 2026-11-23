@@ -39,7 +39,7 @@ export async function renderAudit(el, { api, now = clockNow }) {
   el.innerHTML = `${pageHead({ crumbs: ['시스템', '작업 이력'], title: '작업 이력', help: '프로그램, 회차, 가격 변경과 개인정보, 결제 원본 열람 기록입니다. 최신순으로 최대 1,000건까지 보입니다.' })}
     <div class="sb-host"></div>
     <section class="result" aria-label="조회 결과">
-      <div class="toolbar"><span class="total" aria-live="polite">총 <b class="num">0</b>건</span></div>
+      <div class="toolbar"><span class="total" aria-live="polite" hidden>총 <b class="num">0</b>건</span></div>
       <div class="tb-host"></div>
     </section>`;
   const tb = el.querySelector('.tb-host');
@@ -68,6 +68,7 @@ export async function renderAudit(el, { api, now = clockNow }) {
   ];
 
   function draw() {
+    el.querySelector('.total').hidden = false;
     el.querySelector('.total b').textContent = state.rows.length.toLocaleString('en-US');
     renderDataTable(tb, {
       caption: '작업 이력 목록', columns, rows: pageOf(state.rows, state.page, PAGE_SIZE), total: state.rows.length, page: state.page, pageSize: PAGE_SIZE,
@@ -85,7 +86,7 @@ export async function renderAudit(el, { api, now = clockNow }) {
   for (const r of first) if (r.actor_id && !actors.has(r.actor_id)) actors.set(r.actor_id, `${r.actor_name_masked ?? '-'} (${ROLE_LABEL[r.actor_role] ?? '-'})`);
   const kinds = [...new Set(first.map((r) => r.action))].sort((a, b) => actionLabel(a).localeCompare(actionLabel(b), 'ko'));
   renderSearchBox(el.querySelector('.sb-host'), [
-    { name: 'period', label: '기간', type: 'date-range', today: kstDayKey(now()) },
+    { name: 'period', label: '기간', type: 'date-range', wide: true, today: kstDayKey(now()) },
     { name: 'actor', label: '작업자', type: 'select', options: [{ value: '', label: '전체' }, ...[...actors].map(([value, label]) => ({ value, label }))] },
     { name: 'kind', label: '작업 종류', type: 'select', options: [{ value: '', label: '전체' }, ...kinds.map((value) => ({ value, label: actionLabel(value) }))] },
   ], async (v) => {

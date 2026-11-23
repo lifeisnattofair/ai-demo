@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { downloadCsv, toCsv } from '../../src/lib/csv.js';
+import { downloadCsv, exportCsv, NO_ROWS_MESSAGE, toCsv } from '../../src/lib/csv.js';
 
 describe('toCsv', () => {
   it('둘째 줄이 "A, ""B""" (쉼표/따옴표 이스케이프)', () => {
@@ -48,5 +48,28 @@ describe('downloadCsv', () => {
     expect(create.mock.calls[0][0]).toBeInstanceOf(Blob);
     expect(clicks).toEqual([{ href: 'blob:x', download: '정산.csv' }]);
     expect(document.querySelector('a[download]')).toBeNull();
+  });
+});
+
+describe('exportCsv', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('0건이면 내려받지 않고 안내 문구를 넘깁니다', () => {
+    URL.createObjectURL = vi.fn(() => 'blob:x');
+    const onEmpty = vi.fn();
+    expect(exportCsv('a.csv', [{ key: 'a', label: 'a' }], [], onEmpty)).toBe(false);
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+    expect(onEmpty).toHaveBeenCalledWith(NO_ROWS_MESSAGE);
+    expect(NO_ROWS_MESSAGE.startsWith('내려받을 내역이 없습니다.')).toBe(true);
+  });
+
+  it('행이 있으면 내려받습니다', () => {
+    URL.createObjectURL = vi.fn(() => 'blob:x');
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const onEmpty = vi.fn();
+    expect(exportCsv('a.csv', [{ key: 'a', label: 'a' }], [{ a: 1 }], onEmpty)).toBe(true);
+    expect(URL.createObjectURL).toHaveBeenCalledTimes(1);
+    expect(onEmpty).not.toHaveBeenCalled();
   });
 });

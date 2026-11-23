@@ -178,7 +178,7 @@ export async function renderProgramDetail(el, { api, id, now = clockNow }) {
   // 위쪽: 포스터 + 요약
   const detail = node('div', 'detail');
   const posterBox = node('div', 'd-poster');
-  renderPoster(posterBox, posterProps(program, 'short'));
+  renderPoster(posterBox, posterProps(program, 'short'), { priority: true });
   const info = node('div');
   const tags = node('div', 'd-tags');
   tags.append(typeMark(type));

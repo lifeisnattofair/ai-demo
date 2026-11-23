@@ -23,8 +23,9 @@ function lines(node, text) {
  * @param {HTMLElement} host 포스터를 넣을 틀(.poster-wrap 클래스를 붙입니다)
  * @param {{image?:string, imagePosition?:string, tone?:'light'|'dark', series?:string, title:string,
  *   subtitle?:string, type?:string, periodText?:string, venue?:string}} p
+ * @param {{priority?:boolean}} [opts] priority: 첫 화면 대표 이미지(홈 추천, 상세)는 바로, 높은 우선순위로 불러옵니다.
  */
-export function renderPoster(host, p) {
+export function renderPoster(host, p, { priority = false } = {}) {
   host.classList.add('poster-wrap');
   const poster = el('div', 'poster');
   if (p.tone === 'light') poster.classList.add('light');
@@ -51,7 +52,11 @@ export function renderPoster(host, p) {
     const img = document.createElement('img');
     img.alt = '';
     img.src = p.image;
-    img.loading = 'lazy';
+    // 사진은 3:4 틀에 맞춰 잘라 보이므로(object-fit: cover) 틀 비율 크기를 적어 자리를 미리 잡습니다.
+    img.width = 1200;
+    img.height = 1600;
+    img.setAttribute('loading', priority ? 'eager' : 'lazy');
+    if (priority) img.setAttribute('fetchpriority', 'high');
     img.decoding = 'async';
     if (p.imagePosition) img.style.objectPosition = p.imagePosition;
     // 사진을 못 불러와도 빈 상자가 되지 않게 사진만 걷어 내고 같은 글자를 남깁니다.

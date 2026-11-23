@@ -100,6 +100,20 @@ describe('좌석 선택 화면', () => {
     expect(el.querySelector('.booking-live [role="alert"]')).toBe(alerts[0]);
   });
 
+  it('넓은 화면은 배치도, 768px 이하 좁은 화면은 좌석 목록을 먼저 보이고 전환은 그대로 된다', async () => {
+    await run(fakeApi());
+    expect(el.querySelector('[data-view="map"]').getAttribute('aria-pressed')).toBe('true');
+    document.body.innerHTML = '<main></main>';
+    el = document.querySelector('main');
+    await run(fakeApi(), vi.fn(), { compact: () => true });
+    const listBtn = el.querySelector('[data-view="list"]');
+    expect(listBtn.getAttribute('aria-pressed')).toBe('true');
+    expect(el.querySelector('input[aria-label="E열 3번 S석"]').closest('[hidden]')).toBeNull();
+    expect(el.querySelector('[aria-label="E열 3번 S석"].seat, button[aria-label="E열 3번 S석"]').closest('[hidden]')).not.toBeNull();
+    el.querySelector('[data-view="map"]').click();
+    expect(el.querySelector('button[aria-label="E열 3번 S석"]').closest('[hidden]')).toBeNull();
+  });
+
   it('좌석 이름에는 선택 상태를 붙이지 않고 aria-pressed 로만 알린다(두 번 읽지 않게)', async () => {
     await run(fakeApi());
     const b = el.querySelector('[aria-label="E열 9번 S석"]');

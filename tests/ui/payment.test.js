@@ -22,6 +22,7 @@ const run = async (api, go = vi.fn()) => {
 const payBtn = () => el.querySelector('.summary [data-pay]');
 const flush = () => new Promise((r) => setTimeout(r, 0));
 const chooseMethod = (i) => { const r = el.querySelectorAll('input[name="pm"]')[i]; r.checked = true; r.dispatchEvent(new Event('change', { bubbles: true })); };
+const chooseCard = () => { chooseMethod(0); const c = el.querySelector('#card'); c.value = '누리카드'; c.dispatchEvent(new Event('change', { bubbles: true })); };
 const agreeAll = () => { const c = el.querySelector('.check.all input'); c.checked = true; c.dispatchEvent(new Event('change', { bubbles: true })); };
 
 describe('결제 단계', () => {
@@ -48,7 +49,7 @@ describe('결제 단계', () => {
   it('결제하기를 누르면 준비를 한 번 부르고 성공 주소로 이동한다', async () => {
     const api = oneSeat();
     const go = await run(api);
-    chooseMethod(0);
+    chooseCard();
     agreeAll();
     payBtn().click();
     payBtn().click();
@@ -73,7 +74,7 @@ describe('결제 단계', () => {
     const api = oneSeat();
     await run(api);
     expect(payBtn().textContent).toBe('20,000원 결제하기');
-    chooseMethod(0);
+    chooseCard();
     agreeAll();
     payBtn().click();
     await flush();
@@ -85,7 +86,7 @@ describe('결제 단계', () => {
     const api = oneSeat();
     api.preparePayment.mockRejectedValue(new ApiError('AMOUNT_MISMATCH', '금액이 달라 결제를 시작하지 못했습니다. 다시 시도해 주세요.'));
     const go = await run(api);
-    chooseMethod(0);
+    chooseCard();
     agreeAll();
     payBtn().click();
     await flush();
@@ -94,6 +95,53 @@ describe('결제 단계', () => {
     expect(el.textContent).toContain('선점은 남은 시간 동안 유지됩니다');
     expect(el.querySelector('a[href="#/booking/h1/discount"]')).not.toBeNull();
     expect(payBtn().getAttribute('aria-disabled')).not.toBe('true');
+  });
+
+  it('카드를 고르면 카드사를 골라야 활성화되고, 비운 채 누르면 카드사 칸 아래에 안내한다', async () => {
+    const api = oneSeat();
+    await run(api);
+    chooseMethod(0);
+    agreeAll();
+    expect(payBtn().getAttribute('aria-disabled')).toBe('true');
+    payBtn().click();
+    await flush();
+    expect(api.preparePayment).not.toHaveBeenCalled();
+    const msg = el.querySelector('#card-error');
+    expect(msg.textContent).toBe('카드사를 선택해 주세요.');
+    expect(msg.hidden).toBe(false);
+    expect(el.querySelector('#card').getAttribute('aria-describedby')).toBe('card-error');
+    const card = el.querySelector('#card');
+    card.value = '한빛카드';
+    card.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(msg.hidden).toBe(true);
+    expect(payBtn().getAttribute('aria-disabled')).toBe('false');
+  });
+
+  it('입력 누락 경고는 도움 문단 없이 보이고, 결제 수단을 고르면 사라진다', async () => {
+    await run(oneSeat());
+    payBtn().click();
+    await flush();
+    expect(el.querySelector('[role="alert"]').textContent).toBe('결제 수단을 선택해 주세요.');
+    expect(el.textContent).not.toContain('선점은 남은 시간 동안 유지됩니다');
+    chooseMethod(1);
+    expect(el.querySelector('[data-live] [role="alert"]')).toBeNull();
+  });
+
+  it('필수 약관마다 보기 버튼이 있고 누르면 약관 본문 대화상자가 열린다', async () => {
+    await run(oneSeat());
+    const views = [...el.querySelectorAll('.agree [data-term-view]')];
+    expect(views).toHaveLength(3);
+    expect(views.every((b) => b.tagName === 'BUTTON' && b.textContent === '보기')).toBe(true);
+    views[0].click();
+    const dlg = document.querySelector('[role="dialog"]');
+    expect(dlg).not.toBeNull();
+    expect(dlg.querySelector('h2').textContent).toContain('취소 수수료');
+    expect(dlg.textContent).toContain('8일 전까지는 무료');
+    expect(el.querySelectorAll('[data-term]')[0].checked).toBe(false);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    views[1].click();
+    expect(document.querySelector('[role="dialog"]').textContent).toContain('5년');
   });
 
   it('결제대행사 로고나 상표 문구를 쓰지 않는다', async () => {

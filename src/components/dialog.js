@@ -14,7 +14,7 @@ function node(tag, className, text) {
 const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * @param {{title:string, message:string, detail?:string, rows?:Array<[string,string]>, confirmLabel?:string, cancelLabel?:string|null, danger?:boolean}} opts
+ * @param {{title:string, message:string|string[], detail?:string, rows?:Array<[string,string]>, confirmLabel?:string, cancelLabel?:string|null, danger?:boolean}} opts
  *   rows 는 이름/값 목록(dl)으로 보입니다. cancelLabel 이 null 이면 확인 버튼 하나만 둡니다(정보 보기).
  * @returns {Promise<boolean>} 확인하면 true, 닫거나 취소하면 false
  */
@@ -35,7 +35,8 @@ export function confirmDialog({ title, message, detail, rows, confirmLabel = '�
     h.id = `${id}-title`;
     const desc = node('div', 'dialog-body');
     desc.id = `${id}-desc`;
-    desc.append(node('p', null, message));
+    // message 가 배열이면 문단마다 나눠 보입니다(약관 본문 등).
+    for (const m of [].concat(message)) desc.append(node('p', null, m));
     if (rows?.length) {
       const dl = node('dl', 'dialog-rows');
       for (const [k, v] of rows) dl.append(node('dt', null, k), node('dd', null, v ?? '-'));

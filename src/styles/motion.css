@@ -9,7 +9,7 @@
 /* 전환 대상: 누르는 요소 전체 */
 .btn, .btn-text, .link, .select, .input, .ctl, .chk,
 .gnb-top, .gnb-panel a, .util a, .menu-btn, .m-acc, .m-sub a, .m-util a, .m-util button,
-.quick a, .seg button, .date, .slot, .tabs a, .sub-tabs a, .side-nav a, .back-link,
+.hero-mine, .term-view, .seg button, .date, .slot, .tabs a, .sub-tabs a, .side-nav a, .back-link,
 .seat, .seat-chip button, .view-toggle button, .stepper button, .method, .check,
 .card .poster, .bk, .wl, .noti, .f-links a, .crumb a, .text-link,
 .sidebar .s-head, .sidebar ul a, .pager a, .range-btns button, .topbar .logout, .topbar .session button,
@@ -22,7 +22,7 @@
 .btn:active, .seg button:active, .date:active, .slot:active, .sub-tabs a:active, .side-nav a:active,
 .seat-chip button:active, .view-toggle button:active, .stepper button:active, .method:active,
 .range-btns button:active, .pager a:active, .topbar .logout:active, .topbar .session button:active,
-.gnb-top:active, .m-acc:active, .quick a:active { transform: translateY(var(--press)); }
+.gnb-top:active, .m-acc:active { transform: translateY(var(--press)); }
 
 /* 고를 수 있는 카드, 좌석: 올리면 2px 뜸 */
 .card:hover .poster, .card:focus-visible .poster { transform: translateY(var(--lift)); }
@@ -31,12 +31,15 @@
 
 /* 사용할 수 없음: 모양은 화면별 파일, 커서와 움직임은 공통 */
 [aria-disabled="true"], :disabled, .seat.sold { cursor: not-allowed; }
+/* 고르는 입력은 모두 손 모양(관리자 select.ctl, 라디오 등). 비활성 단추는 화면별 규칙보다 우선합니다. */
+select:not(:disabled), input[type="radio"]:not(:disabled), input[type="checkbox"]:not(:disabled), label:has(> input:not(:disabled)) { cursor: pointer; }
+.stepper button[aria-disabled="true"] { cursor: not-allowed; }
 .btn[aria-disabled="true"]:active, .btn:disabled:active, .stepper button[aria-disabled="true"]:active,
 .date[disabled]:active, .slot[disabled]:active { transform: none; }
 
 /* 글 속 링크: 올리면 밑줄 */
 .text-link, .prose a:not(.btn), .guide-body a:not(.btn), .f-links a, .crumb a, .back-link,
-.bk h3 a, .bk a.bk-no, .hero-feature h2 a, .auth-alt a, .check a {
+.bk h3 a, .bk a.bk-no, .hero-feature h2 a, .auth-alt a, .hero-mine {
   text-decoration-thickness: 1px; text-underline-offset: 3px;
 }
 .text-link:hover, .prose a:not(.btn):hover, .guide-body a:not(.btn):hover, .f-links a:hover, .crumb a:hover,

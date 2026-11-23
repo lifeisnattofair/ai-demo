@@ -1,5 +1,5 @@
 // 결제 결과. 성공 페이지는 승인 요청을 한 번만 보내고, 결과에 따라 예약 완료/취소 안내/오류 안내를 보입니다.
-import { describeError } from '../../lib/api.js';
+import { describeError, isKnownError } from '../../lib/api.js';
 import { escapeHtml, kstDateTime, won } from '../../lib/format.js';
 import { DISCOUNT_LABELS } from '../components/checkout-data.js';
 import { GRADE_NAME } from '../components/seat-map.js';
@@ -8,6 +8,7 @@ import { showSkeleton } from '../../components/skeleton.js';
 const BOOKINGS = '#/me/bookings';
 const ORDER_RE = /^HB-\d{8}-[A-Za-z0-9]{10}$/;
 const KEY_RE = /^mock_[A-Za-z0-9]{20}$/;
+const UNCONFIRMED = '결제 결과를 아직 확인하지 못했습니다. 잠시 후 내 예약에서 다시 확인해 주세요.';
 const FAIL_REASON = {
   USER_CANCEL: '결제를 취소하셨습니다.',
 };
@@ -81,7 +82,7 @@ function bookingView(el, booking, { offering, items }) {
   const note = node('p', 'result-note', discounts.length
     ? '할인 증빙은 방문 당일 현장에서 확인합니다. 증빙이 없으면 차액을 현장에서 결제합니다.'
     : '예약 내용은 내 예약에서 다시 확인하실 수 있습니다.');
-  page(el, '예매가 완료되었습니다.', [dl, note], [link(BOOKINGS, '내 예약 보기', 'primary'), link('#/programs', '프로그램 둘러보기')]);
+  page(el, '예매가 완료되었습니다.', [dl, note], [link(BOOKINGS, '내 예약 보기', 'primary'), link('#/programs', '다른 공연, 강좌 찾기')]);
 }
 
 /**
@@ -119,8 +120,13 @@ export async function renderPaymentSuccess(el, { api, go, query }) {
     confirmations.delete(orderId);
     release();
     console.error(error);
-    page(el, '결제 결과를 확인하지 못했습니다.', [node('p', '', describeError(error))],
-      [link(BOOKINGS, '내 예약 보기', 'primary')]);
+    // 코드별 안내가 없는 오류(실행 환경 오류 등)는 정해 둔 문구와 다시 확인 버튼을 보입니다. 원문은 콘솔에만 남깁니다.
+    const known = isKnownError(error);
+    const again = node('button', 'btn btn-primary', '결과 다시 확인');
+    again.type = 'button';
+    again.addEventListener('click', () => renderPaymentSuccess(el, { api, go, query }));
+    page(el, '결제 결과를 확인하지 못했습니다.', [node('p', '', known ? describeError(error) : UNCONFIRMED)],
+      [again, link(BOOKINGS, '내 예약 보기')]);
     return;
   }
   if (result?.status === 'CONFIRMED' && result.booking) {

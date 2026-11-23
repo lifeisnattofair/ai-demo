@@ -160,6 +160,14 @@ describe('작업 이력 화면', () => {
     });
   });
 
+  it('기간 입력은 조회 상자 한 줄 전체를 씁니다(예약 내역과 같은 배치)', async () => {
+    await renderAudit(el, { api: { audit: vi.fn(async () => rows) }, now: () => NOW });
+    await settle();
+    const cell = el.querySelector('[data-range-for="period"]');
+    expect(cell.classList.contains('wide')).toBe(true);
+    expect(cell.previousElementSibling.classList.contains('start')).toBe(true);
+  });
+
   it('이력이 없으면 빈 상태를 보입니다', async () => {
     const api = { audit: vi.fn(async () => []) };
     await renderAudit(el, { api, now: () => NOW });

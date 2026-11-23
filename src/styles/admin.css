@@ -174,7 +174,7 @@ textarea.ctl { height: auto; min-height: 120px; padding: var(--sp-3); line-heigh
 
 /* 조회 조건: 빠른 기간, 표 선택, 증빙 상태 (admin-bookings 시안) */
 .range-btns { display: inline-flex; margin-left: var(--sp-2); }
-.range-btns button { min-height: 44px; padding: 0 var(--sp-3); border: 1px solid var(--c-line); background: #fff; font-size: var(--fs-caption); cursor: pointer; margin-left: -1px; }
+.range-btns button { min-height: 44px; min-width: 44px; padding: 0 var(--sp-3); border: 1px solid var(--c-line); background: #fff; font-size: var(--fs-caption); cursor: pointer; margin-left: -1px; }
 .range-btns button:first-child { border-radius: var(--r-sm) 0 0 var(--r-sm); margin-left: 0; }
 .range-btns button:last-child { border-radius: 0 var(--r-sm) var(--r-sm) 0; }
 .range-btns button:hover { background: var(--c-surface-2); }
@@ -270,6 +270,7 @@ textarea.ctl { height: auto; min-height: 120px; padding: var(--sp-3); line-heigh
 .lesson-list b { color: var(--c-ink); margin-right: var(--sp-2); }
 .form-alert { margin: 0 0 var(--sp-4); padding: var(--sp-3) var(--sp-4); border-radius: var(--r-md); border: 1px solid var(--c-err); background: var(--c-err-soft); color: var(--c-err-text); font-weight: 700; }
 .form-alert.ok { border-color: var(--c-ok); background: var(--c-ok-soft); color: var(--c-ok-text); }
+.form-alert.info { border-color: var(--c-line); background: var(--c-info-soft); color: var(--c-info-text); }
 .form-alert:focus { outline: none; }
 .save-bar { position: sticky; bottom: 0; z-index: 5; display: flex; justify-content: space-between; align-items: center; gap: var(--sp-3); margin-top: var(--sp-4); padding: var(--sp-3) var(--sp-4); background: #fff; border: 1px solid var(--c-line); border-radius: var(--r-md); }
 .save-bar .state { font-size: var(--fs-caption); color: var(--c-text-muted); }

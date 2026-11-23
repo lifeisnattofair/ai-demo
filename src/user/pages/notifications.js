@@ -37,7 +37,7 @@ export async function renderNotifications(el, deps = {}) {
         title: '받은 알림이 없습니다.',
         body: '예약 완료, 취소, 대기 승격 소식이 이곳에 모입니다.',
         href: '#/programs',
-        label: '프로그램 둘러보기',
+        label: '예매할 공연, 강좌 찾기',
       }));
       return;
     }

@@ -153,6 +153,57 @@ describe('예약 내역', () => {
   });
 });
 
+describe('목록 첫 조회와 CSV 내려받기(감사 #18, #27)', () => {
+  it('예약 내역: 선택지 조회가 늦어도 바로 표 스켈레톤(aria-busy)을 두고 건수는 비워 둡니다', async () => {
+    const never = () => new Promise(() => {});
+    const api = { bookings: vi.fn(never), offerings: vi.fn(never) };
+    renderBookings(el, { api, role: 'operator', now });
+    await flush();
+    expect(api.bookings).toHaveBeenCalledTimes(1);
+    expect(el.querySelector('.tb-host').getAttribute('aria-busy')).toBe('true');
+    expect(el.querySelector('.total').hidden).toBe(true);
+  });
+
+  it('결제 내역: 불러오는 동안 건수를 비워 둡니다', async () => {
+    const never = () => new Promise(() => {});
+    renderPayments(el, { api: { payments: vi.fn(never), refunds: vi.fn(never) }, now });
+    await flush();
+    expect(el.querySelector('.tb-host').getAttribute('aria-busy')).toBe('true');
+    expect(el.querySelector('.total').hidden).toBe(true);
+  });
+
+  it('버튼 이름은 CSV 다운로드이고, 0건이면 빈 파일 대신 안내를 보입니다', async () => {
+    URL.createObjectURL = vi.fn(() => 'blob:z');
+    URL.revokeObjectURL = vi.fn();
+    const clicks = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    const api = { bookings: vi.fn().mockResolvedValue([]), offerings: vi.fn().mockResolvedValue([]) };
+    await renderBookings(el, { api, role: 'operator', now });
+    await settle();
+    expect(el.querySelector('.total').hidden).toBe(false);
+    const btn = el.querySelector('[data-act="csv"]');
+    expect(btn.textContent.trim()).toBe('CSV 다운로드');
+    btn.click();
+    await settle();
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+    expect(el.querySelector('.alert-host').textContent).toContain('내려받을 내역이 없습니다.');
+    clicks.mockRestore();
+  });
+
+  it('정산: 자료가 없을 때 프로그램별을 누르면 눌림 상태가 바뀌고 프로그램별 빈 안내를 보이며, CSV 는 안내만 보입니다', async () => {
+    URL.createObjectURL = vi.fn(() => 'blob:z');
+    await renderSettlement(el, { api: { settlement: vi.fn().mockResolvedValue([]) }, now });
+    await settle();
+    el.querySelector('[data-view="program"]').click();
+    expect(el.querySelector('[data-view="program"]').getAttribute('aria-pressed')).toBe('true');
+    expect(el.querySelector('[data-view="day"]').getAttribute('aria-pressed')).toBe('false');
+    expect(el.querySelector('.body-host').textContent).toContain('프로그램별 자료가 없습니다.');
+    el.querySelector('[data-act="csv"]').click();
+    await settle();
+    expect(URL.createObjectURL).not.toHaveBeenCalled();
+    expect(el.querySelector('.alert-host').textContent).toContain('내려받을 내역이 없습니다.');
+  });
+});
+
 describe('대기자 관리', () => {
   it('순번, 가린 이름, 상태를 글자로 보입니다', async () => {
     const api = {

@@ -43,6 +43,7 @@ export const AVAILABLE = new Set([
   '#/audit', '#/system/clock', '#/system/reset',
 ]);
 
+// 메뉴 묶음을 빠르게 찾게 하는 표식으로 좌측 메뉴 묶음에만 씁니다(DESIGN.md 「관리자 아이콘」).
 const ICONS = {
   dashboard: '<rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>',
   program: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/>',

@@ -46,7 +46,11 @@ function messagePage(el, title, body, href, label) {
  */
 let renderSeq = 0;
 
-export async function renderSelect(el, { api, go, offeringId, now = clockNow, notice = '' }) {
+// 768px 이하에서는 44px 체크 행으로 된 「좌석 목록」을 먼저 보입니다(배치도 좌석은 44px보다 작아 DESIGN.md 예외로 기록).
+const COMPACT_QUERY = '(max-width: 768px)';
+const isCompact = () => Boolean(window.matchMedia?.(COMPACT_QUERY)?.matches);
+
+export async function renderSelect(el, { api, go, offeringId, now = clockNow, notice = '', compact = isCompact }) {
   const selfHash = `#/booking/${encodeURIComponent(offeringId)}/select`;
   const mine = ++renderSeq;
   const stale = () => mine !== renderSeq; // 더 새로운 화면이 그려졌으면 이 화면은 그리지 않습니다.
@@ -148,6 +152,7 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
 
   const img = posterImage(program.poster_image).src;
   const dateText = kstDateTime(offering.starts_at);
+  const startList = type === 'PERFORMANCE' && !activeHold && compact();
   el.innerHTML = `<div data-booking>
     <div class="book-head">
       <div class="container">
@@ -161,8 +166,8 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
         <div class="panel-head">
           <h2 id="sel-title">${type === 'PERFORMANCE' ? '좌석 선택' : type === 'EXPERIENCE' ? '인원 선택' : '수강 신청'}</h2>
           ${type === 'PERFORMANCE' && !activeHold ? `<div class="view-toggle" role="group" aria-label="보기 방식">
-            <button type="button" aria-pressed="true" data-view="map">배치도</button>
-            <button type="button" aria-pressed="false" data-view="list">좌석 목록</button>
+            <button type="button" aria-pressed="${!startList}" data-view="map">배치도</button>
+            <button type="button" aria-pressed="${startList}" data-view="list">좌석 목록</button>
           </div>` : ''}
         </div>
         <div class="panel-body" data-body></div>
@@ -279,7 +284,8 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
   let listView = null;
   const mapHost = node('div');
   const listHost = node('div');
-  listHost.hidden = true;
+  mapHost.hidden = startList;
+  listHost.hidden = !startList;
 
   let qtySync = null;
   // 선점 실패 뒤 한도와 잔여 수량을 다시 계산해 화면 곳곳에 반영합니다.
