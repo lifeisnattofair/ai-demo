@@ -196,7 +196,16 @@ describe('admin_set_prices', () => {
     expect(log.detail).toMatchObject({ from: [{ grade: null, price: 10000 }], to: [{ grade: null, price: 15000 }] });
   });
 
-  it('공연은 R/S/A 세 등급이 모두 있어야 하고 금액은 0 이상의 정수입니다', async () => {
+  it('가격 0원은 거절하고 1원은 받습니다(결제 확인이 0원 결제를 받지 않음)', async () => {
+    const exp = await offering('EXPERIENCE');
+    expect(await code(op.rpc('admin_set_prices', { p_offering: exp.id, p_prices: [{ grade: null, price: 0 }] }))).toBe('INVALID_PRICE');
+    const perf = await offering('PERFORMANCE');
+    expect(await code(op.rpc('admin_set_prices', { p_offering: perf.id, p_prices: [{ grade: 'R', price: 1000 }, { grade: 'S', price: 0 }, { grade: 'A', price: 1000 }] }))).toBe('INVALID_PRICE');
+    await ok(op.rpc('admin_set_prices', { p_offering: exp.id, p_prices: [{ grade: null, price: 1 }] }));
+    expect(await ok(db.from('offering_prices').select('grade, price').eq('offering_id', exp.id))).toEqual([{ grade: null, price: 1 }]);
+  });
+
+  it('공연은 R/S/A 세 등급이 모두 있어야 하고 금액은 1 이상의 정수입니다', async () => {
     const perf = await offering('PERFORMANCE');
     expect(await code(op.rpc('admin_set_prices', { p_offering: perf.id, p_prices: [{ grade: 'R', price: 1000 }] }))).toBe('INVALID_PRICE');
     expect(await code(op.rpc('admin_set_prices', { p_offering: perf.id, p_prices: [{ grade: 'R', price: 1 }, { grade: 'S', price: -1 }, { grade: 'A', price: 1 }] }))).toBe('INVALID_PRICE');

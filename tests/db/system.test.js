@@ -115,6 +115,31 @@ describe('시연 데이터 초기화(admin_reset_demo)', () => {
     expect(await setting('env')).toBe('demo');
   });
 
+  it('시연 계정이 바뀌었으면(비밀번호, 연락처, 탈퇴) 초기화가 시드 상태로 되돌립니다', async () => {
+    // local 에서는 보호가 없으므로 member3 을 망가뜨린 뒤 demo 로 바꿔 초기화합니다.
+    await setEnv('local');
+    const m3 = await userClient('member3@demo.test');
+    const id = (await m3.auth.getUser()).data.user.id;
+    try {
+      expect((await m3.auth.updateUser({ password: 'Changed-9999' })).error).toBeNull();
+      await ok(m3.rpc('update_my_contact', { p_name: '바뀐 이름', p_phone: '01077778888' }));
+      await ok(m3.rpc('withdraw_member'));
+      await expect(userClient('member3@demo.test')).rejects.toThrow();
+
+      await setEnv('demo');
+      await ok(op.rpc('admin_reset_demo'));
+      const back = await userClient('member3@demo.test'); // 시드 비밀번호로 다시 로그인됩니다.
+      expect((await back.auth.getUser()).data.user.id).toBe(id);
+      expect((await ok(db.from('profiles').select('name, phone, role, verified_at').eq('id', id).single())))
+        .toMatchObject({ name: '회원 셋', phone: '010-0000-0003', role: 'member' });
+      expect((await ok(db.from('profiles').select('verified_at').eq('id', id).single())).verified_at).toBeTruthy();
+      const rows = await ok(op.rpc('staff_audit', { p_action: 'RESET_DEMO' }));
+      expect(rows[0].detail).toMatchObject({ env: 'demo', accounts: 5 });
+    } finally {
+      await db.rpc('restore_demo_accounts');
+    }
+  });
+
   it('초기화 기록이 작업 이력에 남습니다', async () => {
     await setEnv('demo');
     await ok(op.rpc('admin_reset_demo'));
