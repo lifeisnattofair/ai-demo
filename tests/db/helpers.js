@@ -18,6 +18,10 @@ export async function resetDb(baseIso) {
   const { error } = await adminClient().rpc('seed_demo', { base: baseIso });
   if (error) throw error;
   await setClock(0);
+  const { error: e2 } = await adminClient()
+    .from('app_settings')
+    .upsert([{ key: 'pg_mock_mode', value: 'APPROVE' }]);
+  if (e2) throw e2;
 }
 
 export async function setClock(offsetMs) {
