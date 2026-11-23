@@ -41,6 +41,8 @@
 - 민감정보(장애/보훈 여부 증빙)는 수집하지 않습니다. 할인 유형 코드만 저장합니다(SER-004).
 - 문구에는 긴 줄표(—) 대신 하이픈(-)을 씁니다.
 - 문구에는 가운뎃점(·)을 꼭 필요한 곳(정식 사업명 등)에만 씁니다. 나열은 쉼표, 짝 개념은 /, 표 구분은 | 로 씁니다. 화면 문구와 산출물 모두에 적용합니다.
+- 인터랙션(사용자 추가 지시): 사용자, 관리자 화면 모두 hover, active, focus-visible, disabled 상태를 디자인하고, 전환은 120~200ms, `prefers-reduced-motion`이면 움직임을 끕니다. 요청 중인 버튼은 로딩 상태(스피너, 중복 클릭 차단)를 가집니다.
+- 로딩(사용자 추가 지시): 데이터를 불러오는 화면은 실제 레이아웃 모양의 스켈레톤을 보여 주고(300ms 지연 표시, `aria-busy`, 화면 낭독용 「불러오는 중」), 스켈레톤은 공용 컴포넌트 하나로 만듭니다.
 - UI 문구는 한국어 존댓말로 씁니다. 오류 안내는 「원인 + 다음 행동」 형식입니다(QUR-007). 색으로만 정보를 전달하지 않습니다(QUR-001).
 - 실제 기관명, 실제 공연 포스터, 실제 개인정보는 쓰지 않습니다. 포스터는 무료 사진(상업적 이용 가능) 또는 생성 이미지에 타이포그래피를 얹어 만들고, 출처를 `src/assets/images/CREDITS.md`에 남깁니다(COR-001).
 - 화면 품질: 바로 출시 가능한 완성도로 만듭니다. 「목업」 「예시」 같은 설명 문구나 설명용 UI는 넣지 않습니다. 도형이나 카드 옆에 포인트 색 두꺼운 선(강조 막대)은 쓰지 않습니다. 장식 요소는 용도, 가독성, 심미성을 따져 하나씩 정합니다(설계 5-9).
@@ -599,6 +601,25 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**
 - [ ] **Step 5: 커밋**: `feat(admin): 검수용 시계/시연 데이터 초기화/작업 이력과 환경 분리`
 
+### Task 15A: 인터랙션과 로딩 상태 보완 (사용자 추가 지시)
+
+Task 8~15에서 만든 화면 전체에 인터랙션과 로딩 상태를 고르게 적용합니다. 이후 Task는 처음부터 이 규칙을 지키고, 이 Task는 이미 만든 화면(Task 8~10)을 맞추고 전체를 점검합니다.
+
+**Files**
+- Create: `src/components/skeleton.js`, `src/components/button-busy.js`, `src/styles/motion.css`
+- Modify: Task 8~15 화면 파일, `src/styles/user.css`, `src/styles/admin.css`
+- Test: `tests/ui/skeleton.test.js`, `tests/ui/button-busy.test.js`
+
+**Interfaces**
+- `showSkeleton(el, kind:'cards'|'detail'|'seat-map'|'table'|'form', {delayMs=300}) -> () => void`(해제 함수). `aria-busy="true"`와 `<span class="sr-only">불러오는 중</span>`을 함께 둡니다.
+- `withBusy(button, promiseFn) -> Promise`: 처리 중 `aria-disabled`, 스피너, 「처리 중」 문구, 중복 클릭 차단, 끝나면 원래대로.
+
+- [ ] **Step 1: 실패하는 테스트 작성**: 300ms 안에 해제하면 스켈레톤이 DOM에 나타나지 않습니다. 300ms 후에는 나타나고 `aria-busy="true"`입니다. `withBusy`는 처리 중 두 번째 클릭을 무시하고, 실패해도 버튼을 원래대로 돌립니다.
+- [ ] **Step 2: 실행해서 실패 확인**
+- [ ] **Step 3: 구현**: 버튼, 링크, 카드, 좌석, 탭, 표 행, 메뉴에 hover/active/focus-visible/disabled 상태를 적용합니다(120~200ms, reduced-motion이면 끔). 목록 카드, 상세, 좌석도, 내 예약, 관리자 표와 정산 카드에 스켈레톤을, 결제/취소/저장 버튼에 `withBusy`를 적용합니다.
+- [ ] **Step 4: 통과 확인**: `npm test` PASS, 1440, 768, 390에서 수동 확인(가로 넘침 없음)
+- [ ] **Step 5: 커밋**: `feat(ui): 인터랙션 상태와 스켈레톤 로딩`
+
 ### Task 16: 배포 구성/시연 안내/추적성 점검
 
 **Files**
@@ -686,7 +707,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 | QUR-004 | 브라우저 지원 | - | - | QA | - |
 | QUR-005 | 정책 로직 검증 | 1, 2 | tests/policy/* | - | AC-1, AC-2, AC-4, AC-5 |
 | QUR-006 | 요구사항 추적성 | 16 | tests/scripts/check-trace | - | AC-8 |
-| QUR-007 | 오류 안내 | 8, 10, 11, 12 | tests/ui/* 문구 단언 | QA | - |
+| QUR-007 | 오류 안내 | 8, 10, 11, 12, 15A | tests/ui/* 문구 단언 | QA | - |
 | COR-001 | 가상 데이터 | 3, 9 | tests/ui/poster | 시드 검토 | - |
 | COR-002 | 결제 모의 연동 | 6 | tests/payments/gateway | - | AC-9 |
 | COR-003 | 키 관리 | 0 | tests/scripts/check-secrets | - | AC-9 |
