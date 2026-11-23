@@ -22,6 +22,7 @@ const MESSAGES = {
   INVALID_REASON: '취소 사유를 500자 안으로 입력해 주세요.',
   ALREADY_DECIDED: '이미 승인 또는 반려된 요청입니다. 목록을 새로 불러와 상태를 확인해 주세요.',
   CANCEL_NOT_APPROVED: '승인된 회차 취소 요청이 없습니다. 취소 요청을 먼저 승인해 주세요.',
+  NOT_ALLOWED_IN_ENV: '이 환경에서는 쓸 수 없는 기능입니다. 환경 설정을 확인한 뒤 다시 시도해 주세요.',
   OFFERING_NOT_FOUND: '회차 정보를 찾을 수 없습니다. 목록을 새로 불러와 다시 확인해 주세요.',
 };
 
@@ -169,5 +170,13 @@ export const adminApi = {
   // 정산
   async settlement(from, to) {
     return (await rpc('staff_settlement', { p_from: from || null, p_to: to || null })) ?? [];
+  },
+
+  // 시스템: 검수용 시계, 시연 데이터 초기화, 작업 이력(0013)
+  clock: () => rpc('staff_clock'),
+  setClock: (offsetMs) => rpc('admin_set_clock', { p_offset_ms: offsetMs }),
+  resetDemo: () => rpc('admin_reset_demo'),
+  async audit(f = {}) {
+    return (await rpc('staff_audit', { p_from: f.from || null, p_to: f.to || null, p_actor: f.actor || null, p_action: f.action || null })) ?? [];
   },
 };

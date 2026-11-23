@@ -9,7 +9,7 @@ import { withBusy } from '../components/button-busy.js';
 import { describeError } from '../lib/api.js';
 import { escapeHtml } from '../lib/format.js';
 import { adminApi } from './admin-api.js';
-import { AVAILABLE, findMenu, renderLayout } from './layout.js';
+import { AVAILABLE, envAllows, findMenu, renderLayout } from './layout.js';
 import { renderDashboard } from './pages/dashboard.js';
 import { renderPrograms, renderProgramEdit } from './pages/programs.js';
 import { renderOfferings, renderOfferingEdit } from './pages/offerings.js';
@@ -18,6 +18,9 @@ import { renderWaitlist } from './pages/waitlist.js';
 import { renderPayments } from './pages/payments.js';
 import { renderCancelRequests } from './pages/cancel-requests.js';
 import { renderSettlement } from './pages/settlement.js';
+import { renderAudit } from './pages/audit.js';
+import { renderSystemClock } from './pages/system-clock.js';
+import { renderSystemReset } from './pages/system-reset.js';
 
 document.body.classList.add('admin');
 const root = document.getElementById('root');
@@ -120,6 +123,9 @@ async function boot(session) {
     '#/payments': (_p, el) => renderPayments(el, { api: adminApi }),
     '#/cancel-requests': (_p, el) => renderCancelRequests(el, { api: adminApi, role, onCounts: (c) => layout?.setCounts(c) }),
     '#/settlement': (_p, el) => renderSettlement(el, { api: adminApi }),
+    '#/audit': (_p, el) => renderAudit(el, { api: adminApi }),
+    '#/system/clock': (_p, el) => renderSystemClock(el, { api: adminApi, onClock: (c) => layout?.setClock(c) }),
+    '#/system/reset': (_p, el) => renderSystemReset(el, { api: adminApi }),
   };
   // 메뉴에 보일 경로(화면이 있는 것만)
   const available = AVAILABLE;
@@ -145,8 +151,15 @@ async function boot(session) {
       el.innerHTML = '<div class="page-message"><h1>이 메뉴를 쓸 권한이 없습니다</h1><p>담당 역할에 맞는 메뉴를 왼쪽에서 선택해 주세요.</p><a class="btn-secondary" href="#/">대시보드로 이동</a></div>';
       return undefined;
     }
+    // 이 환경(VITE_ENV)에서 열지 않는 화면은 주소로 들어와도 막습니다(예: 시연 빌드의 검수용 시계).
+    if (hit && !envAllows(hit.item, APP_ENV)) {
+      el.innerHTML = '<div class="page-message"><h1>이 환경에서는 쓸 수 없는 메뉴입니다</h1><p>이 화면은 다른 환경에서만 열 수 있습니다. 왼쪽 메뉴에서 다른 항목을 선택해 주세요.</p><a class="btn-secondary" href="#/">대시보드로 이동</a></div>';
+      return undefined;
+    }
     return handler(p, el, q);
   }]));
+  // 검수용 시계가 켜져 있으면 어느 화면에서든 상단 띠로 알립니다(조회 실패해도 화면 사용에는 영향이 없습니다).
+  adminApi.clock().then((c) => layout?.setClock(c)).catch(() => {});
   router = createRouter(guarded, layout.content);
   await router.start();
 }

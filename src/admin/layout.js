@@ -1,7 +1,7 @@
 // 관리자 공통 틀: 상단 바(기관명, 통합 검색, 자동 로그아웃, 역할, 이름, 로그아웃), 좌측 메뉴 트리, 본문.
 // 메뉴 구성은 설계 5-9 그대로이고, 역할(roles)과 환경(env)에 맞는 항목만 보입니다.
 // 아직 화면이 없는 경로는 available 에서 빼서 메뉴에 그리지 않습니다(동작 없는 링크 금지).
-import { escapeHtml, kstDateTime } from '../lib/format.js';
+import { clockOffsetText, escapeHtml, kstDateTime } from '../lib/format.js';
 
 const ALL = ['operator', 'finance'];
 
@@ -37,9 +37,10 @@ export const MENU = [
   },
 ];
 
-// 화면이 있는 경로. 메뉴는 이 경로만 그립니다(작업 이력, 시스템 메뉴는 Task 15).
+// 화면이 있는 경로. 메뉴는 이 경로만 그립니다.
 export const AVAILABLE = new Set([
   '#/', '#/programs', '#/offerings', '#/bookings', '#/waitlist', '#/payments', '#/cancel-requests', '#/settlement',
+  '#/audit', '#/system/clock', '#/system/reset',
 ]);
 
 const ICONS = {
@@ -52,8 +53,11 @@ const ICONS = {
 const icon = (name) => `<svg class="ico" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${ICONS[name]}</svg>`;
 const CHEV = '<svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 
+// 환경 제한이 없거나 이 환경이 허용 목록에 있으면 true. 주소로 직접 들어오는 경우에도 같은 규칙을 씁니다.
+export const envAllows = (item, env) => !item.envs || item.envs.includes(env);
+
 const allowed = (item, role, env, available) =>
-  item.roles.includes(role) && (!item.envs || item.envs.includes(env)) && (!item.path || !available || available.has(item.path));
+  item.roles.includes(role) && envAllows(item, env) && (!item.path || !available || available.has(item.path));
 
 /**
  * 역할, 환경, 열 수 있는 경로에 맞춰 거른 메뉴. 하위 항목이 모두 빠진 묶음은 없앱니다.
@@ -95,7 +99,7 @@ const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${pa
  * @param {HTMLElement} el
  * @param {{user:{name:string,email?:string,lastSignInAt?:string}, role:string, current:string, env?:string,
  *   available?:Set<string>, onLogout?:()=>void, onSearch?:(q:string)=>void, now?:()=>number, idleMs?:number}} opts
- * @returns {{content:HTMLElement, setCurrent:(path:string)=>void, setCounts:(counts:Object)=>void, extend:()=>void, destroy:()=>void}}
+ * @returns {{content:HTMLElement, setCurrent:(path:string)=>void, setClock:(clock:{enabled:boolean, offsetMs:number})=>void, setCounts:(counts:Object)=>void, extend:()=>void, destroy:()=>void}}
  */
 export function renderLayout(el, {
   user, role, current, env = 'local', available, onLogout = () => {}, onSearch, now = () => Date.now(), idleMs = 30 * 60 * 1000,
@@ -115,6 +119,8 @@ export function renderLayout(el, {
 
   const lastLogin = user?.lastSignInAt ? `최근 접속 ${escapeHtml(kstDateTime(user.lastSignInAt))}` : '';
   el.innerHTML = `
+    <div class="top-stack">
+    <div class="clock-band" role="status" hidden></div>
     <header class="topbar">
       <button class="menu-toggle" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="admin-nav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
       <a class="brand" href="#/"><b>한빛아트센터</b><span>통합 예약 관리</span></a>
@@ -125,6 +131,7 @@ export function renderLayout(el, {
         <button class="logout" type="button">로그아웃</button>
       </div>
     </header>
+    </div>
     <div class="shell">
       <nav class="sidebar" id="admin-nav" aria-label="관리자 메뉴">
         ${menu.map(groupHtml).join('')}
@@ -232,10 +239,20 @@ export function renderLayout(el, {
     }
   }
 
+  // 검수용 시계가 실제 시각과 다를 때만 상단 띠를 보입니다(어느 화면에서든 같은 자리).
+  const bandEl = el.querySelector('.clock-band');
+  function setClock(clock) {
+    const text = clock?.enabled ? clockOffsetText(clock.offsetMs) : '';
+    bandEl.hidden = !text;
+    bandEl.textContent = text ? `검수용 시계 사용 중: 실제보다 ${text}` : '';
+    el.classList.toggle('has-clock-band', Boolean(text));
+  }
+
   setCurrent(current);
   return {
     content,
     setCurrent,
+    setClock,
     setCounts,
     extend,
     destroy() {

@@ -92,6 +92,17 @@ export function kstShortDate(iso) {
   return `${t.month}. ${t.day}.(${t.weekday})`;
 }
 
+// 검수용 시계 오프셋(밀리초)을 문구로: 86400000 -> '1일 앞', -3600000 -> '1시간 뒤', 분 미만은 ''
+export function clockOffsetText(ms) {
+  const total = Math.floor(Math.abs(Number(ms) || 0) / 60000);
+  if (!total) return '';
+  const d = Math.floor(total / 1440);
+  const h = Math.floor((total % 1440) / 60);
+  const m = total % 60;
+  const parts = [d && `${d}일`, h && `${h}시간`, m && `${m}분`].filter(Boolean);
+  return `${parts.join(' ')} ${ms > 0 ? '앞' : '뒤'}`;
+}
+
 // 날짜 키('2026-12-01') 계산. 기간 조회 입력 값용입니다.
 const DAY_MS = 86400000;
 const keyToUtc = (key) => {
