@@ -22,7 +22,7 @@ export async function renderSystemClock(el, { api, onClock = () => {} }) {
     <div class="sys-host"></div>`;
   const host = el.querySelector('.sys-host');
   const alerts = el.querySelector('.alert-host');
-  let clock = await loadInto(host, 'detail', () => api.clock());
+  let clock = await loadInto(host, 'form', () => api.clock());
   if (!clock) return;
 
   host.innerHTML = `<section class="card sys-card" aria-labelledby="clk-h">

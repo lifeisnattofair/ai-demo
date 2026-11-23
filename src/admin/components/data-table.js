@@ -1,4 +1,4 @@
-// 목록 표: 숫자/금액 열은 오른쪽 정렬과 천 단위 구분, 상태는 글자가 있는 칩, 아래에 페이지 이동.
+// 목록 표: 숫자/금액 열은 오른쪽 정렬과 천 단위 구분, 상태는 글자가 있는 칩, 긴 제목은 두 줄 말줄임, 아래에 페이지 이동.
 // 행이 없으면 빈 상태 화면을 그립니다.
 
 /**
@@ -77,7 +77,14 @@ export function renderDataTable(el, { columns, rows, total, page, pageSize, onPa
       else v = row[c.key];
       if ((c.type === 'number' || c.type === 'money') && typeof v === 'number') v = v.toLocaleString('en-US');
       if (v instanceof Node) td.append(v);
-      else td.textContent = v == null || v === '' ? '-' : String(v);
+      else if (align(c) === 'l' && v != null && v !== '') {
+        // 왼쪽 정렬 글자(제목, 이름)는 두 줄까지 보이고 말줄임, 전체는 title 로 봅니다.
+        const span = document.createElement('span');
+        span.className = 'clamp2';
+        span.title = String(v);
+        span.textContent = String(v);
+        td.append(span);
+      } else td.textContent = v == null || v === '' ? '-' : String(v);
       tr.append(td);
     }
     tbody.append(tr);

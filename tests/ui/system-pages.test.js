@@ -34,7 +34,7 @@ describe('검수용 시계 화면', () => {
     const { api } = mk();
     await renderSystemClock(el, { api });
     expect(el.querySelector('h1').textContent).toBe('검수용 시계');
-    expect(el.querySelector('.clock-now').textContent).toContain('2026. 12. 7.(월) 10:00');
+    expect(el.querySelector('.clock-now').textContent).toContain('2026.12.07(월) 10:00');
     for (const l of ['+10분', '+1일', '+24시간', '초기화']) expect(btn(l), l).toBeTruthy();
   });
 
@@ -126,7 +126,7 @@ describe('작업 이력 화면', () => {
     await settle();
     expect(el.querySelector('h1').textContent).toBe('작업 이력');
     const text = el.querySelector('table').textContent;
-    expect(text).toContain('2026. 12. 7.(월) 09:30');
+    expect(text).toContain('2026.12.07(월) 09:30');
     expect(text).toContain('김*영');
     expect(text).toContain('운영 담당');
     expect(text).toContain('검수용 시계 변경');

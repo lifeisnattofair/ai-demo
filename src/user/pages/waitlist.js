@@ -2,7 +2,7 @@
 import { api as defaultApi, describeError } from '../../lib/api.js';
 import { kstDateTime, kstShortDateTime } from '../../lib/format.js';
 import { confirmDialog } from '../../components/dialog.js';
-import { withBusy } from '../../components/button-busy.js';
+import { isBusy, withBusy } from '../../components/button-busy.js';
 import { showSkeleton } from '../../components/skeleton.js';
 import { typeMark } from '../components/program-card.js';
 import { mountMyPage, node, emptyState, loadError } from './my-shell.js';
@@ -46,9 +46,13 @@ export function promotionCard(w, ctx) {
   const p = node('p', 'num');
   p.append(
     document.createTextNode(`${kstShortDateTime(w.offering.starts_at)}, ${w.allocated_qty}${unit(w.program.type)} 배정. `),
-    node('strong', null, `${deadlineText(w)}`),
-    document.createTextNode('이며, 기한이 지나면 다음 대기자에게 넘어갑니다.'),
   );
+  // 결제 기한을 아직 받지 못했으면 기한 문구 없이 안내합니다.
+  if (w.deadline_at) {
+    p.append(node('strong', null, deadlineText(w)), document.createTextNode('이며, 기한이 지나면 다음 대기자에게 넘어갑니다.'));
+  } else {
+    p.append(document.createTextNode('결제 기한 안에 결제하지 않으면 다음 대기자에게 넘어갑니다.'));
+  }
   text.append(title, p);
   card.append(text, payButton(w, ctx));
   return card;
@@ -79,6 +83,7 @@ function waitCard(w, ctx) {
   const cancel = node('button', 'btn btn-secondary btn-sm', '대기 취소');
   cancel.type = 'button';
   cancel.addEventListener('click', async () => {
+    if (isBusy(cancel)) return;
     const ok = await confirmDialog({
       title: '대기 신청을 취소하시겠습니까?',
       message: promoted ? '배정된 좌석도 함께 다음 대기자에게 넘어갑니다.' : '대기 순번이 사라지며, 다시 신청하면 맨 뒤에 서게 됩니다.',
@@ -121,7 +126,7 @@ export async function renderWaitlist(el, deps = {}) {
   content.append(h1, intro, body);
 
   async function load() {
-    const release = showSkeleton(body, 'cards');
+    const release = showSkeleton(body, 'list');
     let list;
     try {
       list = await api.myWaitlist();

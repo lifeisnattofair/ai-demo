@@ -1,5 +1,5 @@
 // 프로그램 카드와 판매 상태, 기간과 가격 문구. 모든 일시는 Asia/Seoul 기준입니다.
-import { kstDate, won } from '../../lib/format.js';
+import { dateRange, won } from '../../lib/format.js';
 import { renderPoster, TYPE_LABEL } from './poster.js';
 import { posterImage } from './poster-images.js';
 
@@ -62,34 +62,22 @@ export function sortPrograms(programs) {
     || a.title.localeCompare(b.title, 'ko'));
 }
 
-function parts(iso) {
-  const m = kstDate(iso).match(/^(\d+)\. (\d+)\. (\d+)\.\((.)\)$/);
-  return { y: m[1], m: m[2], d: m[3], wd: m[4] };
-}
-
 function periodRange(program) {
   const list = activeOfferings(program);
   if (!list.length) return null;
-  const start = list[0].starts_at;
   const lastOffering = list[list.length - 1];
   // 정규 강좌는 마지막 수업일까지, 나머지는 마지막 회차 시작일까지
-  const end = program.type === 'COURSE' ? lastOffering.ends_at : lastOffering.starts_at;
-  return { s: parts(start), e: parts(end) };
+  return { start: list[0].starts_at, end: program.type === 'COURSE' ? lastOffering.ends_at : lastOffering.starts_at };
 }
 
 /**
- * @param {'full'|'plain'|'short'} style full: 2026. 12. 12.(토) - 12. 13.(일), plain: 요일 없음, short: 12.12 - 12.13
+ * 프로그램 기간. 표기는 format.js 의 dateRange 를 씁니다.
+ * @param {'full'|'plain'|'short'} style full: 2026.12.12(토) - 12.13(일), plain: 2026.12.12 - 12.13, short: 12.12 - 12.13
  */
 export function periodText(program, style = 'plain') {
   const r = periodRange(program);
   if (!r) return '';
-  const { s, e } = r;
-  const same = s.y === e.y && s.m === e.m && s.d === e.d;
-  if (style === 'short') return same ? `${s.m}.${s.d}` : `${s.m}.${s.d} - ${e.m}.${e.d}`;
-  const wd = style === 'full';
-  const head = `${s.y}. ${s.m}. ${s.d}.${wd ? `(${s.wd})` : ''}`;
-  if (same) return head;
-  return `${head} - ${s.y === e.y ? '' : `${e.y}. `}${e.m}. ${e.d}.${wd ? `(${e.wd})` : ''}`;
+  return dateRange(r.start, r.end, { weekday: style === 'full', short: style === 'short' });
 }
 
 export function minPrice(program) {

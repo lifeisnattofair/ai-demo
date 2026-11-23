@@ -90,7 +90,7 @@ export async function renderNotifications(el, deps = {}) {
   }));
 
   async function load() {
-    const release = showSkeleton(body, 'cards');
+    const release = showSkeleton(body, 'list');
     try {
       list = await api.myNotifications();
     } catch (e) {

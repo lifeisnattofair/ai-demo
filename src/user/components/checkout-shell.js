@@ -1,5 +1,5 @@
 // 할인/결제 화면의 공통 틀: 예매 머리말(작품, 일시, 단계), 모바일 타이머, 본문 2단, 모바일 하단 바.
-import { escapeHtml, kstDate, kstDateTime, won } from '../../lib/format.js';
+import { dateRange, escapeHtml, kstDate, kstDateTime, won } from '../../lib/format.js';
 import { posterImage } from './poster-images.js';
 import { bookingSteps } from './booking-steps.js';
 import { startHoldTimer } from './hold-timer.js';
@@ -9,11 +9,12 @@ const DAY = 86400000;
 /** 취소 수수료 일정(정책: 8일 전까지 무료, 7~4일 전 10%, 3~1일 전 30%, 당일 취소 불가). */
 export function cancelSchedule(startsAt) {
   const start = new Date(startsAt).getTime();
-  const d = (n) => kstDate(new Date(start - n * DAY));
+  const at = (n) => new Date(start - n * DAY);
+  const range = (a, b) => dateRange(at(a), at(b), { weekday: true });
   return [
-    ['무료 취소', `${d(8)}까지`],
-    ['수수료 10%', `${d(7)} - ${d(4)}`],
-    ['수수료 30%', `${d(3)} - ${d(1)}`],
+    ['무료 취소', `${kstDate(at(8))}까지`],
+    ['수수료 10%', range(7, 4)],
+    ['수수료 30%', range(3, 1)],
     ['취소 불가', '공연/체험 당일'],
   ];
 }

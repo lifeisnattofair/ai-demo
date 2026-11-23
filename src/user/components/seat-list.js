@@ -44,7 +44,10 @@ export function renderSeatList(el, state, onToggle) {
       input.type = 'checkbox';
       input.dataset.seatId = String(seat.id);
       const pick = node('td');
-      pick.append(input);
+      // 체크 상자 둘레까지 눌러지도록 44px 영역으로 감쌉니다.
+      const hit = node('label', 'cb');
+      hit.append(input);
+      pick.append(hit);
       const status = node('td');
       tr.append(
         pick,

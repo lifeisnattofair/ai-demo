@@ -81,14 +81,5 @@ export function loadError(body, error, retry, describe) {
   body.replaceChildren(box);
 }
 
-// 목록이 비었을 때 보여 주는 화면
-export function emptyState({ title, body, href, label }) {
-  const box = node('div', 'empty-state');
-  box.append(node('h2', null, title), node('p', null, body));
-  if (href) {
-    const a = node('a', 'btn btn-secondary', label);
-    a.href = href;
-    box.append(a);
-  }
-  return box;
-}
+// 목록이 비었을 때 보여 주는 화면(공용 컴포넌트)
+export { emptyState } from '../../components/empty-state.js';

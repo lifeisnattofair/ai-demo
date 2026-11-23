@@ -94,7 +94,7 @@ export async function renderPrograms(el, { api, query }) {
     ], filtered()));
   });
 
-  const rows = await loadInto(tb, 'grid-table', () => api.programs());
+  const rows = await loadInto(tb, 'table', () => api.programs());
   if (!rows) return;
   state.rows = rows;
   draw();
@@ -214,7 +214,7 @@ export async function renderProgramEdit(el, { api, go, id }) {
         if (locked) delete payload.type;
         const saved = await api.saveProgram(payload);
         if (isNew) {
-          sessionStorage.setItem('admin-flash', '프로그램을 등록했습니다. 이제 회차를 등록할 수 있습니다.');
+          try { sessionStorage.setItem('admin-flash', '프로그램을 등록했습니다. 이제 회차를 등록할 수 있습니다.'); } catch { /* 저장소를 못 쓰면 안내 없이 이동합니다. */ }
           await go(`#/programs/${saved.id}`);
         } else {
           alertBox(alertHost, '저장했습니다. 사용자 화면에도 바로 반영됩니다.', 'ok');
@@ -226,6 +226,7 @@ export async function renderProgramEdit(el, { api, go, id }) {
       }
     });
   });
-  const flash = sessionStorage.getItem('admin-flash');
-  if (flash) { sessionStorage.removeItem('admin-flash'); alertBox(alertHost, flash, 'ok'); }
+  let flash = null;
+  try { flash = sessionStorage.getItem('admin-flash'); sessionStorage.removeItem('admin-flash'); } catch { /* 저장소를 못 쓰면 안내를 건너뜁니다. */ }
+  if (flash) alertBox(alertHost, flash, 'ok');
 }

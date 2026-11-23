@@ -93,7 +93,7 @@ export async function renderOfferings(el, { api, query }) {
     });
   }
 
-  const data = await loadInto(tb, 'grid-table', async () => {
+  const data = await loadInto(tb, 'table', async () => {
     const [rows, stats] = await Promise.all([api.offerings(), api.offeringStats()]);
     return { rows, stats };
   });
@@ -320,7 +320,7 @@ export async function renderOfferingEdit(el, { api, go, id, query }) {
       try {
         const saved = await api.saveOffering(payload);
         if (isNew) {
-          sessionStorage.setItem('admin-flash', '회차를 등록했습니다. 사용자 화면에서 바로 예약할 수 있습니다.');
+          try { sessionStorage.setItem('admin-flash', '회차를 등록했습니다. 사용자 화면에서 바로 예약할 수 있습니다.'); } catch { /* 저장소를 못 쓰면 안내 없이 이동합니다. */ }
           await go(`#/offerings/${saved.id}`);
         } else {
           alertBox(alertHost, '저장했습니다. 사용자 화면에도 바로 반영됩니다.', 'ok');
@@ -332,8 +332,9 @@ export async function renderOfferingEdit(el, { api, go, id, query }) {
       }
     });
   });
-  const flash = sessionStorage.getItem('admin-flash');
-  if (flash) { sessionStorage.removeItem('admin-flash'); alertBox(alertHost, flash, 'ok'); }
+  let flash = null;
+  try { flash = sessionStorage.getItem('admin-flash'); sessionStorage.removeItem('admin-flash'); } catch { /* 저장소를 못 쓰면 안내를 건너뜁니다. */ }
+  if (flash) alertBox(alertHost, flash, 'ok');
 }
 
 const SEAT_STATES = [
@@ -348,7 +349,7 @@ const seatKey = (s) => (s === 'PAYING' ? 'HELD' : s);
 async function drawSeats(host, api, offeringId) {
   host.innerHTML = '<section class="result" aria-labelledby="fs-seat"><div class="result-head"><h2 id="fs-seat">좌석 현황</h2><small>결제 중은 선점에 포함</small></div><div class="seat-body"></div></section>';
   const body = host.querySelector('.seat-body');
-  const seats = await loadInto(body, 'table', () => api.seatMap(offeringId));
+  const seats = await loadInto(body, 'seat-map', () => api.seatMap(offeringId));
   if (!seats) return;
   const by = Object.fromEntries(GRADES.map((g) => [g, { AVAILABLE: 0, HELD: 0, WAIT_ALLOCATED: 0, SOLD: 0, total: 0 }]));
   for (const s of seats) {
@@ -379,7 +380,7 @@ async function drawSeats(host, api, offeringId) {
 async function drawBookings(host, api, offeringId) {
   host.innerHTML = '<section class="result" aria-labelledby="fs-bk"><div class="result-head"><h2 id="fs-bk">예약자</h2><small>개인정보는 일부를 가려 표시합니다. 상세를 열면 열람 기록이 남습니다.</small></div><div class="bk-body"></div></section>';
   const body = host.querySelector('.bk-body');
-  const rows = await loadInto(body, 'grid-table', () => api.offeringBookings(offeringId));
+  const rows = await loadInto(body, 'table', () => api.offeringBookings(offeringId));
   if (!rows) return;
   renderDataTable(body, {
     caption: '이 회차의 예약자', rows, total: rows.length, page: 1, pageSize: rows.length || 1, onPage: () => {},

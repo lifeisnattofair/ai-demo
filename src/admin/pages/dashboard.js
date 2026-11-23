@@ -23,7 +23,7 @@ export async function renderDashboard(el, { api, role, available, onCounts }) {
     </section>`;
   const kpiHost = el.querySelector('.kpi-host');
   const upHost = el.querySelector('.up-host');
-  const releaseUp = showSkeleton(upHost, 'grid-table');
+  const releaseUp = showSkeleton(upHost, 'table');
   const data = await loadInto(kpiHost, 'kpis', () => api.dashboard());
   releaseUp();
   if (!data) { upHost.replaceChildren(); return; }

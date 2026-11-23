@@ -8,6 +8,9 @@ import { showSkeleton } from '../../components/skeleton.js';
 const BOOKINGS = '#/me/bookings';
 const ORDER_RE = /^HB-\d{8}-[A-Za-z0-9]{10}$/;
 const KEY_RE = /^mock_[A-Za-z0-9]{20}$/;
+const FAIL_REASON = {
+  USER_CANCEL: '결제를 취소하셨습니다.',
+};
 
 // 같은 주문은 화면을 다시 그려도 승인을 다시 요청하지 않고 첫 요청의 결과를 씁니다(서버도 멱등이지만 불필요한 호출을 줄입니다).
 const confirmations = new Map();
@@ -112,6 +115,8 @@ export async function renderPaymentSuccess(el, { api, go, query }) {
   const { result, error } = await outcome;
 
   if (error) {
+    // 연결 오류처럼 실패한 확인은 기억하지 않아 다시 들어오면 한 번 더 확인합니다.
+    confirmations.delete(orderId);
     release();
     console.error(error);
     page(el, '결제 결과를 확인하지 못했습니다.', [node('p', '', describeError(error))],
@@ -139,7 +144,8 @@ export async function renderPaymentSuccess(el, { api, go, query }) {
 export function renderPaymentFail(el, { query }) {
   const holdId = query.get('holdId');
   const code = query.get('code');
-  const reason = code === 'USER_CANCEL' ? '결제를 취소하셨습니다.' : (query.get('message') || '결제를 완료하지 못했습니다.');
+  // 주소에 실린 문구는 그대로 보이지 않고, 알려진 코드만 정해 둔 안내로 바꿉니다.
+  const reason = FAIL_REASON[code] ?? '결제를 완료하지 못했습니다. 결제 수단을 확인하신 뒤 다시 시도해 주세요.';
   const actions = holdId ? [link(`#/booking/${encodeURIComponent(holdId)}/discount`, '할인 선택으로 돌아가기', 'primary')] : [];
   actions.push(link('#/programs', '프로그램 목록'));
   page(el, '결제가 완료되지 않았습니다.', [

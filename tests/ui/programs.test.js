@@ -4,7 +4,7 @@ import { saleStatus, STATUS_LABEL } from '../../src/user/components/program-card
 import { renderPrograms } from '../../src/user/pages/programs.js';
 import { renderProgramDetail, cancellationRows } from '../../src/user/pages/program-detail.js';
 
-const NOW = new Date('2026-11-23T03:00:00Z'); // 2026. 11. 23.(월) 12:00 KST
+const NOW = new Date('2026-11-23T03:00:00Z'); // 2026.11.23(월) 12:00 KST
 const iso = (days, h = 10) => new Date(NOW.getTime() + days * 86400000 + (h - 12) * 3600000).toISOString();
 
 function offering(id, startDays, over = {}) {
@@ -175,7 +175,7 @@ describe('프로그램 목록', () => {
     const card = el.querySelector('.grid .card');
     expect(card.getAttribute('href')).toBe('#/programs/p1');
     expect(card.querySelector('.c-price').textContent).toBe('20,000원부터');
-    expect(card.querySelector('.c-meta').textContent).toMatch(/^2026\. 12\. 3\./);
+    expect(card.querySelector('.c-meta').textContent).toBe('2026.12.03 - 12.04 소극장');
     const course = [...el.querySelectorAll('.grid .card')].find((c) => c.querySelector('.type').textContent === '정규 강좌');
     expect(course.querySelector('.c-price').textContent).toBe('120,000원');
   });
@@ -196,7 +196,7 @@ describe('프로그램 목록', () => {
     target.dispatchEvent(new Event('change', { bubbles: true }));
     [...el.querySelectorAll('.seg button')].find((b) => b.textContent === '체험').click();
     expect(el.querySelectorAll('.grid .card')).toHaveLength(0);
-    expect(el.querySelector('.empty').textContent).toContain('조건에 맞는 프로그램이 없습니다');
+    expect(el.querySelector('.empty-state').textContent).toContain('조건에 맞는 프로그램이 없습니다');
     expect(month).not.toBeNull();
   });
 
@@ -348,5 +348,56 @@ describe('cancellationRows', () => {
       ['4회 - 5회 진행 후', '결제액의 1/2', '60,000원'],
       ['6회 이후', '환불 불가', '0원'],
     ]);
+  });
+});
+
+describe('메인 화면 다듬기(15A)', () => {
+  let el;
+  beforeEach(() => {
+    el = document.createElement('main');
+    document.body.replaceChildren(el);
+  });
+  const open = (q = '') => renderPrograms(el, { api: fakeApi(), query: new URLSearchParams(q), now: () => NOW });
+
+  it('주소의 month, target 값(GNB 2depth)으로 처음부터 걸러집니다', async () => {
+    await open(`type=EXPERIENCE&target=${encodeURIComponent('초등학생 동반 가족')}`);
+    expect(el.querySelector('#target').value).toBe('초등학생 동반 가족');
+    expect(texts(el.querySelectorAll('.grid .card h3'))).toEqual(['가족 도자기 공방']);
+    await open('type=PERFORMANCE&month=2026-12');
+    expect(el.querySelector('#month').value).toBe('2026-12');
+    expect(el.querySelectorAll('.grid .card')).toHaveLength(2);
+  });
+
+  it('목록에 없는 달이면 그 달을 선택지에 넣고 빈 상태와 조건 초기화를 보입니다', async () => {
+    await open('type=PERFORMANCE&month=2027-06');
+    expect(el.querySelector('#month').value).toBe('2027-06');
+    expect(el.querySelector('#month option[value="2027-06"]').textContent).toBe('2027년 6월');
+    const reset = el.querySelector('.empty-state button');
+    expect(reset.textContent).toBe('조건 초기화');
+    reset.click();
+    expect(el.querySelectorAll('.grid .card')).toHaveLength(6);
+  });
+
+  it('모르는 대상 값은 무시합니다', async () => {
+    await open('target=없는대상');
+    expect(el.querySelector('#target').value).toBe('');
+    expect(el.querySelectorAll('.grid .card')).toHaveLength(6);
+  });
+
+  it('제목 위 작은 라벨과 바로가기 화살표가 없고, 내 예약 바로가기는 새 주소로 갑니다', async () => {
+    await open();
+    expect(el.querySelector('.eyebrow')).toBeNull();
+    expect(el.querySelector('.quick svg')).toBeNull();
+    expect([...el.querySelectorAll('.quick a')].map((a) => a.getAttribute('href'))).toContain('#/me/bookings');
+  });
+
+  it('공지 날짜는 0을 채운 점 형식이고 오늘보다 늦지 않습니다', async () => {
+    await open();
+    const times = [...el.querySelectorAll('.notice-strip time')];
+    expect(times.length).toBeGreaterThan(0);
+    for (const t of times) {
+      expect(t.textContent).toMatch(/^\d{4}\.\d{2}\.\d{2}$/);
+      expect(t.dateTime <= '2026-11-23').toBe(true);
+    }
   });
 });

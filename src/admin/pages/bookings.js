@@ -207,7 +207,7 @@ export async function renderBookings(el, { api, role, query, now = clockNow }) {
 
   async function load() {
     const f = state.filters;
-    const rows = await loadInto(tb, 'grid-table', () => api.bookings({
+    const rows = await loadInto(tb, 'table', () => api.bookings({
       from: f.date.from, to: f.date.to, program: f.program, offering: f.offering, statuses: f.status,
       discount: f.discount, field: f.qField, q: f.q,
     }));

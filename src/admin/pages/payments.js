@@ -167,7 +167,7 @@ export async function renderPayments(el, { api, now = clockNow }) {
   }
 
   async function load() {
-    const data = await loadInto(tb, 'grid-table', async () => {
+    const data = await loadInto(tb, 'table', async () => {
       const [payments, refunds] = await Promise.all([api.payments(state.range.from, state.range.to), api.refunds(state.range.from, state.range.to)]);
       return { payments, refunds };
     });

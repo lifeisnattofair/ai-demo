@@ -2,6 +2,7 @@
 import '../styles/base.css';
 import '../styles/tokens.css';
 import '../styles/admin.css';
+import '../styles/motion.css';
 import { createRouter } from '../lib/router.js';
 import { APP_ENV } from '../lib/supabase.js';
 import { syncClock } from '../lib/clock.js';

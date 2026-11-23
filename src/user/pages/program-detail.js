@@ -1,7 +1,8 @@
 // 프로그램 상세. 마크업과 클래스는 설계 확정본(user-detail.html)과 같습니다.
 import { refundForBeforeStart, refundForCourse } from '@policy/refund.js';
 import { now as clockNow } from '../../lib/clock.js';
-import { kstDate, kstDateTime, won } from '../../lib/format.js';
+import { kstDate, kstDateParts, kstDateTime, kstShortDateTime, kstTime, won } from '../../lib/format.js';
+import { showSkeleton } from '../../components/skeleton.js';
 import {
   activeOfferings, periodText, posterProps, saleStatus, STATUS_LABEL, statusMark, typeMark,
 } from '../components/program-card.js';
@@ -118,28 +119,31 @@ function loadFailed(el, retry) {
 }
 
 function dateParts(iso) {
-  const m = kstDate(iso).match(/^(\d+)\. (\d+)\. (\d+)\.\((.)\)$/);
-  return { key: `${m[1]}-${m[2]}-${m[3]}`, y: m[1], m: m[2], d: m[3], wd: m[4] };
+  const t = kstDateParts(iso);
+  return { key: t.key, label: kstDate(iso), m: Number(t.month), d: Number(t.day), wd: t.weekday };
 }
-const hhmm = (iso) => kstDateTime(iso).slice(-5);
+const hhmm = kstTime;
 
 /**
  * @param {HTMLElement} el
  * @param {{api:object, id:string, now?:()=>Date}} deps
  */
 export async function renderProgramDetail(el, { api, id, now = clockNow }) {
-  el.replaceChildren(node('p', 'container page-message', '프로그램 정보를 불러오는 중입니다.'));
-  el.firstChild.setAttribute('role', 'status');
+  const loading = node('div', 'container detail-loading');
+  el.replaceChildren(loading);
+  const release = showSkeleton(loading, 'detail');
 
   let program;
   try {
     program = await api.getProgram(id);
   } catch (e) {
     console.error(e);
+    release();
     loadFailed(el, () => renderProgramDetail(el, { api, id, now }));
     return;
   }
   if (!program) {
+    release();
     notFound(el);
     return;
   }
@@ -295,7 +299,7 @@ export async function renderProgramDetail(el, { api, id, now = clockNow }) {
       const left = s === 'ON_SALE' && typeof remaining[selected.id] === 'number'
         ? ` 잔여 ${remaining[selected.id]}${w.unit}` : ` ${STATUS_LABEL[s]}`;
       barInfo.replaceChildren(
-        document.createTextNode(type === 'COURSE' ? `${d.m}. ${d.d}.(${d.wd}) 개강` : `${d.m}. ${d.d}.(${d.wd}) ${seq}회차`),
+        document.createTextNode(type === 'COURSE' ? `${kstShortDateTime(selected.starts_at)} 개강` : `${kstShortDateTime(selected.starts_at)} ${seq}회차`),
         node('b', '', `${hhmm(selected.starts_at)}${left}`),
       );
     } else {
@@ -358,7 +362,7 @@ export async function renderProgramDetail(el, { api, id, now = clockNow }) {
       const b = node('button', 'date');
       b.type = 'button';
       b.setAttribute('aria-pressed', String(d.key === currentKey));
-      b.setAttribute('aria-label', `${d.y}. ${d.m}. ${d.d}.(${d.wd})`);
+      b.setAttribute('aria-label', d.label);
       b.append(node('small', '', multiMonth ? `${d.m}월 ${d.wd}` : d.wd), node('b', '', d.d));
       b.addEventListener('click', () => {
         currentKey = d.key;

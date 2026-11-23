@@ -204,7 +204,7 @@ describe('대기 목록', () => {
     const a = api({ myWaitlist: vi.fn().mockResolvedValue([promoted, waiting]) });
     await renderWaitlist(el, { api: a, go: vi.fn(), now });
     const text = el.textContent.replace(/\s+/g, ' ');
-    expect(text).toContain('결제 기한: 12. 3.(목) 14:00까지');
+    expect(text).toContain('결제 기한: 12.03(목) 14:00까지');
     expect(text).toMatch(/순번\s*1번째/);
     expect(text).toMatch(/신청 수량\s*3매/);
     expect(text).toMatch(/배정 수량\s*2매/);
@@ -256,7 +256,7 @@ describe('알림함', () => {
     expect(el.textContent).not.toContain('SMS_MOCK');
     expect(el.querySelectorAll('.noti.unread')).toHaveLength(1);
     expect(el.querySelector('.noti.unread').textContent).toContain('안 읽음');
-    expect(el.textContent).toContain('2026. 12. 3.(목) 14:00');
+    expect(el.textContent).toContain('2026.12.03(목) 14:00');
   });
 
   it('읽음 처리를 요청하고 표시를 바꾼다', async () => {

@@ -76,7 +76,7 @@ export async function renderAudit(el, { api, now = clockNow }) {
     });
   }
 
-  const first = await loadInto(tb, 'grid-table', () => api.audit({}));
+  const first = await loadInto(tb, 'table', () => api.audit({}));
   if (!first) return;
   state.rows = first;
 
@@ -95,7 +95,7 @@ export async function renderAudit(el, { api, now = clockNow }) {
       actor: v.actor || null,
       action: v.kind || null,
     };
-    const rows = await loadInto(tb, 'grid-table', () => api.audit(f));
+    const rows = await loadInto(tb, 'table', () => api.audit(f));
     if (!rows) return;
     state.rows = rows;
     state.page = 1;

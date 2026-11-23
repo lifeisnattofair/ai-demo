@@ -50,9 +50,15 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
   const selfHash = `#/booking/${encodeURIComponent(offeringId)}/select`;
   const mine = ++renderSeq;
   const stale = () => mine !== renderSeq; // 더 새로운 화면이 그려졌으면 이 화면은 그리지 않습니다.
-  const loadHost = node('div', 'container');
+  // 불러오는 동안 실제 예매 화면처럼 왼쪽 좌석 영역과 오른쪽 요약 자리에 스켈레톤을 둡니다.
+  const loadHost = node('div', 'container booking');
+  const mapSlot = node('div', 'panel hall-loading');
+  const sumSlot = node('div', 'panel summary-loading');
+  loadHost.append(mapSlot, sumSlot);
   el.replaceChildren(loadHost);
-  const releaseSkeleton = showSkeleton(loadHost, 'seat-map');
+  const releaseMap = showSkeleton(mapSlot, 'seat-map');
+  const releaseSum = showSkeleton(sumSlot, 'form');
+  const releaseSkeleton = () => { releaseMap(); releaseSum(); };
   let session;
   try {
     session = await api.getSession();
@@ -60,6 +66,7 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
     if (!session) releaseSkeleton();
   } catch (e) {
     releaseSkeleton();
+    if (stale()) return;
     console.error(e);
     messagePage(el, '예매 정보를 불러오지 못했습니다.', LOAD_ERROR, '#/programs', '프로그램 목록');
     return;
@@ -78,7 +85,8 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
   try {
     offering = await api.getOffering(offeringId);
     if (stale()) { releaseSkeleton(); return; }
-    if (!offering) {
+    if (!offering || !LABEL[offering.program?.type]) {
+      releaseSkeleton();
       messagePage(el, '회차를 찾을 수 없습니다.', '주소가 바뀌었거나 판매가 끝난 회차일 수 있습니다. 목록에서 다시 찾아 주세요.', '#/programs', '프로그램 목록');
       return;
     }

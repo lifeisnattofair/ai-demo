@@ -82,7 +82,7 @@ export async function renderWaitlist(el, { api, query, now = clockNow }) {
     });
   }
 
-  const rows = await loadInto(tb, 'grid-table', () => api.waitlist());
+  const rows = await loadInto(tb, 'table', () => api.waitlist());
   if (!rows) return;
   state.rows = rows;
   const programs = [...new Map(rows.map((r) => [r.program_id, r.program_title])).entries()].sort((a, b) => a[1].localeCompare(b[1], 'ko'));

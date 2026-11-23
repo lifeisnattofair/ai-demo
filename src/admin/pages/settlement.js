@@ -201,7 +201,7 @@ export async function renderSettlement(el, { api, now = clockNow }) {
 
   async function load() {
     kpiHost.replaceChildren();
-    const releaseBody = showSkeleton(bodyHost, 'grid-table');
+    const releaseBody = showSkeleton(bodyHost, 'chart');
     const rows = await loadInto(kpiHost, 'kpis', () => api.settlement(state.from, state.to));
     releaseBody();
     if (!rows) { bodyHost.replaceChildren(); return; }

@@ -162,7 +162,7 @@ export async function renderCancelRequests(el, { api, role, now = clockNow, onCo
   }
 
   async function load() {
-    const rows = await loadInto(tb, 'grid-table', () => api.cancelRequests());
+    const rows = await loadInto(tb, 'table', () => api.cancelRequests());
     if (!rows) return;
     state.rows = rows;
     onCounts?.({ '#/cancel-requests': rows.filter((r) => r.status === 'REQUESTED').length });

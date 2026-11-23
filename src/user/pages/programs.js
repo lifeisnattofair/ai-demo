@@ -1,6 +1,8 @@
 // 메인과 프로그램 목록. 마크업과 클래스는 설계 확정본(user-list.html)과 같습니다.
 import { now as clockNow } from '../../lib/clock.js';
-import { kstDate } from '../../lib/format.js';
+import { dayKeyLabel, kstMonthKey, monthKeyLabel } from '../../lib/format.js';
+import { showSkeleton } from '../../components/skeleton.js';
+import { emptyState } from '../../components/empty-state.js';
 import {
   activeOfferings, periodText, posterProps, priceText, programStatus,
   renderProgramCard, sortPrograms, statusMark, typeMark,
@@ -8,17 +10,17 @@ import {
 import { renderPoster } from '../components/poster.js';
 
 const TYPES = [['ALL', '전체'], ['PERFORMANCE', '공연'], ['EXPERIENCE', '체험'], ['COURSE', '정규 강좌']];
-const CHEVRON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
 const QUICK = [
   ['#/programs?type=PERFORMANCE', '공연 예매', '지정석 선택, 1인 4매'],
   ['#/programs?type=EXPERIENCE', '체험 신청', '회차별 인원 신청'],
   ['#/programs?type=COURSE', '정규 강좌 수강 신청', '12주 과정, 개강 전 신청'],
-  ['#/my', '내 예약 확인', '예약 내역, 취소, 환불'],
+  ['#/me/bookings', '내 예약 확인', '예약 내역, 취소, 환불'],
 ];
+// 날짜 키(KST)와 제목. 날짜 표기는 format.js 로 만듭니다.
 const NOTICES = [
-  ['2026-12-01', '2026. 12. 1.', '겨울 시즌 공연, 교육 프로그램 예약을 한곳에서 받습니다'],
-  ['2026-11-27', '2026. 11. 27.', '할인 증빙은 입장(수업) 당일 현장에서 확인합니다'],
-  ['2026-11-20', '2026. 11. 20.', '주차장 공사로 12월 한 달간 지하 2층만 이용할 수 있습니다'],
+  ['2026-11-20', '겨울 시즌 공연, 교육 프로그램 예약을 한곳에서 받습니다'],
+  ['2026-11-16', '할인 증빙은 입장(수업) 당일 현장에서 확인합니다'],
+  ['2026-11-09', '주차장 공사로 12월 한 달간 지하 2층만 이용할 수 있습니다'],
 ];
 const LOAD_ERROR = '프로그램 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
 
@@ -35,7 +37,7 @@ function monthsOf(program) {
   if (!list.length) return [];
   const last = list[list.length - 1];
   const end = program.type === 'COURSE' ? last.ends_at : last.starts_at;
-  const ym = (iso) => kstDate(iso).match(/^(\d+)\. (\d+)\./).slice(1).map(Number);
+  const ym = (iso) => kstMonthKey(iso).split('-').map(Number);
   let [y, m] = ym(list[0].starts_at);
   const [ey, em] = ym(end);
   const out = [];
@@ -46,8 +48,6 @@ function monthsOf(program) {
   }
   return out;
 }
-
-const monthLabel = (key) => `${key.slice(0, 4)}년 ${Number(key.slice(5))}월`;
 
 function pickFeatured(programs, statusOf) {
   return programs.find((p) => p.type === 'PERFORMANCE' && statusOf(p) === 'ON_SALE')
@@ -121,7 +121,6 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
   el.innerHTML = `<section class="hero">
     <div class="container hero-grid">
       <div>
-        <p class="eyebrow">한빛아트센터</p>
         <h1>무대와 배움이<br>가까운 곳에</h1>
         <p>공연과 체험, 정규 강좌를 한곳에서 찾고 예약하세요. 회원이면 좌석 선택부터 취소, 환불까지 직접 하실 수 있습니다.</p>
       </div>
@@ -132,7 +131,7 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
   <section class="section" aria-labelledby="list-title">
     <div class="container">
       <div class="section-head"><div><h2 id="list-title">프로그램</h2></div></div>
-      <div data-list><p role="status" class="list-note">프로그램을 불러오는 중입니다.</p></div>
+      <div data-list></div>
     </div>
   </section>
   <section class="notice-strip" aria-labelledby="notice-title">
@@ -146,13 +145,12 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
     const span = node('span', '', label);
     span.append(node('small', '', hint));
     a.append(span);
-    a.insertAdjacentHTML('beforeend', CHEVRON);
     quick.append(a);
   }
   const notices = el.querySelector('.notice-strip ul');
-  for (const [dt, label, text] of NOTICES) {
+  for (const [dt, text] of NOTICES) {
     const li = node('li');
-    const t = node('time', '', label);
+    const t = node('time', '', dayKeyLabel(dt, { plain: true }));
     t.dateTime = dt;
     li.append(t, node('span', '', text));
     notices.append(li);
@@ -163,11 +161,13 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
 
   let programs;
   let remaining;
+  const release = showSkeleton(list, 'cards');
   try {
     programs = sortPrograms(await api.listPrograms());
     remaining = await loadRemaining(api, programs);
   } catch (e) {
     console.error(e);
+    release();
     feature.remove();
     const msg = node('p', 'form-error', LOAD_ERROR);
     msg.setAttribute('role', 'alert');
@@ -178,6 +178,7 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
     return;
   }
 
+  release();
   const statusOf = (p) => programStatus(p, now(), remaining);
   if (programs.length) {
     const featured = pickFeatured(programs, statusOf);
@@ -188,15 +189,19 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
 
   // 필터 상태
   const wanted = query.get('type');
-  const state = { type: TYPES.some(([k]) => k === wanted) ? wanted : 'ALL', month: '', target: '' };
   const months = [...new Set(programs.flatMap(monthsOf))].sort();
   const targets = [...new Set(programs.map((p) => p.audience).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'ko'));
+  // GNB 2depth(이번 달 공연, 가족 체험)는 month, target 값으로 들어옵니다. 달은 목록에 없어도 그 달로 거릅니다(빈 상태 안내).
+  const wantedMonth = /^\d{4}-\d{2}$/.test(query.get('month') ?? '') ? query.get('month') : '';
+  if (wantedMonth && !months.includes(wantedMonth)) { months.push(wantedMonth); months.sort(); }
+  const wantedTarget = targets.includes(query.get('target')) ? query.get('target') : '';
+  const state = { type: TYPES.some(([k]) => k === wanted) ? wanted : 'ALL', month: wantedMonth, target: wantedTarget };
 
   const seg = node('div', 'seg');
   seg.setAttribute('role', 'group');
   seg.setAttribute('aria-label', '유형');
   const count = node('span', 'count');
-  const monthSel = selectBox('month', '기간', '전체 기간', months.map((m) => [m, monthLabel(m)]));
+  const monthSel = selectBox('month', '기간', '전체 기간', months.map((m) => [m, monthKeyLabel(m)]));
   const targetSel = selectBox('target', '대상', '전체 대상', targets.map((t) => [t, t]));
   const right = node('div', 'right');
   right.append(count, ...monthSel.parts, ...targetSel.parts);
@@ -213,7 +218,17 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
       && (!state.target || p.audience === state.target));
     count.textContent = `총 ${shown.length}건`;
     if (!shown.length) {
-      results.replaceChildren(node('p', 'empty', '조건에 맞는 프로그램이 없습니다. 유형이나 기간, 대상을 바꿔 보세요.'));
+      results.replaceChildren(emptyState({
+        title: '조건에 맞는 프로그램이 없습니다.',
+        body: '유형이나 기간, 대상을 바꿔 보세요.',
+        label: '조건 초기화',
+        onAction: () => {
+          Object.assign(state, { type: 'ALL', month: '', target: '' });
+          monthSel.select.value = '';
+          targetSel.select.value = '';
+          draw();
+        },
+      }));
       return;
     }
     const grid = node('ul', 'grid');
@@ -231,6 +246,8 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
   }
   monthSel.select.addEventListener('change', () => { state.month = monthSel.select.value; draw(); });
   targetSel.select.addEventListener('change', () => { state.target = targetSel.select.value; draw(); });
+  monthSel.select.value = state.month;
+  targetSel.select.value = state.target;
   draw();
 }
 

@@ -4,6 +4,7 @@ import '../styles/user.css';
 import '../styles/screens.css';
 import '../styles/booking.css';
 import '../styles/mypage.css';
+import '../styles/motion.css';
 import { createRouter } from '../lib/router.js';
 import { api } from '../lib/api.js';
 import { syncClock } from '../lib/clock.js';
@@ -20,6 +21,7 @@ import { renderMyBookings } from './pages/my-bookings.js';
 import { renderBookingDetail } from './pages/booking-detail.js';
 import { renderWaitlist } from './pages/waitlist.js';
 import { renderNotifications } from './pages/notifications.js';
+import { renderGuideCourse, renderGuideRefund, renderGuideVisit } from './pages/guide.js';
 
 const root = document.getElementById('root');
 root.innerHTML = `<a class="skip" href="#/" data-skip>본문으로 건너뛰기</a>
@@ -49,8 +51,11 @@ router = createRouter(
     '#/me/bookings/:id': (p, el) => renderBookingDetail(el, { api, go, id: p.id }),
     '#/me/waitlist': (_p, el) => renderWaitlist(el, { api, go }),
     '#/me/notifications': (_p, el) => renderNotifications(el, { api, go }),
-    // 예전 주소는 내 예약으로 보냅니다.
-    '#/my': () => go('#/me/bookings'),
+    '#/guide/refund': (_p, el) => renderGuideRefund(el),
+    '#/guide/visit': (_p, el) => renderGuideVisit(el),
+    '#/guide/course': (_p, el) => renderGuideCourse(el),
+    // 예전 주소는 내 예약으로 보냅니다(방문 기록에 예전 주소를 남기지 않습니다).
+    '#/my': () => router.replace('#/me/bookings'),
   },
   main,
 );
@@ -67,6 +72,7 @@ api.onAuthChange((event) => {
   if (event === 'PASSWORD_RECOVERY') go('#/account');
 });
 
-mountHeader(root.querySelector('.site-header'), { api, go });
-syncClock();
+const header = mountHeader(root.querySelector('.site-header'), { api, go });
+// 검수용 시계를 맞춘 뒤 GNB 의 이번 달/다음 달 링크를 다시 계산합니다.
+syncClock().then(() => header.then((h) => h.refresh()));
 router.start();

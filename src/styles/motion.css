@@ -1,0 +1,102 @@
+/* 인터랙션 상태와 로딩(사용자, 관리자 공용). 화면별 파일에는 색과 모양만 두고 상태 규칙은 여기에 모읍니다.
+   - 전환: 색, 배경, 테두리만 var(--dur) var(--ease) 로 바꿉니다(120~200ms).
+   - 움직임: 세로 이동 한 종류. 누를 때 1px 내려가고(var(--press)), 고를 수 있는 카드/좌석은 올릴 때 2px 뜹니다(var(--lift)).
+   - 그림자: 떠 있는 층(열린 메뉴, 대화상자)에만 씁니다. 마우스 올림에는 쓰지 않습니다.
+   - prefers-reduced-motion: reduce 이면 전환과 움직임, 반복 애니메이션을 모두 끕니다. */
+
+:focus-visible { outline: 2px solid var(--c-focus); outline-offset: 2px; }
+
+/* 전환 대상: 누르는 요소 전체 */
+.btn, .btn-text, .link, .select, .input, .ctl, .chk,
+.gnb-top, .gnb-panel a, .util a, .menu-btn, .m-acc, .m-sub a, .m-util a, .m-util button,
+.quick a, .seg button, .date, .slot, .tabs a, .sub-tabs a, .side-nav a, .back-link,
+.seat, .seat-chip button, .view-toggle button, .stepper button, .method, .check,
+.card .poster, .bk, .wl, .noti, .f-links a, .crumb a, .text-link,
+.sidebar .s-head, .sidebar ul a, .pager a, .range-btns button, .topbar .logout, .topbar .session button,
+.menu-toggle, .grid-table tbody tr, .audit-detail summary, .seat-list tbody tr {
+  transition: color var(--dur) var(--ease), background-color var(--dur) var(--ease),
+    border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+/* 누름: 1px 내려감 */
+.btn:active, .seg button:active, .date:active, .slot:active, .sub-tabs a:active, .side-nav a:active,
+.seat-chip button:active, .view-toggle button:active, .stepper button:active, .method:active,
+.range-btns button:active, .pager a:active, .topbar .logout:active, .topbar .session button:active,
+.gnb-top:active, .m-acc:active, .quick a:active { transform: translateY(var(--press)); }
+
+/* 고를 수 있는 카드, 좌석: 올리면 2px 뜸 */
+.card:hover .poster, .card:focus-visible .poster { transform: translateY(var(--lift)); }
+.seat:not(.sold):not(.sel):hover { transform: translateY(var(--lift)); }
+.seat:not(.sold):not(.sel):active { transform: translateY(0); }
+
+/* 사용할 수 없음: 모양은 화면별 파일, 커서와 움직임은 공통 */
+[aria-disabled="true"], :disabled, .seat.sold { cursor: not-allowed; }
+.btn[aria-disabled="true"]:active, .btn:disabled:active, .stepper button[aria-disabled="true"]:active,
+.date[disabled]:active, .slot[disabled]:active { transform: none; }
+
+/* 글 속 링크: 올리면 밑줄 */
+.text-link, .prose a:not(.btn), .guide-body a:not(.btn), .f-links a, .crumb a, .back-link,
+.bk h3 a, .bk a.bk-no, .hero-feature h2 a, .auth-alt a, .check a {
+  text-decoration-thickness: 1px; text-underline-offset: 3px;
+}
+.text-link:hover, .prose a:not(.btn):hover, .guide-body a:not(.btn):hover, .f-links a:hover, .crumb a:hover,
+.back-link:hover, .bk h3 a:hover, .bk a.bk-no:hover, .hero-feature h2 a:hover, .card:hover h3 { text-decoration-line: underline; }
+
+/* 요청 처리 중 버튼 (components/button-busy.js) */
+.btn[data-busy="true"] { cursor: progress; gap: var(--sp-2); opacity: 1; }
+.btn[data-busy="true"]:active { transform: none; }
+.spinner { width: 16px; height: 16px; border-radius: 50%; border: 2px solid currentColor; border-right-color: transparent; animation: spin .8s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 스켈레톤 (components/skeleton.js). 실제 화면 모양을 따라 그립니다. */
+.skeleton .sk-block { background: var(--c-line-soft); border-radius: var(--r-sm); animation: sk-pulse 1.4s ease-in-out infinite; }
+@keyframes sk-pulse { 50% { opacity: .55; } }
+.skeleton .sk-line { height: 14px; margin-top: var(--sp-3); }
+.skeleton .sk-line.short { width: 40%; }
+.skeleton .sk-title { height: 28px; width: 70%; margin-top: var(--sp-3); }
+.skeleton .sk-btn { height: var(--h-btn); width: 50%; margin-top: var(--sp-5); border-radius: var(--r-md); }
+.skeleton .sk-poster { aspect-ratio: 3 / 4; border-radius: var(--r-md); }
+.skeleton .sk-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-7) var(--sp-6); }
+.skeleton .sk-detail { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sp-8); padding: var(--sp-5) 0; }
+.skeleton .sk-stage { width: 62%; height: 34px; margin: 0 auto var(--sp-5); border-radius: 0 0 50% 50% / 0 0 100% 100%; }
+.skeleton .sk-row { display: flex; justify-content: center; gap: var(--sp-1); margin-bottom: 6px; }
+.skeleton .sk-row i { display: block; width: 18px; height: 18px; }
+.skeleton .sk-form-row { height: 56px; margin-top: var(--sp-3); border-radius: var(--r-md); }
+.skeleton .sk-item { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: var(--sp-5); padding: var(--sp-5); border: 1px solid var(--c-line-soft); border-radius: var(--r-lg); }
+.skeleton .sk-item + .sk-item { margin-top: var(--sp-4); }
+.skeleton .sk-thumb { aspect-ratio: 3 / 4; }
+.skeleton .sk-grid { padding: 0 var(--sp-4) var(--sp-4); }
+.skeleton .sk-grid .sk-th { height: 40px; margin: 0 calc(var(--sp-4) * -1) var(--sp-1); border-radius: 0; animation: none; background: var(--c-surface-2); }
+.skeleton .sk-grid .sk-tr { display: grid; grid-template-columns: 40px 2fr 1fr 1fr 1fr 80px; gap: var(--sp-4); padding: 14px 0; border-bottom: 1px solid var(--c-line-soft); }
+.skeleton .sk-grid .sk-tr i { display: block; height: 14px; }
+.skeleton .sk-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3); }
+.skeleton .sk-kpis div { height: 104px; border-radius: var(--r-md); }
+.skeleton .sk-chart { display: flex; align-items: flex-end; gap: var(--sp-3); height: 200px; padding: var(--sp-5) var(--sp-4) var(--sp-3); }
+.skeleton .sk-chart i { display: block; flex: 1; border-radius: var(--r-sm) var(--r-sm) 0 0; }
+
+@media (max-width: 860px) {
+  .skeleton .sk-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-5) var(--sp-3); }
+  .skeleton .sk-detail { grid-template-columns: 240px minmax(0, 1fr); gap: var(--sp-5); }
+}
+@media (max-width: 1180px) {
+  .skeleton .sk-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .skeleton .sk-detail { grid-template-columns: 1fr; }
+  .skeleton .sk-detail .sk-poster { max-width: 240px; }
+  .skeleton .sk-item { grid-template-columns: 72px minmax(0, 1fr); gap: var(--sp-4); padding: var(--sp-4); }
+  .skeleton .sk-grid .sk-tr { grid-template-columns: 2fr 1fr 1fr; }
+  .skeleton .sk-grid .sk-tr i:nth-child(n+4) { display: none; }
+  .skeleton .sk-row i { width: 12px; height: 12px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+  :root { --lift: 0px; --press: 0px; }
+  .spinner { border-style: dotted; border-right-color: currentColor; }
+}

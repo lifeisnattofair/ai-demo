@@ -88,11 +88,11 @@ export function renderSeatMap(el, state, onToggle) {
   const bySeat = new Map(state.seats.map((s) => [s.id, s]));
 
   const hall = node('div', 'hall');
-  hall.append(node('div', 'stage', 'STAGE'));
+  hall.append(node('div', 'stage', '무대'));
   const scroller = node('div', 'hall-scroll');
   const rowsBox = node('div', 'rows');
   scroller.append(rowsBox);
-  hall.append(scroller, node('p', 'scroll-hint', '좌석도는 좌우로 밀어서 볼 수 있습니다.'));
+  hall.append(scroller, node('p', 'scroll-hint', '배치도는 좌우로 밀어 볼 수 있습니다. 좌석이 작게 보이면 위의 「좌석 목록」에서 고르실 수 있습니다.'));
   const foot = node('div', 'hall-foot');
   foot.append(node('span', '', '출입구'), node('span', '', '출입구'));
   hall.append(foot);

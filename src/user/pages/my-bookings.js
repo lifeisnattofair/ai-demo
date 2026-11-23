@@ -40,7 +40,7 @@ export async function renderMyBookings(el, deps = {}) {
   content.append(h1, promo, tabs, body);
 
   async function load() {
-    const release = showSkeleton(body, 'cards');
+    const release = showSkeleton(body, 'list');
     let list;
     let waits = [];
     try {

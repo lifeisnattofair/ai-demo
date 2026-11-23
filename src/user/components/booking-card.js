@@ -1,8 +1,8 @@
 // 예약 카드: 목록과 상세가 함께 씁니다. 펼치면 결제 정보와 환불 미리보기, 예약 취소가 나옵니다.
 import { describeError } from '../../lib/api.js';
-import { kstDate, kstDateTime, won } from '../../lib/format.js';
+import { dateRange, kstDateTime, won } from '../../lib/format.js';
 import { confirmDialog } from '../../components/dialog.js';
-import { withBusy } from '../../components/button-busy.js';
+import { isBusy, withBusy } from '../../components/button-busy.js';
 import { renderPoster } from './poster.js';
 import { posterProps, typeMark } from './program-card.js';
 import { DISCOUNT_LABELS } from './checkout-data.js';
@@ -71,7 +71,7 @@ function metaRows(b) {
     const lessons = b.lesson_starts ?? [];
     const first = lessons[0] ?? b.offering.starts_at;
     const last = lessons[lessons.length - 1] ?? b.offering.ends_at;
-    rows.push(row('수업 기간', `${kstDate(first)} - ${kstDate(last)}${lessons.length ? ` (${lessons.length}회)` : ''}`));
+    rows.push(row('수업 기간', `${dateRange(first, last, { weekday: true })}${lessons.length ? ` (${lessons.length}회)` : ''}`));
     rows.push(row('신청 인원', '본인 1명'));
   }
   if (b.program.venue) rows.push(row('장소', b.program.venue));
@@ -179,6 +179,8 @@ export function renderBookingCard(b, ctx) {
   detail.append(payCol);
 
   async function onCancel(button, preview) {
+    // 취소 처리 중에 다시 누르면 확인 대화상자를 또 열지 않습니다.
+    if (isBusy(button)) return;
     const ok = await confirmDialog({
       title: '예약을 취소하시겠습니까?',
       message: preview.sentence,

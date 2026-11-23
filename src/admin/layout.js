@@ -246,6 +246,10 @@ export function renderLayout(el, {
     bandEl.hidden = !text;
     bandEl.textContent = text ? `검수용 시계 사용 중: 실제보다 ${text}` : '';
     el.classList.toggle('has-clock-band', Boolean(text));
+    // 좁은 화면에서 띠 문구가 두 줄이 되어도 사이드바 위치가 맞도록 실제 높이를 씁니다(36px 는 기본값).
+    const h = text ? bandEl.offsetHeight : 0;
+    if (h) el.style.setProperty('--band-h', `${h}px`);
+    else el.style.removeProperty('--band-h');
   }
 
   setCurrent(current);
