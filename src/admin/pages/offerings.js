@@ -161,7 +161,7 @@ export function validateOffering(v, { type, isNew, nowMs, minCapacity = 0 }) {
   }
   if (type === 'COURSE' && (!Number.isInteger(v.lessonCount) || v.lessonCount < 1 || v.lessonCount > 52)) e.lessonCount = '수업 횟수는 1에서 52 사이로 입력해 주세요.';
   for (const p of v.prices ?? []) {
-    if (!Number.isInteger(p.price) || p.price < 0 || p.price > 10000000) e[`price_${p.grade ?? 'N'}`] = '가격은 0원 이상의 숫자로 입력해 주세요.';
+    if (!Number.isInteger(p.price) || p.price < 1 || p.price > 10000000) e[`price_${p.grade ?? 'N'}`] = '가격은 1원 이상의 숫자로 입력해 주세요. 무료(0원) 회차는 받을 수 없습니다.';
   }
   return e;
 }
@@ -233,7 +233,7 @@ export async function renderOfferingEdit(el, { api, go, id, query }) {
     const grades = type === 'PERFORMANCE' ? GRADES : [null];
     priceGrid.innerHTML = grades.map((g) => formRow({
       label: g ? `${g}석` : '1인 가격', required: true, name: `price_${g ?? 'N'}`,
-      field: `<div class="row"><input class="ctl money" type="number" inputmode="numeric" min="0" step="1000" id="f-price_${g ?? 'N'}" name="price_${g ?? 'N'}" value="${priceOf(g) ?? ''}"${dis}><span>원</span></div>`,
+      field: `<div class="row"><input class="ctl money" type="number" inputmode="numeric" min="1" step="1000" id="f-price_${g ?? 'N'}" name="price_${g ?? 'N'}" value="${priceOf(g) ?? ''}"${dis}><span>원</span></div>`,
       hint: g === 'R' ? 'R석 A~D열 80석, S석 E~G열 60석, A석 H~J열 60석' : undefined,
     })).join('');
   }

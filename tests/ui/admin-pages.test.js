@@ -49,6 +49,8 @@ describe('회차 입력 검사', () => {
     expect(v({ capacity: 0 })).toHaveProperty('capacity');
     expect(v({ capacity: 4 }, { minCapacity: 5 }).capacity).toContain('5명');
     expect(v({ prices: [{ grade: null, price: -1 }] })).toHaveProperty('price_N');
+    expect(v({ prices: [{ grade: null, price: 0 }] }).price_N).toBe('가격은 1원 이상의 숫자로 입력해 주세요. 무료(0원) 회차는 받을 수 없습니다.');
+    expect(v({ prices: [{ grade: null, price: 1 }] })).not.toHaveProperty('price_N');
     expect(validateOffering({ ...base, capacity: NaN }, { type: 'PERFORMANCE', isNew: true, nowMs })).toEqual({});
   });
   it('정규 강좌 수업은 주 1회로 만들고 종료는 마지막 수업보다 늦어야 합니다', () => {
