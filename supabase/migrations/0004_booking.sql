@@ -380,3 +380,222 @@ grant execute on function public.sweep_offering(uuid) to authenticated, service_
 grant execute on function public.prepare_payment(uuid, jsonb, int, text) to authenticated, service_role;
 grant execute on function public.lock_for_confirm(text), public.finalize_booking(text, text, jsonb),
   public.unlock_after_failure(text) to service_role;
+
+-- ===== Task 7: 취소, 환불, 기관 일괄 취소, 웹훅 =====
+-- 모두 payments-cancel / payments-webhook 함수(service_role) 전용입니다.
+-- 잠금 순서: 회차 -> (예약) -> 선점 -> 대기 -> 좌석. release_inventory/sweep_offering과 같은 순서입니다.
+
+-- 취소 진행 표시(동시 취소 방지). 5분이 지나면 다시 잡을 수 있습니다.
+alter table public.bookings add column if not exists cancel_started_at timestamptz;
+
+-- 환불 계산에 필요한 정보. 기준일은 회차 시작(정규 강좌는 첫 회).
+-- {productType, paidAmount, baseAt, lessonStarts, paymentKey, status, ownerId, offeringId, offeringStatus, refund}
+-- refund는 이미 취소된 예약의 기록된 환불 결과({refundAmount, feeAmount, rule}) 또는 null입니다.
+create or replace function public.cancel_context(p_booking uuid) returns jsonb
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v jsonb;
+begin
+  select jsonb_build_object(
+    'productType', p.type,
+    'paidAmount', coalesce(pay.amount, b.total_amount),
+    'baseAt', coalesce((select min(l.starts_at) from public.course_lessons l where l.offering_id = o.id), o.starts_at),
+    'lessonStarts', case when p.type = 'COURSE' then
+      (select jsonb_agg(l.starts_at order by l.starts_at, l.seq) from public.course_lessons l where l.offering_id = o.id) end,
+    'paymentKey', pay.payment_key,
+    'status', b.status,
+    'ownerId', b.user_id,
+    'offeringId', o.id,
+    'offeringStatus', o.status,
+    'refund', (select jsonb_build_object('refundAmount', r.refund_amount, 'feeAmount', r.fee_amount, 'rule', r.rule)
+                 from public.refunds r where r.booking_id = b.id order by r.created_at desc, r.id limit 1))
+    into v
+    from public.bookings b
+    join public.offerings o on o.id = b.offering_id
+    join public.programs p on p.id = o.program_id
+    left join public.payments pay on pay.booking_id = b.id
+   where b.id = p_booking;
+  if v is null then perform public.hold_error('BOOKING_NOT_FOUND'); end if;
+  return v;
+end $$;
+
+-- 취소 시작 표시. CONFIRMED이고 다른 취소가 진행 중이 아닐 때만 true.
+create or replace function public.begin_cancel(p_booking uuid) returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  update public.bookings set cancel_started_at = public.app_now()
+   where id = p_booking and status = 'CONFIRMED'
+     and (cancel_started_at is null or cancel_started_at <= public.app_now() - interval '5 minutes');
+  return found;
+end $$;
+
+create or replace function public.abort_cancel(p_booking uuid) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  update public.bookings set cancel_started_at = null where id = p_booking and status = 'CONFIRMED';
+end $$;
+
+-- 취소 확정. 예약 CANCELLED, 환불 기록, 결제 상태, 재고 반환, 알림을 한 트랜잭션에서 처리합니다.
+-- 이미 CANCELLED면 아무것도 바꾸지 않고 예약을 돌려줍니다(멱등).
+-- 재고: 판매 중인 회차는 release_inventory(대기 FIFO 배정, D-2 이내면 일반 판매)로, 취소된 회차(기관 취소)는
+-- 판매가 닫혔으므로 대기에 배정하지 않고 좌석만 비웁니다.
+-- 알림: 회원 취소 BOOKING_CANCELLED, 기관 취소 OFFERING_CANCELLED.
+create or replace function public.finalize_cancel(p_booking uuid, p_refund int, p_fee int, p_rule text, p_reason text, p_tx_key text)
+returns public.bookings
+language plpgsql security definer set search_path = public as $$
+declare
+  v_b public.bookings%rowtype;
+  v_off public.offerings%rowtype;
+  v_pay public.payments%rowtype;
+  v_type text;
+  v_title text;
+  v_when text;
+  v_seats int[];
+  v_qty int;
+  v_res public.bookings;
+begin
+  select * into v_b from public.bookings where id = p_booking;
+  if not found then perform public.hold_error('BOOKING_NOT_FOUND'); end if;
+  select * into v_off from public.offerings where id = v_b.offering_id for update;
+  select * into v_b from public.bookings where id = p_booking for update;
+  if v_b.status = 'CANCELLED' then return v_b; end if;
+
+  if p_reason is null or p_reason not in ('USER', 'INSTITUTION', 'CONFLICT') then
+    perform public.hold_error('INVALID_REQUEST');
+  end if;
+  if p_reason = 'INSTITUTION' and v_off.status <> 'CANCELLED' then perform public.hold_error('OFFERING_NOT_CANCELLED'); end if;
+  select * into v_pay from public.payments where booking_id = v_b.id for update;
+  if not found then perform public.hold_error('PAYMENT_NOT_FOUND'); end if;
+  if p_refund is null or p_fee is null or p_refund < 0 or p_fee < 0 or p_refund + p_fee <> v_pay.amount then
+    perform public.hold_error('AMOUNT_MISMATCH');
+  end if;
+  if p_refund > 0 and coalesce(p_tx_key, '') = '' then perform public.hold_error('INVALID_REQUEST'); end if;
+
+  -- release_inventory가 확정 수에서 빼고 세도록 예약을 먼저 CANCELLED로 바꿉니다.
+  update public.bookings set status = 'CANCELLED', cancelled_at = public.app_now(), cancel_started_at = null
+   where id = v_b.id returning * into v_res;
+
+  insert into public.refunds(payment_id, booking_id, refund_amount, fee_amount, rule, reason, pg_transaction_key, created_at)
+    values (v_pay.id, v_b.id, p_refund, p_fee, p_rule, p_reason, nullif(p_tx_key, ''), public.app_now());
+  if p_refund > 0 then
+    update public.payments
+       set status = case when p_refund = v_pay.amount then 'CANCELED' else 'PARTIAL_CANCELED' end
+     where id = v_pay.id;
+  end if;
+
+  select p.type, p.title, to_char(v_off.starts_at at time zone 'Asia/Seoul', 'FMMM. FMDD. HH24:MI')
+    into v_type, v_title, v_when
+    from public.programs p where p.id = v_off.program_id;
+
+  if v_type = 'PERFORMANCE' then
+    select coalesce(array_agg(seat_id order by seat_id), '{}') into v_seats
+      from public.booking_items where booking_id = v_b.id and seat_id is not null;
+  else
+    select qty into v_qty from public.holds where id = v_b.hold_id;
+  end if;
+
+  if v_off.status = 'CANCELLED' then
+    if v_type = 'PERFORMANCE' then
+      perform 1 from public.inventory_seats
+       where offering_id = v_off.id and seat_id = any(v_seats) and status = 'SOLD'
+       order by seat_id for update;
+      update public.inventory_seats set status = 'AVAILABLE', hold_id = null, waitlist_id = null
+       where offering_id = v_off.id and seat_id = any(v_seats) and status = 'SOLD';
+    end if;
+  else
+    perform public.release_inventory(v_off.id, case when v_type = 'PERFORMANCE' then v_seats end, v_qty);
+  end if;
+
+  if p_reason = 'INSTITUTION' then
+    insert into public.notifications(user_id, kind, title, body, created_at) values (v_b.user_id, 'OFFERING_CANCELLED',
+      '회차가 취소되어 전액 환불했습니다',
+      format('기관 사정으로 %s (%s) 회차가 취소되었습니다. 예약번호 %s의 결제 금액 %s원을 전액 환불했습니다. 카드사에 따라 환불 반영까지 며칠 걸릴 수 있습니다.',
+             v_title, v_when, v_b.booking_no, to_char(p_refund, 'FM999,999,999,990')),
+      public.app_now());
+  else
+    insert into public.notifications(user_id, kind, title, body, created_at) values (v_b.user_id, 'BOOKING_CANCELLED',
+      '예약이 취소되었습니다',
+      format('%s (%s) 예약(예약번호 %s)이 취소되었습니다. 환불 금액 %s원, 취소 수수료 %s원입니다.',
+             v_title, v_when, v_b.booking_no, to_char(p_refund, 'FM999,999,999,990'), to_char(p_fee, 'FM999,999,999,990')),
+      public.app_now());
+  end if;
+  return v_res;
+end $$;
+
+-- 기관 사유 회차 일괄 취소 시작. 정산 담당(finance)이고 승인된 취소 요청이 있어야 합니다.
+-- 회차를 CANCELLED로 바꾸고 판매를 닫습니다: 유효 선점 해제, 진행 중인 대기 종료(알림), 선점/배정 좌석 비우기.
+-- 돌려주는 bookingIds(아직 CONFIRMED인 예약)를 호출자가 하나씩 기관 취소합니다. 다시 불러도 안전합니다.
+create or replace function public.begin_offering_cancel(p_offering uuid, p_actor uuid) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  v_off public.offerings%rowtype;
+  v_title text;
+  v_when text;
+  v_w record;
+begin
+  if not exists (select 1 from public.profiles where id = p_actor and role = 'finance') then
+    perform public.hold_error('FORBIDDEN');
+  end if;
+  select * into v_off from public.offerings where id = p_offering for update;
+  if not found then perform public.hold_error('OFFERING_NOT_FOUND'); end if;
+  if not exists (select 1 from public.offering_cancel_requests where offering_id = p_offering and status = 'APPROVED') then
+    perform public.hold_error('CANCEL_NOT_APPROVED');
+  end if;
+
+  if v_off.status <> 'CANCELLED' then
+    update public.offerings set status = 'CANCELLED' where id = p_offering;
+    select p.title, to_char(v_off.starts_at at time zone 'Asia/Seoul', 'FMMM. FMDD. HH24:MI') into v_title, v_when
+      from public.programs p where p.id = v_off.program_id;
+
+    -- 선점 -> 대기 -> 좌석 순서. 결제 중(PAYING) 선점은 결과를 기다립니다(확정되면 다시 불러 환불).
+    perform 1 from public.holds where offering_id = p_offering and status = 'ACTIVE' order by id for update;
+    update public.holds set status = 'RELEASED' where offering_id = p_offering and status = 'ACTIVE';
+
+    for v_w in
+      select * from public.waitlist
+       where offering_id = p_offering and status in ('WAITING', 'PROMOTED')
+       order by created_at, id
+       for update
+    loop
+      update public.waitlist set status = 'CANCELLED' where id = v_w.id;
+      insert into public.notifications(user_id, kind, title, body, created_at) values (v_w.user_id, 'OFFERING_CANCELLED',
+        '대기 신청하신 회차가 취소되었습니다',
+        format('기관 사정으로 %s (%s) 회차가 취소되어 대기 신청이 종료되었습니다. 다른 회차를 확인해 주세요.', v_title, v_when),
+        public.app_now());
+    end loop;
+
+    perform 1 from public.inventory_seats
+     where offering_id = p_offering and status in ('HELD', 'WAIT_ALLOCATED') order by seat_id for update;
+    update public.inventory_seats set status = 'AVAILABLE', hold_id = null, waitlist_id = null
+     where offering_id = p_offering and status in ('HELD', 'WAIT_ALLOCATED');
+
+    insert into public.admin_audit(actor_id, action, target_type, target_id, detail, at)
+      values (p_actor, 'OFFERING_CANCEL', 'offering', p_offering::text, jsonb_build_object('previousStatus', v_off.status),
+              public.app_now());
+  end if;
+
+  return jsonb_build_object('offeringId', p_offering, 'bookingIds', coalesce((
+    select jsonb_agg(id order by created_at, id) from public.bookings
+     where offering_id = p_offering and status = 'CONFIRMED'), '[]'::jsonb));
+end $$;
+
+-- 웹훅 반영. 기대 상태(p_expected)일 때만 결제 상태를 바꿉니다. 바꿨으면 true.
+create or replace function public.apply_payment_status(p_payment_key text, p_status text, p_expected text) returns boolean
+language plpgsql security definer set search_path = public as $$
+begin
+  if p_status is null or p_status not in ('DONE', 'CANCELED', 'PARTIAL_CANCELED') then
+    perform public.hold_error('INVALID_REQUEST');
+  end if;
+  update public.payments set status = p_status
+   where payment_key = p_payment_key and status = p_expected and status <> p_status;
+  return found;
+end $$;
+
+revoke all on function public.cancel_context(uuid), public.begin_cancel(uuid), public.abort_cancel(uuid),
+  public.finalize_cancel(uuid, int, int, text, text, text), public.begin_offering_cancel(uuid, uuid),
+  public.apply_payment_status(text, text, text)
+  from public, anon, authenticated;
+grant execute on function public.cancel_context(uuid), public.begin_cancel(uuid), public.abort_cancel(uuid),
+  public.finalize_cancel(uuid, int, int, text, text, text), public.begin_offering_cancel(uuid, uuid),
+  public.apply_payment_status(text, text, text)
+  to service_role;
