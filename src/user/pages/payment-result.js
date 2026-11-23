@@ -121,12 +121,15 @@ export async function renderPaymentSuccess(el, { api, go, query }) {
     release();
     console.error(error);
     // 코드별 안내가 없는 오류(실행 환경 오류 등)는 정해 둔 문구와 다시 확인 버튼을 보입니다. 원문은 콘솔에만 남깁니다.
-    const known = isKnownError(error);
+    // 코드별 안내가 있는 오류(금액 불일치 등)는 그 안내와 내 예약 링크만 둡니다. 다시 확인 버튼은 알 수 없는 오류에만 둡니다.
+    if (isKnownError(error)) {
+      page(el, '결제 결과를 확인하지 못했습니다.', [node('p', '', describeError(error))], [link(BOOKINGS, '내 예약 보기', 'primary')]);
+      return;
+    }
     const again = node('button', 'btn btn-primary', '결과 다시 확인');
     again.type = 'button';
     again.addEventListener('click', () => renderPaymentSuccess(el, { api, go, query }));
-    page(el, '결제 결과를 확인하지 못했습니다.', [node('p', '', known ? describeError(error) : UNCONFIRMED)],
-      [again, link(BOOKINGS, '내 예약 보기')]);
+    page(el, '결제 결과를 확인하지 못했습니다.', [node('p', '', UNCONFIRMED)], [again, link(BOOKINGS, '내 예약 보기')]);
     return;
   }
   if (result?.status === 'CONFIRMED' && result.booking) {

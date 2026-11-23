@@ -82,7 +82,7 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
           ${METHODS.map(([v, name, sub]) => `<label class="method"><input type="radio" name="pm" value="${v}"><b>${name}</b><small>${sub}</small></label>`).join('')}
         </div>
         <div class="card-fields" data-card hidden>
-          <div class="field"><label for="card">카드사</label><select class="select" id="card"><option value="">카드사를 선택하세요</option>${CARD_COMPANIES.map((c) => `<option>${c}</option>`).join('')}</select><p class="field-error" id="card-error" hidden>${CARD_MISSING}</p></div>
+          <div class="field"><label for="card">카드사</label><select class="select" id="card"><option value="">카드사를 선택하세요</option>${CARD_COMPANIES.map((c) => `<option>${c}</option>`).join('')}</select><p class="field-error" id="card-error" role="alert" hidden>${CARD_MISSING}</p></div>
           <div class="field"><label for="inst">할부</label><select class="select" id="inst">${INSTALLMENTS.map((c) => `<option>${c}</option>`).join('')}</select></div>
         </div>
       </div>
@@ -177,7 +177,6 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
     if (!key.startsWith('missing|')) return;
     const text = key.slice('missing|'.length);
     if ((text === '결제 수단을 선택해 주세요.' && method != null)
-      || (text === CARD_MISSING && !cardMissing())
       || (text === '필수 약관에 모두 동의해 주세요.' && termBoxes.every((b) => b.checked))) say('', '');
   }
   function sync() {
@@ -207,7 +206,8 @@ export async function renderPayment(el, { api, go, holdId, now = clockNow }) {
     if (!ready()) {
       if (method == null) sayMissing('결제 수단을 선택해 주세요.');
       else if (cardMissing()) {
-        sayMissing(CARD_MISSING);
+        // 카드사 누락은 칸 아래 안내와 초점만 씁니다(위 알림에 같은 문구를 겹쳐 띄우지 않음).
+        say('', '');
         showCardError(true);
         cardSel.focus();
       } else sayMissing('필수 약관에 모두 동의해 주세요.');

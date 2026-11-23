@@ -63,6 +63,14 @@ describe('결제 성공 페이지', () => {
     await run(a);
     expect(el.textContent).toContain(messageFor('PAYMENT_IN_PROGRESS'));
     expect(el.querySelector('a[href="#/me/bookings"]')).not.toBeNull();
+    expect([...el.querySelectorAll('button')].some((b) => b.textContent === '결과 다시 확인')).toBe(false);
+  });
+
+  it('금액 불일치처럼 정해진 안내가 있는 오류에는 결과 다시 확인 버튼을 두지 않는다', async () => {
+    const a = api({ confirmPayment: vi.fn().mockRejectedValue(new ApiError('AMOUNT_MISMATCH', '결제 금액이 주문 금액과 달라 결제를 취소했습니다.')) });
+    await run(a);
+    expect(el.textContent).toContain('결제 금액이 주문 금액과 달라');
+    expect([...el.querySelectorAll('button')].some((b) => b.textContent === '결과 다시 확인')).toBe(false);
   });
 
   it('알 수 없는 서버 오류는 원문 대신 정해 둔 안내와 결과 다시 확인 버튼을 보인다', async () => {

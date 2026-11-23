@@ -110,6 +110,8 @@ describe('결제 단계', () => {
     expect(msg.textContent).toBe('카드사를 선택해 주세요.');
     expect(msg.hidden).toBe(false);
     expect(el.querySelector('#card').getAttribute('aria-describedby')).toBe('card-error');
+    expect(el.querySelector('[data-live]').textContent).toBe('');
+    expect(document.activeElement).toBe(el.querySelector('#card'));
     const card = el.querySelector('#card');
     card.value = '한빛카드';
     card.dispatchEvent(new Event('change', { bubbles: true }));

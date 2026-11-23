@@ -12,7 +12,7 @@ button, input, select { font: inherit; color: inherit; }
 .num { font-variant-numeric: tabular-nums; }
 
 /* 헤더 */
-.site-header { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,0.96); backdrop-filter: saturate(1.4) blur(8px); border-bottom: 1px solid var(--c-line-soft); }
+.site-header { position: sticky; top: 0; z-index: 20; background: #fff; border-bottom: 1px solid var(--c-line-soft); }
 .site-header .container { display: flex; align-items: center; height: 72px; gap: var(--sp-6); }
 .logo { display: flex; align-items: baseline; gap: 8px; flex-shrink: 0; padding: 6px 0; }
 .logo b { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; color: var(--c-ink); }
