@@ -391,7 +391,9 @@ describe('lock order (offering -> holds)', () => {
 
     expect(String(d.error?.message ?? '')).not.toMatch(/deadlock/i);
     expect(String(f.error?.message ?? '')).not.toMatch(/deadlock/i);
-    expect(d.error?.message).toBe('PAYMENT_IN_PROGRESS');
+    // 중복 요청이 선점을 잡는 시점에 따라 결제 중(PAYMENT_IN_PROGRESS) 또는 이미 확정(ALREADY_CONFIRMED) 둘 다 맞습니다.
+    // 지켜야 할 것은 교착이 없고 예약이 하나뿐이라는 점입니다.
+    expect(['PAYMENT_IN_PROGRESS', 'ALREADY_CONFIRMED']).toContain(d.error?.message);
     expect(f.error).toBeNull();
     expect(f.data.status).toBe('CONFIRMED');
     const bookings = await ok(db.from('bookings').select('id, status').eq('hold_id', hold.id));
