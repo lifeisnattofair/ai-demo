@@ -9,7 +9,7 @@ afterEach(() => vi.useRealTimers());
 describe('스켈레톤', () => {
   it('300ms 안에 끝나면 모양을 보이지 않고, 길어지면 보인다', () => {
     const host = document.getElementById('h');
-    const release = showSkeleton(host, 'hall');
+    const release = showSkeleton(host, 'seat-map');
     expect(host.getAttribute('aria-busy')).toBe('true');
     expect(host.querySelector('[role="status"]').textContent).toBe('불러오는 중');
     expect(host.querySelector('.sk-shape').hidden).toBe(true);

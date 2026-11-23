@@ -1,5 +1,5 @@
 // 요청 처리 중 버튼 상태: 스피너와 「처리 중」 문구를 보이고 중복 클릭을 막습니다.
-// 스타일은 .btn[data-busy] (src/styles/user.css) 를 씁니다.
+// 스타일은 .btn[data-busy] (src/styles/booking.css, 공용 정리는 15A) 를 씁니다.
 
 /**
  * @param {HTMLElement} button

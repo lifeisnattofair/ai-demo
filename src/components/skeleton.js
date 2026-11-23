@@ -1,11 +1,11 @@
 // 불러오는 동안 보여 주는 스켈레톤. 실제 화면 모양을 따라 그리고, 짧게 끝나면 깜빡이지 않도록 지연해서 보입니다.
-// 화면 낭독기에는 aria-busy 와 「불러오는 중」 문구로 알립니다. 스타일은 .skeleton (src/styles/user.css).
+// 화면 낭독기에는 aria-busy 와 「불러오는 중」 문구로 알립니다. 스타일은 .skeleton (src/styles/booking.css, 공용 정리는 15A).
 
 const rows = (n, make) => Array.from({ length: n }, make).join('');
 
 const KINDS = {
   // 좌석 배치도: 무대와 10개 열
-  hall: () => `<div class="sk-stage sk-block"></div>${rows(10, () => `<div class="sk-row">${rows(20, () => '<i class="sk-block"></i>')}</div>`)}`,
+  'seat-map': () => `<div class="sk-stage sk-block"></div>${rows(10, () => `<div class="sk-row">${rows(20, () => '<i class="sk-block"></i>')}</div>`)}`,
   cards: () => `<div class="sk-cards">${rows(6, () => '<div><div class="sk-poster sk-block"></div><div class="sk-line sk-block"></div><div class="sk-line short sk-block"></div></div>')}</div>`,
   detail: () => '<div class="sk-detail"><div class="sk-poster sk-block"></div><div><div class="sk-line sk-block"></div><div class="sk-line short sk-block"></div>'
     + `${rows(5, () => '<div class="sk-line sk-block"></div>')}</div></div>`,
@@ -14,7 +14,7 @@ const KINDS = {
 
 /**
  * @param {HTMLElement} el 스켈레톤을 넣을 요소
- * @param {'hall'|'cards'|'detail'|'table'} kind
+ * @param {'seat-map'|'cards'|'detail'|'table'} kind
  * @param {{delayMs?:number}} [opts]
  * @returns {() => void} 불러오기가 끝나면 부릅니다(타이머, 스켈레톤, aria-busy 를 정리).
  */

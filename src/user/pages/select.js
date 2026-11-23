@@ -44,14 +44,19 @@ function messagePage(el, title, body, href, label) {
  * @param {HTMLElement} el
  * @param {{api:object, go:(h:string)=>void, offeringId:string, now?:()=>Date, notice?:string}} deps
  */
+let renderSeq = 0;
+
 export async function renderSelect(el, { api, go, offeringId, now = clockNow, notice = '' }) {
   const selfHash = `#/booking/${encodeURIComponent(offeringId)}/select`;
-  const loadHost = node('div', 'container page-message');
+  const mine = ++renderSeq;
+  const stale = () => mine !== renderSeq; // 더 새로운 화면이 그려졌으면 이 화면은 그리지 않습니다.
+  const loadHost = node('div', 'container');
   el.replaceChildren(loadHost);
-  const releaseSkeleton = showSkeleton(loadHost, 'hall');
+  const releaseSkeleton = showSkeleton(loadHost, 'seat-map');
   let session;
   try {
     session = await api.getSession();
+    if (stale()) { releaseSkeleton(); return; }
     if (!session) releaseSkeleton();
   } catch (e) {
     releaseSkeleton();
@@ -72,6 +77,7 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
   let remainingCap = null;
   try {
     offering = await api.getOffering(offeringId);
+    if (stale()) { releaseSkeleton(); return; }
     if (!offering) {
       messagePage(el, '회차를 찾을 수 없습니다.', '주소가 바뀌었거나 판매가 끝난 회차일 수 있습니다. 목록에서 다시 찾아 주세요.', '#/programs', '프로그램 목록');
       return;
@@ -85,13 +91,17 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
     } else {
       remainingCap = await api.remainingCapacity(offeringId);
     }
+    if (stale()) { releaseSkeleton(); return; }
   } catch (e) {
     releaseSkeleton();
+    if (stale()) return;
     console.error(e);
     messagePage(el, '예매 정보를 불러오지 못했습니다.', LOAD_ERROR, '#/programs', '프로그램 목록');
     return;
   }
   releaseSkeleton();
+  // 화면 시계가 서버보다 조금 앞서 이미 지난 선점이 남아 있으면 이어가지 않습니다(만료 직후 다시 그리기가 반복되지 않게).
+  if (activeHold && new Date(activeHold.expires_at).getTime() <= now().getTime()) activeHold = null;
 
   const program = offering.program;
   const type = program.type;
@@ -115,11 +125,16 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
   const priceOf = (seat) => prices[seat.grade] ?? 0;
 
   // 한도: 이미 확정했거나 선점한 수량을 뺀 만큼만 고를 수 있습니다.
-  const { remaining: limitLeft } = checkLimit({ productType: type, existingQty: existing, requestedQty: LIMITS[type] });
-  const maxPick = type === 'PERFORMANCE' ? limitLeft : Math.min(limitLeft, remainingCap ?? limitLeft);
+  let limitLeft = 0;
+  let maxPick = 0;
+  function recomputeLimits() {
+    limitLeft = checkLimit({ productType: type, existingQty: existing, requestedQty: LIMITS[type] }).remaining;
+    maxPick = type === 'PERFORMANCE' ? limitLeft : Math.min(limitLeft, remainingCap ?? limitLeft);
+  }
+  recomputeLimits();
 
   const selected = new Set();
-  let qty = type === 'EXPERIENCE' ? Math.min(1, maxPick) : type === 'COURSE' ? Math.min(1, maxPick) : 0;
+  let qty = type === 'PERFORMANCE' ? 0 : Math.min(1, maxPick);
   let busy = false;
   const stops = [];
 
@@ -221,7 +236,7 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
       : `<h2 class="sum-title">선택 내역</h2>`;
     const chipHtml = type === 'PERFORMANCE'
       ? (count ? `<div class="seat-chips">${chips().map((s) => {
-        const name = `${GRADE_NAME[s.grade]} ${s.row_label}열 ${s.seat_no}번`;
+        const name = escapeHtml(`${GRADE_NAME[s.grade]} ${s.row_label}열 ${s.seat_no}번`);
         return `<span class="seat-chip">${name}<button type="button" data-remove="${s.id}" aria-label="${name} 선택 해제">${CLOSE_ICON}</button></span>`;
       }).join('')}</div>` : '<p class="sum-empty">배치도 또는 좌석 목록에서 좌석을 선택해 주세요.</p>')
       : '';
@@ -255,14 +270,34 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
   const listHost = node('div');
   listHost.hidden = true;
 
+  let qtySync = null;
+  // 선점 실패 뒤 한도와 잔여 수량을 다시 계산해 화면 곳곳에 반영합니다.
+  function refreshLimits() {
+    recomputeLimits();
+    if (type === 'PERFORMANCE') {
+      while (selected.size > maxPick) selected.delete([...selected].pop());
+      mapView?.update({ statusById, max: maxPick });
+      listView?.update({ statusById, max: maxPick });
+      const left = seats.filter((x) => statusById[x.id] === 'AVAILABLE').length;
+      const countEl = body.querySelector('.seat-count');
+      if (countEl) countEl.textContent = `잔여 ${left}석 / ${seats.length}석`;
+    } else {
+      qty = maxPick <= 0 ? 0 : Math.min(Math.max(qty, 1), maxPick);
+      const capEl = body.querySelector('[data-cap]');
+      if (capEl) capEl.textContent = String(remainingCap);
+      const subEl = body.querySelector('[data-qty-sub]');
+      if (subEl) subEl.textContent = `1인 ${won(unitPrice)}, 잔여 ${remainingCap}명`;
+      qtySync?.();
+    }
+    drawSummary();
+  }
+
   async function reloadSeats() {
     const map = await api.offeringSeatMap(offeringId);
     statusById = Object.fromEntries(map.map((r) => [r.seat_id, r.status]));
     for (const id of [...selected]) if (statusById[id] !== 'AVAILABLE') selected.delete(id);
     existing = await api.myOfferingQty(offeringId);
-    mapView.update({ statusById, max: maxPick });
-    listView.update({ statusById, max: maxPick });
-    drawSummary();
+    refreshLimits();
   }
 
   function onSeatToggle() {
@@ -300,13 +335,13 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
     if (type === 'COURSE') {
       body.innerHTML = `
         <div class="qty-fixed"><b>본인 1명 신청</b><span>정규 강좌는 1인 1건만 신청할 수 있어 인원은 바꿀 수 없습니다.</span></div>
-        <dl class="qty-meta"><div><dt>수강료</dt><dd class="num">${won(unitPrice)}</dd></div><div><dt>잔여 정원</dt><dd class="num">${soldNote.replace('잔여 ', '')}</dd></div></dl>`;
+        <dl class="qty-meta"><div><dt>수강료</dt><dd class="num">${won(unitPrice)}</dd></div><div><dt>잔여 정원</dt><dd class="num" data-cap>${remainingCap}</dd></div></dl>`;
       body.prepend(live);
       return;
     }
     body.innerHTML = `
       <div class="qty-row">
-        <div><b id="qty-label">인원</b><span class="qty-sub">1인 ${won(unitPrice)}, ${soldNote}</span></div>
+        <div><b id="qty-label">인원</b><span class="qty-sub" data-qty-sub>1인 ${won(unitPrice)}, ${soldNote}</span></div>
         <div class="stepper" role="group" aria-labelledby="qty-label">
           <button type="button" data-step="-1" aria-label="인원 줄이기">-</button>
           <output class="num" aria-live="polite" data-qty>${qty}명</output>
@@ -322,6 +357,7 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
       minus.setAttribute('aria-disabled', String(qty <= 1));
       plus.setAttribute('aria-disabled', String(qty >= maxPick));
     };
+    qtySync = sync;
     body.querySelector('.stepper').addEventListener('click', (e) => {
       const b = e.target.closest('button[data-step]');
       if (!b) return;
@@ -378,6 +414,7 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
             else {
               remainingCap = await api.remainingCapacity(offeringId);
               existing = await api.myOfferingQty(offeringId);
+              refreshLimits();
             }
           } catch (e2) { console.error(e2); }
         }
@@ -407,8 +444,9 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
       return;
     }
     if (e.target.closest('[data-release]')) {
+      const releaseBtn = e.target.closest('[data-release]');
       try {
-        await api.releaseHold(activeHold.id);
+        await withBusy(releaseBtn, () => api.releaseHold(activeHold.id));
         stops.forEach((s) => s());
         renderSelect(el, { api, go, offeringId, now });
       } catch (err) {

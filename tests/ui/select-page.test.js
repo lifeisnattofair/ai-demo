@@ -119,4 +119,49 @@ describe('좌석 선택 화면', () => {
     await flush();
     expect(api.holdCapacity).toHaveBeenCalledWith('o1', 1);
   });
+
+  it('이미 지난 선점은 이어가지 않고 선택 화면을 그린다(만료 재표시 반복 방지)', async () => {
+    const api = fakeApi({ myActiveHold: vi.fn().mockResolvedValue({ id: 'h9', qty: 2, expires_at: new Date(NOW.getTime() - 1000).toISOString() }) });
+    await run(api);
+    expect(el.querySelector('.timer')).toBeNull();
+    expect(el.querySelector('[data-release]')).toBeNull();
+    expect(api.myActiveHold).toHaveBeenCalledTimes(1);
+    expect(el.querySelectorAll('button.seat')).toHaveLength(200);
+  });
+
+  it('선점 실패 뒤 잔여 수량과 한도를 다시 반영한다', async () => {
+    const base = fakeApi();
+    const o = await base.getOffering();
+    const api = fakeApi({
+      getOffering: vi.fn().mockResolvedValue({ ...o, prices: [{ grade: null, price: 10000 }], program: { ...o.program, type: 'EXPERIENCE' } }),
+      holdCapacity: vi.fn().mockRejectedValue(new ApiError('SOLD_OUT')),
+    });
+    await run(api);
+    const plus = el.querySelector('[data-step="1"]');
+    plus.click(); plus.click(); plus.click();
+    expect(el.querySelector('[data-qty]').textContent).toBe('4명');
+    api.remainingCapacity.mockResolvedValue(2);
+    el.querySelector('.summary [data-next]').click();
+    await flush();
+    expect(el.querySelector('[data-qty-sub]').textContent).toContain('잔여 2명');
+    expect(el.querySelector('[data-qty]').textContent).toBe('2명');
+    expect(plus.getAttribute('aria-disabled')).toBe('true');
+  });
+
+  it('선점 해제 버튼은 처리 중 상태가 되고 중복 요청하지 않는다', async () => {
+    let finish;
+    const api = fakeApi({
+      myActiveHold: vi.fn().mockResolvedValue({ id: 'h9', qty: 2, expires_at: new Date(NOW.getTime() + 600000).toISOString() }),
+      releaseHold: vi.fn(() => new Promise((r) => { finish = r; })),
+    });
+    await run(api);
+    const btn = el.querySelector('[data-release]');
+    btn.click();
+    btn.click();
+    await flush();
+    expect(btn.textContent).toBe('처리 중');
+    expect(api.releaseHold).toHaveBeenCalledTimes(1);
+    finish();
+    await flush();
+  });
 });
