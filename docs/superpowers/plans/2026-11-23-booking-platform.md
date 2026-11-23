@@ -39,6 +39,7 @@
   - 다자녀 30%(`MULTICHILD` 매수 제한 없음)
   - 매수마다 한 가지만 적용합니다. 정규 강좌에는 동반 할인이 없습니다.
 - 민감정보(장애/보훈 여부 증빙)는 수집하지 않습니다. 할인 유형 코드만 저장합니다(SER-004).
+- 문구에는 긴 줄표(—) 대신 하이픈(-)을 씁니다.
 - 문구에는 가운뎃점(·)을 꼭 필요한 곳(정식 사업명 등)에만 씁니다. 나열은 쉼표, 짝 개념은 /, 표 구분은 | 로 씁니다. 화면 문구와 산출물 모두에 적용합니다.
 - UI 문구는 한국어 존댓말로 씁니다. 오류 안내는 「원인 + 다음 행동」 형식입니다(QUR-007). 색으로만 정보를 전달하지 않습니다(QUR-001).
 - 실제 기관명, 실제 공연 포스터, 실제 개인정보는 쓰지 않습니다. 포스터는 무료 사진(상업적 이용 가능) 또는 생성 이미지에 타이포그래피를 얹어 만들고, 출처를 `src/assets/images/CREDITS.md`에 남깁니다(COR-001).
@@ -131,7 +132,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**: `npm test`가 PASS, `npm run build` 성공(`dist/index.html`, `dist/admin.html` 생성), `npm run check:secrets` 종료 코드 0
 - [ ] **Step 5: 커밋**: `chore: Vite/Vitest 골격과 비밀값 점검 스크립트`
 
-### Task 1: 정책 — KST 날짜와 환불 계산
+### Task 1: 정책 - KST 날짜와 환불 계산
 
 **Files**
 - Create: `supabase/functions/_shared/policy/time.js`, `refund.js`
@@ -173,7 +174,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**: `npx vitest run tests/policy` → PASS
 - [ ] **Step 5: 커밋**: `feat(policy): KST D-day와 환불 계산`
 
-### Task 2: 정책 — 할인/금액과 1인 한도
+### Task 2: 정책 - 할인/금액과 1인 한도
 
 **Files**
 - Create: `supabase/functions/_shared/policy/pricing.js`, `limits.js`
@@ -248,7 +249,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**: `npm run test:db -- schema` → PASS
 - [ ] **Step 5: 커밋**: `feat(db): 스키마/시드와 테이블/코드 정의서`
 
-### Task 4: DB — 검수용 시계, 선점, 만료, 한도
+### Task 4: DB - 검수용 시계, 선점, 만료, 한도
 
 **Files**
 - Create: `supabase/migrations/0002_clock_hold.sql`
@@ -282,7 +283,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**: `npm run test:db -- hold` → PASS
 - [ ] **Step 5: 커밋**: `feat(db): 선점, 만료, 한도와 검수용 시계`
 
-### Task 5: DB — 대기 신청, 승격, 만료
+### Task 5: DB - 대기 신청, 승격, 만료
 
 **Files**
 - Create: `supabase/migrations/0003_waitlist.sql`
@@ -397,7 +398,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 사용자 확인**: 시안을 보여 드리고 피드백을 반영합니다. 확정되면 `tokens.css`를 고정합니다.
 - [ ] **Step 5: 커밋**: `design: 사용자, 관리자 화면 시안과 디자인 토큰`
 
-### Task 8: 화면 공통 — KRDS 토큰, 라우터, 인증/회원
+### Task 8: 화면 공통 - KRDS 토큰, 라우터, 인증/회원
 
 **Files**
 - Create: `src/styles/tokens.css`, `user.css`, `src/lib/supabase.js`, `api.js`, `format.js`, `router.js`, `clock.js`, `src/user/pages/auth.js`, `account.js`, `src/user/components/header.js`. 마이그레이션 `0001` 보강(`complete_mock_verification` RPC)
@@ -425,7 +426,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**: `npm test` PASS, `npm run dev`로 가입/로그인 수동 확인
 - [ ] **Step 5: 커밋**: `feat(ui): KRDS 토큰, 라우터, 회원 가입과 모의 본인인증`
 
-### Task 9: 사용자 — 프로그램 목록/상세와 사진 포스터
+### Task 9: 사용자 - 프로그램 목록/상세와 사진 포스터
 
 **Files**
 - Create: `src/user/components/poster.js`, `src/user/pages/programs.js`, `program-detail.js`, `src/user/components/program-card.js`
@@ -446,7 +447,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**
 - [ ] **Step 5: 커밋**: `feat(user): 프로그램 목록/상세와 사진 포스터`
 
-### Task 10: 사용자 — 좌석/인원 선택과 선점 타이머
+### Task 10: 사용자 - 좌석/인원 선택과 선점 타이머
 
 **Files**
 - Create: `src/user/pages/select.js`, `src/user/components/seat-map.js`, `seat-list.js`, `hold-timer.js`, `booking-steps.js`
@@ -472,7 +473,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**
 - [ ] **Step 5: 커밋**: `feat(user): 좌석 배치도/대체 목록/인원 선택과 선점 타이머`
 
-### Task 11: 사용자 — 할인 선택과 토스 결제
+### Task 11: 사용자 - 할인 선택과 토스 결제
 
 **Files**
 - Create: `src/user/pages/discount.js`, `payment.js`, `payment-result.js`
@@ -492,7 +493,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**: 로컬에서 테스트 키로 실제 테스트 결제 1회(사용자 키 필요). 실패하면 원인을 기록합니다.
 - [ ] **Step 5: 커밋**: `feat(user): 할인 선택/토스 결제위젯/결제 결과`
 
-### Task 12: 사용자 — 내 예약, 취소, 대기, 알림함
+### Task 12: 사용자 - 내 예약, 취소, 대기, 알림함
 
 **Files**
 - Create: `src/user/pages/my-bookings.js`, `booking-detail.js`, `waitlist.js`, `notifications.js`
@@ -511,7 +512,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**
 - [ ] **Step 5: 커밋**: `feat(user): 내 예약/취소 환불 미리보기, 대기, 알림함`
 
-### Task 13: 관리자 — 레이아웃, 권한, 프로그램, 회차, 좌석 관리
+### Task 13: 관리자 - 레이아웃, 권한, 프로그램, 회차, 좌석 관리
 
 **Files**
 - Create: `supabase/migrations/0005_admin.sql`, `0006_rls.sql`, `src/styles/admin.css`, `src/admin/layout.js`, `src/admin/pages/dashboard.js`, `programs.js`, `offerings.js`, `src/admin/components/search-box.js`, `data-table.js`
@@ -541,7 +542,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**
 - [ ] **Step 5: 커밋**: `feat(admin): 관리자 레이아웃/역할 메뉴, 프로그램, 회차, 좌석 관리`
 
-### Task 14: 관리자 — 예약, 대기, 결제, 환불, 회차 취소/정산
+### Task 14: 관리자 - 예약, 대기, 결제, 환불, 회차 취소/정산
 
 **Files**
 - Create: `src/admin/pages/bookings.js`, `waitlist.js`, `payments.js`, `cancel-requests.js`, `settlement.js`, `src/lib/csv.js`. 마이그레이션 `0005`에 뷰와 함수를 추가합니다.
@@ -568,7 +569,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 - [ ] **Step 4: 통과 확인**
 - [ ] **Step 5: 커밋**: `feat(admin): 예약, 대기, 결제, 환불 내역, 회차 취소 승인, 정산/CSV`
 
-### Task 15: 관리자 — 검수용 시계/시연 데이터 초기화/작업 이력, 환경 분리
+### Task 15: 관리자 - 검수용 시계/시연 데이터 초기화/작업 이력, 환경 분리
 
 **Files**
 - Create: `src/admin/pages/system-clock.js`, `system-reset.js`, `audit.js`. 마이그레이션 `0005`에 `admin_set_clock`, `admin_reset_demo`를 추가합니다.
@@ -623,7 +624,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 | 요구사항 ID | 명칭 | 구현 Task | 자동 검증 | 수동 검증 | AC |
 |---|---|---|---|---|---|
 | SFR-001 | 회원 가입/로그인 | 8 | tests/ui/auth | QA | AC-1 |
-| SFR-002 | 회원 정보 | 8 | — | QA | AC-1 |
+| SFR-002 | 회원 정보 | 8 | - | QA | AC-1 |
 | SFR-003 | 프로그램 목록 | 9 | tests/ui/programs | QA | AC-1 |
 | SFR-004 | 프로그램 상세/회차 선택 | 9 | tests/ui/programs | QA | AC-1 |
 | SFR-005 | 공연 좌석 선택 | 10 | tests/ui/seat-map | QA | AC-1, AC-7 |
@@ -642,47 +643,47 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 | SFR-018 | 관리자 로그인/역할 | 13 | tests/ui/admin-layout, tests/db/rls | QA | AC-6 |
 | SFR-019 | 프로그램 관리 | 13 | tests/db/admin | QA | AC-6 |
 | SFR-020 | 회차, 정원, 좌석 관리 | 13 | tests/db/admin | QA | AC-6 |
-| SFR-021 | 예약 내역 관리 | 14 | — | QA | AC-6 |
-| SFR-022 | 결제/환불 내역 | 14 | — | QA | AC-6 |
+| SFR-021 | 예약 내역 관리 | 14 | - | QA | AC-6 |
+| SFR-022 | 결제/환불 내역 | 14 | - | QA | AC-6 |
 | SFR-023 | 회차 취소/일괄 환불 | 7, 14 | tests/payments/cancel, tests/db/settlement | QA | AC-6 |
 | SFR-024 | 정산 현황 | 14 | tests/db/settlement, tests/ui/csv | QA | AC-6 |
 | SFR-025 | 검수용 시계 | 4, 15 | tests/db/hold, tests/db/system | QA | AC-4, AC-5 |
 | SFR-026 | 시연 데이터 초기화 | 15 | tests/db/system | QA | AC-6 |
-| PER-001 | 응답 시간 | — | — | 목표치(미측정) | — |
-| PER-002 | 동시 접속 | — | — | 목표치(미측정) | — |
-| PER-003 | 결제 승인 처리 | — | — | 목표치(미측정) | — |
-| PER-004 | 선점/확정 정합성 | 4, 6 | tests/db/hold(동시 20회), tests/db/booking | — | AC-3 |
+| PER-001 | 응답 시간 | - | - | 목표치(미측정) | - |
+| PER-002 | 동시 접속 | - | - | 목표치(미측정) | - |
+| PER-003 | 결제 승인 처리 | - | - | 목표치(미측정) | - |
+| PER-004 | 선점/확정 정합성 | 4, 6 | tests/db/hold(동시 20회), tests/db/booking | - | AC-3 |
 | SER-001 | 인증 | 8 | tests/ui/auth | QA | AC-1 |
 | SER-002 | 접근 통제 | 13 | tests/db/rls | QA | AC-6 |
-| SER-003 | 비밀값 관리 | 0, 6 | tests/scripts/check-secrets | — | AC-9 |
+| SER-003 | 비밀값 관리 | 0, 6 | tests/scripts/check-secrets | - | AC-9 |
 | SER-004 | 개인정보 최소 수집 | 3 | tests/db/schema | 테이블 정의서 검토 | AC-9 |
-| SER-005 | 개인정보 표시 제한 | 13 | — | QA | AC-6 |
+| SER-005 | 개인정보 표시 제한 | 13 | - | QA | AC-6 |
 | SER-006 | 관리자 작업 이력 | 13, 15 | tests/db/admin | QA | AC-6 |
-| SER-007 | 결제 위변조 방지 | 6, 7 | tests/payments/confirm, tests/payments/webhook | — | AC-3 |
-| SER-008 | 시큐어 코딩 | 8~15 | — | 리뷰 단계 점검 | — |
-| DAR-001 | 데이터 모델 | 3 | tests/db/schema | 테이블 정의서 | — |
-| DAR-002 | 코드 정의 | 3 | tests/db/schema | 코드 정의서 | — |
-| DAR-003 | 금액 처리 | 1, 2 | tests/policy/refund, tests/policy/pricing | — | AC-1, AC-2 |
-| DAR-004 | 시간 기준 | 1, 4 | tests/policy/time, tests/db/hold | — | AC-1, AC-2 |
-| DAR-005 | 보관 기간 | 3 | — | 테이블 정의서 | — |
-| DAR-006 | 초기 데이터 | 3, 15 | tests/db/schema, tests/db/system | — | AC-6 |
-| SIR-001 | 결제위젯 | 11 | — | QA(테스트 결제) | AC-1 |
+| SER-007 | 결제 위변조 방지 | 6, 7 | tests/payments/confirm, tests/payments/webhook | - | AC-3 |
+| SER-008 | 시큐어 코딩 | 8~15 | - | 리뷰 단계 점검 | - |
+| DAR-001 | 데이터 모델 | 3 | tests/db/schema | 테이블 정의서 | - |
+| DAR-002 | 코드 정의 | 3 | tests/db/schema | 코드 정의서 | - |
+| DAR-003 | 금액 처리 | 1, 2 | tests/policy/refund, tests/policy/pricing | - | AC-1, AC-2 |
+| DAR-004 | 시간 기준 | 1, 4 | tests/policy/time, tests/db/hold | - | AC-1, AC-2 |
+| DAR-005 | 보관 기간 | 3 | - | 테이블 정의서 | - |
+| DAR-006 | 초기 데이터 | 3, 15 | tests/db/schema, tests/db/system | - | AC-6 |
+| SIR-001 | 결제위젯 | 11 | - | QA(테스트 결제) | AC-1 |
 | SIR-002 | 결제 승인 API | 6 | tests/payments/confirm | QA | AC-1, AC-3 |
 | SIR-003 | 결제 취소 API | 7 | tests/payments/cancel | QA | AC-1, AC-2 |
-| SIR-004 | 결제 웹훅 | 7 | tests/payments/webhook | — | AC-3 |
+| SIR-004 | 결제 웹훅 | 7 | tests/payments/webhook | - | AC-3 |
 | SIR-005 | 회원 인증 | 8 | tests/ui/auth | QA | AC-1 |
-| SIR-006 | 본인인증(모의) | 8 | — | QA | AC-1 |
+| SIR-006 | 본인인증(모의) | 8 | - | QA | AC-1 |
 | QUR-001 | 웹 접근성 | 8~15 | tests/ui/seat-map | QA(자동 점검 + 키보드) | AC-7 |
-| QUR-002 | 디자인 시스템 | 8A, 8, 13 | — | QA | — |
-| QUR-003 | 반응형 | 8~15 | — | QA(1440/390) | — |
-| QUR-004 | 브라우저 지원 | — | — | QA | — |
-| QUR-005 | 정책 로직 검증 | 1, 2 | tests/policy/* | — | AC-1, AC-2, AC-4, AC-5 |
-| QUR-006 | 요구사항 추적성 | 16 | tests/scripts/check-trace | — | AC-8 |
-| QUR-007 | 오류 안내 | 8, 10, 11, 12 | tests/ui/* 문구 단언 | QA | — |
-| COR-001 | 가상 데이터 | 3, 9 | tests/ui/poster | 시드 검토 | — |
-| COR-002 | 결제 테스트 모드 | 0 | tests/scripts/check-secrets(`live_`) | — | AC-9 |
-| COR-003 | 키 관리 | 0 | tests/scripts/check-secrets | — | AC-9 |
-| COR-004 | 호스팅 | 16 | — | 배포 시 확인 | — |
-| COR-005 | 기술 구성 | 0 | — | 리뷰 | — |
-| COR-006 | 실사업 전환 기준 | — | — | 설계 문서 4장 | — |
-| COR-007 | 개발 방식 | 전체 | — | 포트폴리오 기록 | — |
+| QUR-002 | 디자인 시스템 | 8A, 8, 13 | - | QA | - |
+| QUR-003 | 반응형 | 8~15 | - | QA(1440/390) | - |
+| QUR-004 | 브라우저 지원 | - | - | QA | - |
+| QUR-005 | 정책 로직 검증 | 1, 2 | tests/policy/* | - | AC-1, AC-2, AC-4, AC-5 |
+| QUR-006 | 요구사항 추적성 | 16 | tests/scripts/check-trace | - | AC-8 |
+| QUR-007 | 오류 안내 | 8, 10, 11, 12 | tests/ui/* 문구 단언 | QA | - |
+| COR-001 | 가상 데이터 | 3, 9 | tests/ui/poster | 시드 검토 | - |
+| COR-002 | 결제 테스트 모드 | 0 | tests/scripts/check-secrets(`live_`) | - | AC-9 |
+| COR-003 | 키 관리 | 0 | tests/scripts/check-secrets | - | AC-9 |
+| COR-004 | 호스팅 | 16 | - | 배포 시 확인 | - |
+| COR-005 | 기술 구성 | 0 | - | 리뷰 | - |
+| COR-006 | 실사업 전환 기준 | - | - | 설계 문서 4장 | - |
+| COR-007 | 개발 방식 | 전체 | - | 포트폴리오 기록 | - |

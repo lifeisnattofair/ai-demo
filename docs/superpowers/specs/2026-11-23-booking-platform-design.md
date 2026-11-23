@@ -1,4 +1,4 @@
-# 설계 문서 — 문화예술회관 통합 예약 플랫폼 (프로토타입)
+# 설계 문서 - 문화예술회관 통합 예약 플랫폼 (프로토타입)
 
 **작성일**: 2026-11-23, **상태**: 승인 (2026-11-23)
 **요구사항**: [요구사항정의서](2026-11-23-booking-platform-requirements.md) (요구사항 64개, ID는 그 문서 기준)
@@ -41,7 +41,7 @@
 | B | Netlify Functions + Supabase(Postgres) | DB 고유 제약으로 중복 판매를 막고, 정산은 SQL 집계로 처리합니다. 테이블 정의서를 만들 수 있습니다. | 처음 추천안 |
 | B′ | **GitHub Pages + Supabase(DB, 인증, Edge Functions)** | B의 장점을 유지하면서 Netlify 한도를 쓰지 않습니다. 대신 서버 함수가 Deno 런타임이고, 저장소를 공개해야 합니다. | **사용자 선택** |
 | C | 브라우저 저장소 + 결제 함수만 | 사용자끼리 상태를 공유하지 못해 동시 결제/대기 승격을 시연할 수 없습니다. | 제외 |
-| — | GitHub Pages + Cloudflare Workers | 무료 한도는 넉넉하지만 DB를 따로 골라야 해서 계정이 하나 더 늘어납니다. | 제외 |
+| - | GitHub Pages + Cloudflare Workers | 무료 한도는 넉넉하지만 DB를 따로 골라야 해서 계정이 하나 더 늘어납니다. | 제외 |
 
 ### 기술 스택 판단 (AI 기본값 대신 공공 맥락 기준)
 
@@ -154,7 +154,7 @@
 ### 5-8. 저장소 구조(제안)
 ```
 /                  README, .env.example, .gitignore
-/src               화면(Vite) — pages/, components/, styles/
+/src               화면(Vite) - pages/, components/, styles/
 /supabase          migrations/(테이블, 제약, RLS, DB 함수), seed.sql, functions/(Edge Functions + _shared/ 정책 모듈)
 /tests             정책 단위 테스트, 동시성 통합 테스트
 /docs/superpowers  specs/, plans/, notes/
@@ -189,7 +189,7 @@
 - 디자인 요소는 선과 도형을 그냥 조합하지 않습니다. 요소마다 특성, 용도, 가독성, 심미성을 따져 만듭니다.
 - 시안은 반응형 HTML로 만듭니다(PC 1440, 모바일 390).
 - **금지**: 도형이나 카드 옆에 포인트 색 두꺼운 선(좌측 강조 막대 등)을 두지 않습니다. AI 티가 나고 시선이 흩어지기 때문입니다.
-- 가운뎃점(·)은 꼭 필요한 곳에만 씁니다.
+- 가운뎃점(·)은 꼭 필요한 곳에만 씁니다. 긴 줄표(—) 대신 하이픈(-)을 씁니다.
 - **레퍼런스**:
   - [DICE](https://styles.refero.design/style/f4af4c42-2cba-4aa6-8d06-2f728bce702d): 흑백 UI에 포스터만 컬러
   - [Eventbrite](https://styles.refero.design/style/1fa0d9da-966f-4d43-9775-e156bec3a3b3): 행동 색 하나
