@@ -11,11 +11,15 @@ const KINDS = {
     + `${rows(5, () => '<div class="sk-line sk-block"></div>')}</div></div>`,
   form: () => `<div class="sk-line sk-block"></div>${rows(3, () => '<div class="sk-form-row sk-block"></div>')}`,
   table: () => rows(8, () => '<div class="sk-line sk-block"></div>'),
+  // 관리자 목록 표: 머리글 띠와 열이 있는 행
+  'grid-table': () => `<div class="sk-grid"><div class="sk-th sk-block"></div>${rows(8, () => `<div class="sk-tr">${rows(6, () => '<i class="sk-block"></i>')}</div>`)}</div>`,
+  // 관리자 대시보드 수치 카드
+  kpis: () => `<div class="sk-kpis">${rows(4, () => '<div class="sk-block"></div>')}</div>`,
 };
 
 /**
  * @param {HTMLElement} el 스켈레톤을 넣을 요소
- * @param {'seat-map'|'cards'|'detail'|'table'|'form'} kind
+ * @param {'seat-map'|'cards'|'detail'|'table'|'form'|'grid-table'|'kpis'} kind
  * @param {{delayMs?:number}} [opts]
  * @returns {() => void} 불러오기가 끝나면 부릅니다(타이머, 스켈레톤, aria-busy 를 정리).
  */

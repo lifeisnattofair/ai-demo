@@ -6,6 +6,7 @@
   --c-text: #1e2124;         /* gray-90 */
   --c-text-2: #464c53;       /* gray-70 */
   --c-text-3: #6d7882;       /* gray-50 */
+  --c-text-muted: #58616a;   /* gray-60, 회색 바탕(#f4f5f6, #f8f9fa) 위 보조 글자 4.5:1 이상 */
   --c-line: #cdd1d5;         /* gray-20 */
   --c-line-soft: #e6e8ea;    /* gray-10 */
   --c-surface: #ffffff;

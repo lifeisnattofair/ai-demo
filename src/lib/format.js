@@ -60,3 +60,28 @@ export function formatPhone(digits) {
 export function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 }
+
+// 입력 상자(datetime-local, date)와 주고받는 KST 값. 화면 표시용 문구가 아니라 입력 값 형식입니다.
+const pad2 = (s) => String(s).padStart(2, '0');
+
+// '2026-12-01T19:30' (KST)
+export function toKstInput(iso) {
+  if (iso == null || iso === '') return '';
+  const d = iso instanceof Date ? iso : new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const t = kstParts(d);
+  return `${t.year}-${pad2(t.month)}-${pad2(t.day)}T${t.hour}:${t.minute}`;
+}
+
+// '2026-12-01T19:30' 또는 '2026-12-01' (KST) -> ISO(UTC). 형식이 틀리면 null.
+export function fromKstInput(value) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})(?:T(\d{2}):(\d{2}))?$/.exec(String(value ?? '').trim());
+  if (!m) return null;
+  const d = new Date(`${m[1]}-${m[2]}-${m[3]}T${m[4] ?? '00'}:${m[5] ?? '00'}:00+09:00`);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+// KST 달력 날짜 키 '2026-12-01'(기간 조회 비교용)
+export function kstDayKey(iso) {
+  return toKstInput(iso).slice(0, 10);
+}

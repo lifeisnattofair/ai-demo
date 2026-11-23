@@ -14,10 +14,11 @@ function node(tag, className, text) {
 const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * @param {{title:string, message:string, detail?:string, confirmLabel?:string, cancelLabel?:string, danger?:boolean}} opts
+ * @param {{title:string, message:string, detail?:string, rows?:Array<[string,string]>, confirmLabel?:string, cancelLabel?:string|null, danger?:boolean}} opts
+ *   rows 는 이름/값 목록(dl)으로 보입니다. cancelLabel 이 null 이면 확인 버튼 하나만 둡니다(정보 보기).
  * @returns {Promise<boolean>} 확인하면 true, 닫거나 취소하면 false
  */
-export function confirmDialog({ title, message, detail, confirmLabel = '확인', cancelLabel = '닫기', danger = false }) {
+export function confirmDialog({ title, message, detail, rows, confirmLabel = '확인', cancelLabel = '닫기', danger = false }) {
   return new Promise((resolve) => {
     const opener = document.activeElement;
     const id = `dlg-${++seq}`;
@@ -35,6 +36,11 @@ export function confirmDialog({ title, message, detail, confirmLabel = '확인',
     const desc = node('div', 'dialog-body');
     desc.id = `${id}-desc`;
     desc.append(node('p', null, message));
+    if (rows?.length) {
+      const dl = node('dl', 'dialog-rows');
+      for (const [k, v] of rows) dl.append(node('dt', null, k), node('dd', null, v ?? '-'));
+      desc.append(dl);
+    }
     if (detail) desc.append(node('p', 'dialog-detail', detail));
 
     const actions = node('div', 'dialog-actions');
@@ -42,7 +48,8 @@ export function confirmDialog({ title, message, detail, confirmLabel = '확인',
     cancel.type = 'button';
     const ok = node('button', `btn ${danger ? 'btn-danger-solid' : 'btn-primary'}`, confirmLabel);
     ok.type = 'button';
-    actions.append(cancel, ok);
+    if (cancelLabel == null) actions.append(ok);
+    else actions.append(cancel, ok);
     box.append(h, desc, actions);
     backdrop.append(box);
 
@@ -90,6 +97,7 @@ export function confirmDialog({ title, message, detail, confirmLabel = '확인',
     document.body.append(backdrop);
     document.body.classList.add('dialog-open');
     // 실수로 확정하지 않도록 처음 초점은 닫기 버튼에 둡니다.
-    cancel.focus();
+    if (cancelLabel == null) ok.focus();
+    else cancel.focus();
   });
 }

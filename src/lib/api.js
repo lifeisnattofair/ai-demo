@@ -38,7 +38,7 @@ function client() {
 }
 
 // DB 함수는 raise exception 의 message 에 코드를 담습니다.
-function fromDbError(error) {
+export function fromDbError(error) {
   const raw = String(error?.message ?? '');
   const code = /^[A-Z][A-Z_]+$/.test(raw) ? raw : (raw.match(/\b([A-Z]{3,}(?:_[A-Z]+)+)\b/)?.[1] ?? 'UNKNOWN');
   return new ApiError(code);
