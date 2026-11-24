@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { marked } from 'marked';
 import ExcelJS from 'exceljs';
 import puppeteer from 'puppeteer-core';
-import { loadQa } from './qa-data.mjs';
+import { loadQa, normalizeResult } from './qa-data.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -184,11 +184,12 @@ async function buildTrace(reqRows, acMap) {
   const statusOf = (ids) => {
     const list = ids.split(/,\s*/).filter(Boolean);
     if (!list.length) return '계획';
-    const res = list.map((q) => qa.results.get(q)?.result ?? '미수행');
-    if (res.some((x) => /^FAIL/.test(x))) return '결함';
-    if (res.every((x) => x === 'PASS' || /자동/.test(x))) return '검수 완료';
-    if (res.some((x) => /^PASS/.test(x) || /자동/.test(x))) return '검수 중';
-    return '구현 완료';
+    const res = list.map((q) => normalizeResult(qa.results.get(q)?.result).key);
+    if (res.includes('FAIL')) return '결함';
+    if (res.every((x) => x === 'PASS' || x === '자동 확인')) return '검수 완료';
+    if (res.some((x) => x === 'PASS' || x === 'PASS(일부)' || x === '자동 확인')) return '부분 검수';
+    if (res.includes('BLOCKED')) return '검수 보류';
+    return '미검수';
   };
   const wb = new ExcelJS.Workbook();
   wb.creator = '서비스 기획';

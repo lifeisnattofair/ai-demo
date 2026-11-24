@@ -209,6 +209,8 @@ textarea.ctl { height: auto; min-height: 120px; padding: var(--sp-3); line-heigh
 .filter-bar .fg { display: inline-flex; align-items: center; gap: var(--sp-2); white-space: nowrap; }
 .filter-bar .sep { width: 1px; height: 20px; background: var(--c-line-soft); margin: 0 var(--sp-1); }
 .filter-bar .push { margin-left: auto; display: flex; gap: var(--sp-2); }
+/* 긴 프로그램 이름이 선택 상자를 넓혀 조회 버튼이 다음 줄로 밀리지 않게 합니다(선택한 이름은 말줄임, 목록에는 전체 이름). */
+.filter-bar select.ctl { max-width: 200px; text-overflow: ellipsis; }
 .filter-bar + .alert-host:not(:empty) { margin-top: var(--sp-4); }
 .kpi-host .kpis { margin-top: var(--sp-4); }
 .two-col { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--sp-3); margin-top: var(--sp-3); align-items: stretch; }

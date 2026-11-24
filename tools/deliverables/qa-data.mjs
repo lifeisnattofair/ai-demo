@@ -28,6 +28,22 @@ export function tableAfter(md, heading = null) {
   return rows;
 }
 
+/**
+ * 결과 원문(예: 「PASS(시계는 SQL)」)을 판정 값 하나로 맞춥니다.
+ * 실행 수단만 다른 경우는 PASS, 일부를 실행하지 않은 경우는 PASS(일부)입니다.
+ * @returns {{key:string, qual:string}}
+ */
+export function normalizeResult(raw) {
+  const text = String(raw ?? '').trim();
+  if (!text) return { key: '미수행', qual: '' };
+  const m = text.match(/^([^(]+?)\s*(?:\((.*)\))?$/);
+  const head = (m?.[1] ?? text).trim();
+  const qual = m?.[2] ?? '';
+  let key = /^PASS/.test(head) ? 'PASS' : /^FAIL/.test(head) ? 'FAIL' : /^BLOCK/.test(head) ? 'BLOCKED' : /자동/.test(head) ? '자동 확인' : '미수행';
+  if (key === 'PASS' && (qual === '일부' || /미실행|미확인|일부|기준|화면 미/.test(qual))) key = 'PASS(일부)';
+  return { key, qual: qual === '일부' ? '' : qual };
+}
+
 export function loadQa(root) {
   const read = (p) => (existsSync(resolve(root, p)) ? readFileSync(resolve(root, p), 'utf8') : '');
   const casesMd = read('docs/qa/2026-11-24-qa-cases.md');
@@ -47,12 +63,13 @@ export function loadQa(root) {
   };
   add('docs/qa/2026-11-24-qa-lead-results.md', '리드 검수');
   add('docs/qa/2026-11-24-qa-browser-results.md', 'QA 에이전트');
+  add('docs/qa/2026-11-24-qa-retest.md', '재검수');
 
   const working = tableAfter(read('docs/qa/defects-working.md')).map(([id, sev, screen, symptom, repro, action]) => ({
     id, sev, screen, symptom, repro, action, status: action ? '조치 완료' : '미조치',
   }));
   const agentMd = read('docs/qa/2026-11-24-qa-browser-results.md');
-  const agentDefects = tableAfter(agentMd, '결함').filter((r) => /^D-\d+/.test(r[0])).map(([id, sev, screen, symptom, repro, action = '']) => ({
+  const agentDefects = tableAfter(agentMd, '## 2. 결함').filter((r) => /^D-\d+/.test(r[0])).map(([id, sev, screen, symptom, repro, action = '']) => ({
     id, sev, screen, symptom, repro, action, status: action ? '조치 완료' : '미조치',
   }));
   const a11y = tableAfter(read('docs/qa/2026-11-24-a11y.md'));

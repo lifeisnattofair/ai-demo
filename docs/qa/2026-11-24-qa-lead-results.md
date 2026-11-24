@@ -36,12 +36,12 @@
 | QA-087 | PASS | check:trace ok, 요구사항 64개 모두 계획 추적표와 QA 케이스에 연결 | - |
 | QA-088 | PASS | check:secrets ok, 회원 데이터는 이메일, 이름, 휴대폰과 할인 유형 선택값만 저장 | - |
 
-## 자동 점검 (main, d01b3c9 기준)
+## 자동 점검 (main, 6ee9642 기준, 결함 D-01~D-15 수정 후)
 
 | 구분 | 명령 | 결과 |
 |---|---|---|
-| 단위/화면 테스트 | `npm test` | 34개 파일, 381건 통과 |
-| DB 테스트 | `npm run test:db` | 11개 파일, 167건 통과(검수 계정이 있으면 실패하던 시드 재실행 테스트 1건 보정 후) |
+| 단위/화면 테스트 | `npm test` | 36개 파일, 402건 통과 |
+| DB 테스트 | `npm run test:db` | 12개 파일, 180건 통과(두 번 연속 실행, 동시성과 만료 처리 포함) |
 | 비밀값 점검 | `npm run check:secrets` | ok |
 | 추적성 점검 | `npm run check:trace` | ok |
 | 빌드 | `npm run build` | 성공 |

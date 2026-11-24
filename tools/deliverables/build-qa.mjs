@@ -4,7 +4,7 @@ import { readFileSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ExcelJS from 'exceljs';
-import { loadQa, tableAfter } from './qa-data.mjs';
+import { loadQa, normalizeResult, tableAfter } from './qa-data.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -73,16 +73,22 @@ function paintResult(cell, value) {
   const s = RESULT_STYLE[resultKey(value)];
   cell.fill = s.fill; cell.font = { ...bold, color: { argb: s.color } };
 }
-function sectionTitle(ws, rowNo, text) {
+function sectionTitle(ws, rowNo, text, span = 5) {
+  ws.mergeCells(rowNo, 1, rowNo, span);
   const c = ws.getCell(rowNo, 1);
   c.value = text; c.font = { name: '맑은 고딕', size: 11, bold: true, color: { argb: 'FF1D3557' } };
   ws.getRow(rowNo).height = 20;
 }
 
 /* ---------- 2. 테스트 케이스 결과 ---------- */
+// 결과 원문의 괄호 설명은 관찰 열로 옮기고, 결과 열은 판정 값 하나로 맞춥니다.
+// 실행 수단만 다른 경우(API, SQL로 준비)는 PASS, 일부를 실행하지 않은 경우는 PASS(일부)입니다.
+const normalize = normalizeResult;
 const caseRows = qa.cases.map((k) => {
   const r = qa.results.get(k.id);
-  return { ...k, result: r?.result ?? '미수행', note: r?.note ?? '', defect: r?.defect ?? '-', by: r?.by ?? '-' };
+  const { key, qual } = normalize(r?.result ?? '미수행');
+  const note = [qual && qual !== '일부' ? `[${qual}]` : '', r?.note ?? ''].filter(Boolean).join(' ');
+  return { ...k, result: r ? key : '미수행', note, defect: r?.defect ?? '-', by: r?.by ?? '-' };
 });
 
 const summary = wb.addWorksheet('결과 요약', { pageSetup: pageSetup('portrait'), headerFooter: headerFooter('테스트 결과서') });
@@ -189,7 +195,7 @@ sectionTitle(summary, r++, '3. 검수 기준(AC) 판정');
 headRow(summary, r++, ['검수 기준', '항목', '종단 케이스', '결과', '확인 방법']);
 for (const [ac, item, how] of acRows) {
   const qaId = (qa.cases.find((k) => k.req.split(/,\s*/)[0] === ac) ?? {}).id ?? '';
-  const res = qa.results.get(qaId)?.result ?? '미수행';
+  const res = normalize(qa.results.get(qaId)?.result).key;
   const row = summary.getRow(r++);
   row.values = [ac, item, qaId, res, how];
   for (let c = 1; c <= 5; c++) { row.getCell(c).border = border; row.getCell(c).font = font; row.getCell(c).alignment = { wrapText: true, vertical: 'top', horizontal: [1, 3, 4].includes(c) ? 'center' : 'left' }; }
@@ -216,7 +222,7 @@ const count = (k) => caseRows.filter((c) => resultKey(c.result) === k).length;
 const open = qa.defects.filter((d) => d.status !== '조치 완료');
 const opinions = [
   `케이스 ${caseRows.length}건 중 PASS ${count('PASS')}건, 일부 확인 ${count('PASS(일부)')}건, 자동 확인 ${count('자동 확인')}건, FAIL ${count('FAIL')}건, BLOCKED ${count('BLOCKED')}건, 미수행 ${count('미수행')}건입니다.`,
-  `결함 ${qa.defects.length}건을 기록했고 ${qa.defects.length - open.length}건은 수정 뒤 같은 절차로 다시 확인했습니다.${open.length ? ` 미조치 ${open.length}건(${open.map((d) => d.id).join(', ')})은 결함 관리 시트에 사유를 적었습니다.` : ''}`,
+  `결함 ${qa.defects.length}건(${['상', '중', '하'].map((v) => `${v} ${qa.defects.filter((d) => d.sev === v).length}`).join(', ')})을 기록했고 ${qa.defects.length - open.length}건을 수정했습니다. 화면에서 재현되는 결함은 같은 절차로 브라우저 재검수했고, 나머지는 추가한 단위/DB 테스트로 확인했습니다. D-01~D-15 수정분은 별도 코드 리뷰와 범위 재검토를 거쳤고, D-16(CSS 한 줄)은 화면 측정으로 확인했습니다.${open.length ? ` 미조치 ${open.length}건(${open.map((d) => d.id).join(', ')})은 결함 관리 시트에 사유를 적었습니다.` : ''}`,
   `접근성 자동 점검은 ${qa.a11y.length}개 화면에서 위반 0건입니다. 키보드 점검은 좌석 배치도, 결제 단계 입력 요소를 포함합니다.`,
   '성능 목표(PER-001~003)는 프로토타입에서 측정하지 않는 목표치라 문서 확인으로 처리했고, 운영 환경 구축 시 별도 성능 시험이 필요합니다.',
 ];
