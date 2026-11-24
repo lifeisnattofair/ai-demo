@@ -72,7 +72,7 @@ docs/                    요구사항, 설계, 계획, 산출물 정의서
 
 아래는 저장소 소유자가 자신의 계정에서 실행하는 순서입니다. 이 저장소의 작업 과정에서는 실행하지 않았습니다.
 
-1. Supabase 프로젝트를 만들고 `npx supabase link --project-ref <프로젝트 ref>` 후 `npx supabase db push` 로 마이그레이션을 올립니다. 호스팅 Supabase는 마이그레이션을 올리기 전에 대시보드의 Database > Extensions에서 `pg_cron`을 켜 둡니다. `0017_review_fixes.sql`이 대기 기한 처리 작업 `sweep-due-offerings`(`sweep_due_offerings_cron`)를 1분마다 돌리도록 등록하는데, 확장이 없으면 알림만 남기고 이 작업을 건너뜁니다. 그러면 대기 기한 만료와 승격은 누군가 대기 현황, 알림함, 좌석 선택, 관리자 대기자 화면을 열 때(이 읽기 경로가 `sweep_due_offerings`를 부릅니다)에만 처리됩니다. 시드(`supabase/seed.sql`)를 적용한 뒤, 대시보드의 SQL 편집기에서 환경을 `demo`로 바꿉니다.
+1. Supabase 프로젝트를 만들고 `npx supabase link --project-ref <프로젝트 ref>` 후 `npx supabase db push --remote --include-seed` 로 마이그레이션과 시드를 올립니다(Supabase CLI 3.x는 `--remote`가 없으면 로컬 DB에 적용합니다). 호스팅 Supabase는 마이그레이션을 올리기 전에 대시보드의 Database > Extensions에서 `pg_cron`을 켜 둡니다. `0017_review_fixes.sql`이 대기 기한 처리 작업 `sweep-due-offerings`(`sweep_due_offerings_cron`)를 1분마다 돌리도록 등록하는데, 확장이 없으면 알림만 남기고 이 작업을 건너뜁니다. 그러면 대기 기한 만료와 승격은 누군가 대기 현황, 알림함, 좌석 선택, 관리자 대기자 화면을 열 때(이 읽기 경로가 `sweep_due_offerings`를 부릅니다)에만 처리됩니다. 시드를 적용한 뒤, 대시보드의 SQL 편집기에서 환경을 `demo`로 바꿉니다.
 
    ```sql
    insert into public.app_settings(key, value) values ('env', '"demo"')
@@ -81,7 +81,7 @@ docs/                    요구사항, 설계, 계획, 산출물 정의서
    ```
 
    주의: 마이그레이션의 기본값은 `local`이고, `local`에서는 검수용 시계(`admin_set_clock`)와 시연 데이터 초기화가 모두 켜져 있습니다. `VITE_ENV=demo` 빌드는 메뉴만 감출 뿐이라, 이 단계를 빠뜨리면 공개된 운영 담당 계정으로 누구나 RPC를 불러 시계를 옮길 수 있고 시연 계정 보호도 동작하지 않습니다.
-2. Edge Functions 비밀값에 `ALLOWED_ORIGIN`(Pages 주소 예: `https://<계정>.github.io`)을 설정하고 `npx supabase functions deploy` 로 배포합니다. 모의 결제라 결제 비밀값은 필요 없습니다.
+2. Edge Functions 비밀값에 `ALLOWED_ORIGIN`(Pages 주소 예: `https://<계정>.github.io`)을 설정하고 `npx supabase functions deploy --use-api` 로 배포합니다(`--use-api`는 Docker 없이 올립니다). 모의 결제라 결제 비밀값은 필요 없습니다.
 3. GitHub 저장소 Settings의 Secrets and variables에 `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`를 등록합니다.
 4. Settings의 Pages 소스를 GitHub Actions로 바꾸고 `main`에 push하면 `.github/workflows/pages.yml`이 `npm test`와 `npm run check:secrets`를 통과한 뒤 `VITE_BASE=/ai-demo/`, `VITE_ENV=demo`로 빌드해 배포합니다.
 
