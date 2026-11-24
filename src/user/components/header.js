@@ -1,6 +1,7 @@
 // 공통 헤더(GNB 2depth 메뉴, 모바일 전체 메뉴)와 푸터.
 // 키보드: 1depth 버튼은 Enter/Space 로 열고 닫으며, 아래 화살표로 열고 첫 링크로 갑니다. 위/아래 화살표는 링크 사이,
 // 좌우 화살표는 1depth 사이를 움직이고, Esc 는 닫고 초점을 1depth 버튼으로 돌려 둡니다.
+import { logoMark } from '../../components/logo.js';
 import { api as defaultApi } from '../../lib/api.js';
 import { now as clockNow } from '../../lib/clock.js';
 import { addMonths, escapeHtml, kstDayKey } from '../../lib/format.js';
@@ -61,7 +62,7 @@ export function headerHtml({ name = null, loggedIn = false } = {}, menus = gnbMe
     ? '<a href="#/me/bookings">내 예약</a><a href="#/account">내 정보</a><button type="button" data-logout>로그아웃</button>'
     : '<a href="#/login">로그인</a><a href="#/signup">회원 가입</a>';
   return `<div class="container">
-      <a class="logo" href="#/"><b>한빛아트센터</b><span>한빛시 문화재단</span></a>
+      <a class="logo" href="#/"><b>${logoMark()}한빛아트센터</b><span>한빛시 문화재단</span></a>
       <nav class="gnb" aria-label="주 메뉴"><ul class="gnb-list">${nav}</ul></nav>
       <div class="util">${util}</div>
       <button class="menu-btn" type="button" aria-label="전체 메뉴 열기" aria-expanded="false" aria-controls="m-menu">${MENU_ICON}</button>

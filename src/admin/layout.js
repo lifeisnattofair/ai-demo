@@ -1,6 +1,7 @@
 // 관리자 공통 틀: 상단 바(기관명, 통합 검색, 자동 로그아웃, 역할, 이름, 로그아웃), 좌측 메뉴 트리, 본문.
 // 메뉴 구성은 설계 5-9 그대로이고, 역할(roles)과 환경(env)에 맞는 항목만 보입니다.
 // 아직 화면이 없는 경로는 available 에서 빼서 메뉴에 그리지 않습니다(동작 없는 링크 금지).
+import { logoMark } from '../components/logo.js';
 import { clockOffsetText, escapeHtml, kstDateTime } from '../lib/format.js';
 
 const ALL = ['operator', 'finance'];
@@ -124,7 +125,7 @@ export function renderLayout(el, {
     <div class="clock-band" role="status" hidden></div>
     <header class="topbar">
       <button class="menu-toggle" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="admin-nav"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
-      <a class="brand" href="#/"><b>한빛아트센터</b><span>통합 예약 관리</span></a>
+      <a class="brand" href="#/"><b>${logoMark()}한빛아트센터</b><span>통합 예약 관리</span></a>
       ${canSearch ? `<form class="t-search" role="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><label class="sr-only" for="gs">통합 검색</label><input id="gs" name="q" type="search" placeholder="프로그램명 검색" autocomplete="off"></form>` : ''}
       <div class="t-right">
         <span class="session"><span class="lbl">자동 로그아웃</span> <b class="num" aria-hidden="true"></b><span class="sr-only" role="status" aria-live="polite"></span><button type="button">연장</button></span>

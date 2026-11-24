@@ -387,3 +387,6 @@ textarea.ctl { height: auto; min-height: 120px; padding: var(--sp-3); line-heigh
 .audit-detail summary { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--sp-3); border-radius: var(--r-sm); color: var(--c-action-text); font-weight: 700; cursor: pointer; }
 .audit-detail summary:hover { background: var(--c-surface-2); text-decoration: underline; text-underline-offset: 3px; }
 .audit-detail pre { margin: 0 0 var(--sp-2); padding: var(--sp-3); max-width: 420px; max-height: 240px; overflow: auto; border: 1px solid var(--c-line); border-radius: var(--r-sm); background: var(--c-surface-2); font-size: var(--fs-caption); line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; text-align: left; }
+
+/* 로고 기호: 높이는 글자 실측(윗선 0.80em, 아랫선 0.10em)에 맞춥니다 */
+.logo-mark { display: inline-block; height: 0.9em; width: 0.827em; margin-right: 0.3em; vertical-align: -0.1em; }

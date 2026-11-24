@@ -330,3 +330,6 @@ button, input, select { font: inherit; color: inherit; }
   .detail .d-poster { position: static; max-width: 240px; }
   .lesson-list { grid-template-columns: 1fr; }
 }
+
+/* 로고 기호: 높이는 글자 실측(윗선 0.80em, 아랫선 0.10em)에 맞춥니다 */
+.logo-mark { display: inline-block; height: 0.9em; width: 0.827em; margin-right: 0.3em; vertical-align: -0.1em; }

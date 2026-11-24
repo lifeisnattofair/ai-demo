@@ -1,4 +1,5 @@
 // 관리자 화면 진입점: 로그인 -> 역할 확인(담당자가 아니면 접근 거부) -> 공통 틀 + 해시 라우터
+import { logoMark } from '../components/logo.js';
 import '../styles/base.css';
 import '../styles/tokens.css';
 import '../styles/admin.css';
@@ -28,7 +29,7 @@ const root = document.getElementById('root');
 const STAFF = ['operator', 'finance'];
 const LOGIN_MSG = 'admin-login-msg';
 
-const gateBrand = '<div class="brand"><b>한빛아트센터</b><span>통합 예약 관리</span></div>';
+const gateBrand = `<div class="brand"><b>${logoMark()}한빛아트센터</b><span>통합 예약 관리</span></div>`;
 
 function renderLogin(message, tone = 'err') {
   root.innerHTML = `<main class="gate"><div class="gate-card">${gateBrand}
