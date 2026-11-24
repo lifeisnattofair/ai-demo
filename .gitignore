@@ -9,3 +9,6 @@ design/mockups/assets/photos/candidates/*.jpg
 dist/
 supabase/.temp/
 supabase/functions/.env
+
+# 참고 사이트 캡처(타 기관 저작물이라 올리지 않음)
+docs/design-refs/*.jpg

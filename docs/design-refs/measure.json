@@ -1,0 +1,628 @@
+{
+  "lgart": {
+    "url": "https://www.lgart.com/",
+    "title": "LG아트센터 서울",
+    "body": {
+      "font": "\"Noto Sans KR\", sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "lh": "normal",
+      "ls": "normal",
+      "color": "rgb(0, 0, 0)"
+    },
+    "heads": [
+      {
+        "tag": "H2",
+        "text": "스킵네비게이션",
+        "size": "24px",
+        "weight": "400",
+        "font": "\"Noto Sans KR\", sans-serif"
+      },
+      {
+        "tag": "H1",
+        "text": "",
+        "size": "32px",
+        "weight": "400",
+        "font": "\"Noto Sans KR\", sans-serif"
+      },
+      {
+        "tag": "H2",
+        "text": "What'sON",
+        "size": "24px",
+        "weight": "400",
+        "font": "\"Noto Sans KR\", sans-serif"
+      },
+      {
+        "tag": "H3",
+        "text": "연극 '안티피플'",
+        "size": "30px",
+        "weight": "700",
+        "font": "\"Noto Sans KR\", sans-serif"
+      }
+    ],
+    "bg": [
+      "rgb(0, 0, 0)",
+      "rgb(35, 34, 33)",
+      "rgb(255, 255, 255)",
+      "rgb(58, 58, 58)",
+      "rgb(43, 43, 43)",
+      "rgb(200, 0, 0)"
+    ],
+    "linkColors": [
+      "rgb(0, 0, 0)",
+      "rgb(255, 255, 255)",
+      "rgb(115, 115, 115)"
+    ],
+    "containerGuess": 971.6875
+  },
+  "sac": {
+    "url": "https://www.sac.or.kr/",
+    "title": "예술의전당",
+    "body": {
+      "font": "Pretendard, sans-serif",
+      "size": "15px",
+      "weight": "400",
+      "lh": "normal",
+      "ls": "normal",
+      "color": "rgb(85, 85, 85)"
+    },
+    "heads": [
+      {
+        "tag": "H1",
+        "text": "예술의전당",
+        "size": "15px",
+        "weight": "700",
+        "font": "Pretendard, sans-serif"
+      },
+      {
+        "tag": "H3",
+        "text": "한국·벨기에 수교 125주년 기념음악회",
+        "size": "25.5px",
+        "weight": "700",
+        "font": "Pretendard, sans-serif"
+      },
+      {
+        "tag": "H3",
+        "text": "몬트리올 심포니 오케스트라 & 브루스 리우",
+        "size": "25.5px",
+        "weight": "700",
+        "font": "Pretendard, sans-serif"
+      },
+      {
+        "tag": "H3",
+        "text": "왕쯔통 피아노 리사이틀",
+        "size": "25.5px",
+        "weight": "700",
+        "font": "Pretendard, sans-serif"
+      }
+    ],
+    "bg": [
+      "rgb(234, 234, 234)",
+      "rgba(0, 0, 0, 0.27)",
+      "rgb(230, 0, 45)",
+      "rgb(255, 255, 255)"
+    ],
+    "linkColors": [
+      "rgb(85, 85, 85)",
+      "rgb(0, 0, 0)",
+      "rgb(99, 99, 99)",
+      "rgb(255, 255, 255)"
+    ],
+    "containerGuess": 1396.796875
+  },
+  "ntok": {
+    "url": "https://www.ntok.go.kr/",
+    "title": "국립극장",
+    "body": {
+      "font": "Pretendard, SCDream, xeicon, Montserrat, NotoSans, 돋움, Dotum, 굴림, remixicon, Gul",
+      "size": "16.2px",
+      "weight": "400",
+      "lh": "normal",
+      "ls": "-0.5px",
+      "color": "rgb(17, 17, 17)"
+    },
+    "heads": [
+      {
+        "tag": "H2",
+        "text": "캘린더",
+        "size": "33.3px",
+        "weight": "400",
+        "font": "Pretendard, SCDream, xeicon, Montserrat, NotoSans,"
+      },
+      {
+        "tag": "H2",
+        "text": "국립극장이모저모",
+        "size": "33.3px",
+        "weight": "400",
+        "font": "Pretendard, SCDream, xeicon, Montserrat, NotoSans,"
+      },
+      {
+        "tag": "H2",
+        "text": "계간 국립극장",
+        "size": "33.3px",
+        "weight": "400",
+        "font": "Pretendard, SCDream, xeicon, Montserrat, NotoSans,"
+      },
+      {
+        "tag": "H2",
+        "text": "배너존",
+        "size": "17.1px",
+        "weight": "500",
+        "font": "Pretendard, SCDream, xeicon, Montserrat, NotoSans,"
+      }
+    ],
+    "bg": [
+      "rgba(0, 0, 0, 0.9)",
+      "rgb(0, 0, 0)",
+      "rgb(255, 255, 255)",
+      "rgb(241, 241, 241)",
+      "rgb(245, 245, 245)",
+      "rgb(232, 232, 232)"
+    ],
+    "linkColors": [
+      "rgb(17, 17, 17)",
+      "rgb(0, 0, 0)",
+      "rgb(51, 51, 51)",
+      "rgb(255, 255, 255)"
+    ],
+    "containerGuess": 1404
+  },
+  "barbican": {
+    "url": "https://www.barbican.org.uk/",
+    "title": "Welcome to the Barbican | Barbican",
+    "body": {
+      "font": "Supreme, arial, helvetica, sans-serif",
+      "size": "19.125px",
+      "weight": "400",
+      "lh": "26.775px",
+      "ls": "normal",
+      "color": "rgb(51, 51, 51)"
+    },
+    "heads": [
+      {
+        "tag": "H2",
+        "text": "Main navigation",
+        "size": "35.7px",
+        "weight": "700",
+        "font": "Supreme, arial, helvetica, sans-serif"
+      },
+      {
+        "tag": "H1",
+        "text": "Welcome to the Barbican",
+        "size": "89.25px",
+        "weight": "700",
+        "font": "Supreme, arial, helvetica, sans-serif"
+      },
+      {
+        "tag": "H2",
+        "text": "This week",
+        "size": "51px",
+        "weight": "400",
+        "font": "Supreme-Black, Arial, Helvetica, sans-serif"
+      },
+      {
+        "tag": "H3",
+        "text": "On this week",
+        "size": "18.7px",
+        "weight": "700",
+        "font": "Supreme, arial, helvetica, sans-serif"
+      }
+    ],
+    "bg": [
+      "rgb(255, 255, 255)",
+      "rgb(26, 26, 26)",
+      "rgba(209, 73, 0, 0.02)",
+      "rgb(0, 0, 0)",
+      "rgb(209, 73, 0)",
+      "oklab(0.979365 0.0070293 0.00594561)"
+    ],
+    "linkColors": [
+      "rgb(0, 0, 0)",
+      "rgb(26, 26, 26)",
+      "rgb(255, 255, 255)",
+      "rgb(209, 73, 0)"
+    ],
+    "containerGuess": 1318.625
+  },
+  "sejongpac": {
+    "url": "https://www.sejongpac.or.kr/",
+    "title": "세종문화회관",
+    "body": {
+      "font": "modern, sans-serif",
+      "size": "16px",
+      "weight": "400",
+      "lh": "24px",
+      "ls": "-0.48px",
+      "color": "rgb(0, 0, 0)"
+    },
+    "heads": [
+      {
+        "tag": "H1",
+        "text": "서울특별시 세종문화회관",
+        "size": "16px",
+        "weight": "700",
+        "font": "modern, sans-serif"
+      }
+    ],
+    "bg": [
+      "rgb(255, 255, 255)",
+      "rgb(230, 230, 230)",
+      "rgb(0, 0, 0)",
+      "rgb(255, 234, 0)"
+    ],
+    "linkColors": [
+      "rgb(0, 0, 0)",
+      "rgb(255, 255, 255)"
+    ],
+    "containerGuess": 1438
+  },
+  "lincolncenter": {
+    "url": "https://www.lincolncenter.org/",
+    "title": "Lincoln Center",
+    "body": {
+      "font": "\"Univers Next W02\", \"helvetica neue\", arial, helvetica, sans-serif",
+      "size": "16px",
+      "weight": "500",
+      "lh": "normal",
+      "ls": "normal",
+      "color": "rgb(25, 25, 25)"
+    },
+    "heads": [
+      {
+        "tag": "H2",
+        "text": "What's On Now",
+        "size": "18px",
+        "weight": "500",
+        "font": "\"Univers Next W02\", \"helvetica neue\", arial, helve"
+      }
+    ],
+    "bg": [
+      "rgb(0, 0, 0)",
+      "rgb(17, 17, 17)",
+      "rgb(255, 255, 255)"
+    ],
+    "linkColors": [
+      "rgb(0, 0, 238)"
+    ],
+    "containerGuess": 921.59375
+  },
+  "southbank": {
+    "url": "https://www.southbankcentre.co.uk/",
+    "title": "Welcome to the Southbank Centre – an engine of creativity",
+    "body": {
+      "font": "Akkurat, sans-serif",
+      "size": "19px",
+      "weight": "400",
+      "lh": "28.5px",
+      "ls": "normal",
+      "color": "rgb(0, 0, 0)"
+    },
+    "heads": [
+      {
+        "tag": "H1",
+        "text": "Welcome to the heart of London",
+        "size": "80.75px",
+        "weight": "400",
+        "font": "\"SC Noe Bold\", serif"
+      },
+      {
+        "tag": "H3",
+        "text": "An engine of creativity, we’re",
+        "size": "46.3125px",
+        "weight": "400",
+        "font": "\"SC Noe Bold\", serif"
+      },
+      {
+        "tag": "H2",
+        "text": "On now & coming up",
+        "size": "55.8125px",
+        "weight": "400",
+        "font": "\"SC Noe Bold\", serif"
+      },
+      {
+        "tag": "H3",
+        "text": "Nan Goldin: You Never Did Anyt",
+        "size": "32.0625px",
+        "weight": "400",
+        "font": "\"SC Noe Bold\", serif"
+      }
+    ],
+    "bg": [
+      "rgb(251, 250, 246)",
+      "rgb(0, 0, 0)",
+      "rgb(244, 244, 244)",
+      "rgb(255, 255, 255)",
+      "rgb(33, 26, 1)",
+      "rgb(66, 131, 70)"
+    ],
+    "linkColors": [
+      "rgb(0, 0, 0)",
+      "rgb(255, 255, 255)",
+      "rgb(44, 44, 44)"
+    ],
+    "containerGuess": 1382.40625
+  },
+  "kennedycenter": {
+    "url": "https://www.kennedy-center.org/",
+    "title": "The John F. Kennedy Memorial Center for the Performing Arts",
+    "body": {
+      "font": "freight-sans-pro, Helvetica, Arial, sans-serif, serif",
+      "size": "20px",
+      "weight": "400",
+      "lh": "26px",
+      "ls": "normal",
+      "color": "rgb(0, 0, 0)"
+    },
+    "heads": [
+      {
+        "tag": "H3",
+        "text": "Page Navigation",
+        "size": "36px",
+        "weight": "900",
+        "font": "freight-display-pro, \"Times New Roman\", serif, ser"
+      },
+      {
+        "tag": "H3",
+        "text": "Partner Organizations",
+        "size": "36px",
+        "weight": "900",
+        "font": "freight-display-pro, \"Times New Roman\", serif, ser"
+      },
+      {
+        "tag": "H3",
+        "text": "Utility",
+        "size": "36px",
+        "weight": "900",
+        "font": "freight-display-pro, \"Times New Roman\", serif, ser"
+      },
+      {
+        "tag": "H1",
+        "text": "Home",
+        "size": "68px",
+        "weight": "900",
+        "font": "freight-display-pro, \"Times New Roman\", serif, ser"
+      }
+    ],
+    "bg": [
+      "rgba(0, 0, 0, 0.6)",
+      "rgb(0, 0, 0)",
+      "rgb(240, 240, 240)",
+      "rgba(0, 0, 0, 0.4)",
+      "rgb(255, 255, 255)",
+      "rgba(0, 12, 49, 0.6)"
+    ],
+    "linkColors": [
+      "rgb(0, 0, 0)",
+      "rgb(255, 255, 255)",
+      "rgba(0, 0, 0, 0.6)"
+    ],
+    "containerGuess": 1376
+  },
+  "elbphilharmonie": {
+    "url": "https://www.elbphilharmonie.de/en/",
+    "title": "Elbphilharmonie Laeiszhalle Hamburg - Elbphilharmonie",
+    "body": {
+      "font": "FFDIN, \"Lucida Sans Unicode\", \"Lucida Grande\", sans-serif",
+      "size": "16px",
+      "weight": "300",
+      "lh": "24px",
+      "ls": "normal",
+      "color": "rgb(34, 34, 34)"
+    },
+    "heads": [
+      {
+        "tag": "H1",
+        "text": "Privacy settings",
+        "size": "25.2px",
+        "weight": "700",
+        "font": "FFDIN, \"Lucida Sans Unicode\", \"Lucida Grande\", san"
+      },
+      {
+        "tag": "H2",
+        "text": "Saved Events",
+        "size": "44px",
+        "weight": "700",
+        "font": "FFDIN, \"Lucida Sans Unicode\", \"Lucida Grande\", san"
+      },
+      {
+        "tag": "H1",
+        "text": "Elbphilharmonie\n\t\t  & Laeiszha",
+        "size": "64px",
+        "weight": "700",
+        "font": "FFDIN, \"Lucida Sans Unicode\", \"Lucida Grande\", san"
+      },
+      {
+        "tag": "H2",
+        "text": "Elphi Black Week",
+        "size": "44px",
+        "weight": "700",
+        "font": "FFDIN, \"Lucida Sans Unicode\", \"Lucida Grande\", san"
+      }
+    ],
+    "bg": [
+      "rgb(255, 255, 255)",
+      "rgba(0, 0, 0, 0.4)",
+      "rgb(239, 239, 239)",
+      "rgb(65, 203, 255)",
+      "rgb(227, 228, 228)",
+      "rgb(0, 0, 0)"
+    ],
+    "linkColors": [
+      "rgb(34, 34, 34)",
+      "rgb(0, 0, 0)",
+      "rgb(255, 255, 255)"
+    ],
+    "containerGuess": 1346
+  },
+  "sydneyopera": {
+    "url": "https://www.sydneyoperahouse.com/",
+    "title": "Home | Sydney Opera House",
+    "body": {
+      "font": "\"LL Circular Pro Book\", \"Noto Sans\", \"Noto Sans JP\", \"Noto Sans Khmer\", \"Noto Sa",
+      "size": "16px",
+      "weight": "400",
+      "lh": "24px",
+      "ls": "normal",
+      "color": "rgb(0, 0, 0)"
+    },
+    "heads": [
+      {
+        "tag": "H2",
+        "text": "Main navigation",
+        "size": "32px",
+        "weight": "400",
+        "font": "\"LL Circular Pro Black\", \"Noto Sans\", \"Noto Sans J"
+      },
+      {
+        "tag": "H1",
+        "text": "Sydney Opera House home page",
+        "size": "48px",
+        "weight": "400",
+        "font": "\"LL Circular Pro Black\", \"Noto Sans\", \"Noto Sans J"
+      },
+      {
+        "tag": "H2",
+        "text": "Nothing quite like it",
+        "size": "48px",
+        "weight": "400",
+        "font": "\"LL Circular Pro Black\", \"Noto Sans\", \"Noto Sans J"
+      },
+      {
+        "tag": "H2",
+        "text": "Highlights",
+        "size": "32px",
+        "weight": "400",
+        "font": "\"LL Circular Pro Black\", \"Noto Sans\", \"Noto Sans J"
+      }
+    ],
+    "bg": [
+      "rgb(0, 0, 0)",
+      "rgb(246, 245, 243)",
+      "rgb(190, 166, 210)",
+      "rgb(185, 192, 222)",
+      "rgb(220, 98, 129)",
+      "rgb(61, 29, 83)"
+    ],
+    "linkColors": [
+      "rgb(0, 0, 0)",
+      "rgb(255, 255, 255)",
+      "rgb(43, 51, 63)",
+      "rgb(66, 66, 66)"
+    ],
+    "containerGuess": 1396.8125
+  },
+  "acc": {
+    "url": "https://www.acc.go.kr/",
+    "title": "국립아시아문화전당",
+    "body": {
+      "font": "Pretendard, \"Noto Sans KR\", \"맑은 고딕\", \"Malgun Gothic\", 돋움, dotum, \"sans-serif\"",
+      "size": "16px",
+      "weight": "400",
+      "lh": "17.6px",
+      "ls": "normal",
+      "color": "rgb(0, 0, 0)"
+    },
+    "heads": [
+      {
+        "tag": "H1",
+        "text": "",
+        "size": "16px",
+        "weight": "700",
+        "font": "Pretendard, \"Noto Sans KR\", \"맑은 고딕\", \"Malgun Gothi"
+      },
+      {
+        "tag": "H3",
+        "text": "ACC 전체일정",
+        "size": "16px",
+        "weight": "700",
+        "font": "Pretendard, \"Noto Sans KR\", \"맑은 고딕\", \"Malgun Gothi"
+      },
+      {
+        "tag": "H3",
+        "text": "ACC 보도자료",
+        "size": "20px",
+        "weight": "700",
+        "font": "Pretendard, \"Noto Sans KR\", \"맑은 고딕\", \"Malgun Gothi"
+      },
+      {
+        "tag": "H3",
+        "text": "ACC 알리미",
+        "size": "20px",
+        "weight": "700",
+        "font": "Pretendard, \"Noto Sans KR\", \"맑은 고딕\", \"Malgun Gothi"
+      }
+    ],
+    "bg": [
+      "rgb(255, 255, 255)",
+      "rgb(246, 246, 246)",
+      "rgba(8, 8, 8, 0.5)",
+      "rgb(0, 0, 0)",
+      "rgb(46, 134, 199)",
+      "rgb(40, 40, 219)"
+    ],
+    "linkColors": [
+      "rgb(0, 0, 0)",
+      "rgb(95, 95, 95)",
+      "rgb(255, 255, 255)",
+      "rgb(63, 68, 75)"
+    ],
+    "containerGuess": 1300
+  },
+  "philharmonie": {
+    "url": "https://philharmoniedeparis.fr/en",
+    "title": "Homepage | Philharmonie de Paris",
+    "body": {
+      "font": "\"Source Sans Pro\"",
+      "size": "14px",
+      "weight": "400",
+      "lh": "normal",
+      "ls": "normal",
+      "color": "rgb(0, 27, 59)"
+    },
+    "heads": [
+      {
+        "tag": "H2",
+        "text": "Concerts in the Grande Salle",
+        "size": "16px",
+        "weight": "700",
+        "font": "\"Source Sans Pro\""
+      },
+      {
+        "tag": "H2",
+        "text": "Discovery selection",
+        "size": "16px",
+        "weight": "700",
+        "font": "\"Source Sans Pro\""
+      },
+      {
+        "tag": "H2",
+        "text": "26/27 season",
+        "size": "16px",
+        "weight": "700",
+        "font": "\"Source Sans Pro\""
+      },
+      {
+        "tag": "H2",
+        "text": "Resident & associate ensembles",
+        "size": "16px",
+        "weight": "700",
+        "font": "\"Source Sans Pro\""
+      }
+    ],
+    "bg": [
+      "rgb(73, 109, 174)",
+      "rgb(255, 255, 255)",
+      "rgb(224, 213, 213)",
+      "rgb(0, 27, 59)",
+      "rgb(231, 226, 215)",
+      "rgb(22, 91, 128)"
+    ],
+    "linkColors": [
+      "rgb(0, 27, 59)",
+      "rgb(255, 255, 255)",
+      "rgb(255, 254, 241)",
+      "rgb(68, 68, 68)"
+    ],
+    "containerGuess": 1384
+  }
+}
