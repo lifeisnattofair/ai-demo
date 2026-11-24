@@ -45,7 +45,7 @@
   --fs-h1: clamp(1.625rem, 1.3rem + 1.1vw, 2.25rem);
   --fs-h2: clamp(1.25rem, 1.1rem + 0.6vw, 1.5rem);
   --fs-h3: 1.125rem;
-  --fs-body: 1rem;
+  --fs-body: 1.0625rem;  /* 17px, KRDS 본문. 제목(display 52px)과 3배 비 */
   --fs-small: 0.875rem;
   --fs-xsmall: 0.8125rem;
   --fs-caption: 0.75rem;   /* 표 머리 보조, 그래프 축, 작은 표식 */

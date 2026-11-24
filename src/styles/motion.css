@@ -72,17 +72,14 @@ select:not(:disabled), input[type="radio"]:not(:disabled), input[type="checkbox"
 .skeleton .sk-grid .sk-th { height: 40px; margin: 0 calc(var(--sp-4) * -1) var(--sp-1); border-radius: 0; animation: none; background: var(--c-surface-2); }
 .skeleton .sk-grid .sk-tr { display: grid; grid-template-columns: 40px 2fr 1fr 1fr 1fr 80px; gap: var(--sp-4); padding: 14px 0; border-bottom: 1px solid var(--c-line-soft); }
 .skeleton .sk-grid .sk-tr i { display: block; height: 14px; }
-.skeleton .sk-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3); }
-.skeleton .sk-kpis div { height: 104px; border-radius: var(--r-md); }
+.skeleton .sk-kpis { display: grid; gap: var(--sp-1); }
+.skeleton .sk-kpis div { height: 52px; border-radius: var(--r-sm); }
 .skeleton .sk-chart { display: flex; align-items: flex-end; gap: var(--sp-3); height: 200px; padding: var(--sp-5) var(--sp-4) var(--sp-3); }
 .skeleton .sk-chart i { display: block; flex: 1; border-radius: var(--r-sm) var(--r-sm) 0 0; }
 
 @media (max-width: 860px) {
   .skeleton .sk-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-5) var(--sp-3); }
   .skeleton .sk-detail { grid-template-columns: 240px minmax(0, 1fr); gap: var(--sp-5); }
-}
-@media (max-width: 1180px) {
-  .skeleton .sk-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
   .skeleton .sk-detail { grid-template-columns: 1fr; }

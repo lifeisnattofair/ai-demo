@@ -158,18 +158,20 @@ textarea.ctl { height: auto; min-height: 120px; padding: var(--sp-3); line-heigh
 .load-error .btn { margin-top: var(--sp-3); }
 
 /* 대시보드 */
-.kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-3); }
-.kpi { background: #fff; border: 1px solid var(--c-line); border-radius: var(--r-md); padding: var(--sp-4) var(--sp-4); }
-.kpi .k-label { display: flex; justify-content: space-between; gap: var(--sp-2); font-size: var(--fs-xsmall); color: var(--c-text-2); font-weight: 500; }
+/* 주요 수치: 카드 4개를 나란히 두지 않고 한 장의 목록(이름 왼쪽, 값 오른쪽)으로 둡니다(DESIGN.md 금지 목록). */
+.kpis { background: #fff; border: 1px solid var(--c-line); border-radius: var(--r-md); }
+.kpi { display: grid; grid-template-columns: 13em 8em minmax(0, 1fr) auto; column-gap: var(--sp-5); align-items: center; min-height: 52px; padding: var(--sp-1) var(--sp-4); }
+.kpi + .kpi { border-top: 1px solid var(--c-line-soft); }
+.kpi .k-label { grid-column: 1; grid-row: 1; display: flex; align-items: baseline; gap: var(--sp-2); font-size: var(--fs-small); color: var(--c-ink); font-weight: 700; }
 .kpi .k-label small { color: var(--c-text-muted); font-weight: 400; font-variant-numeric: tabular-nums; }
-.kpi.net { background: var(--c-ink); border-color: var(--c-ink); }
-.kpi.net .k-label, .kpi.net .k-note, .kpi.net .k-label small { color: var(--c-line); }
-.kpi.net .k-value { color: #fff; }
-.kpi .k-value { margin-top: var(--sp-2); font-size: var(--fs-h2); font-weight: 700; letter-spacing: -0.02em; color: var(--c-ink); font-variant-numeric: tabular-nums; }
+.kpi .k-value { grid-column: 2; grid-row: 1; margin: 0; text-align: right; font-size: var(--fs-h3); font-weight: 700; letter-spacing: -0.02em; color: var(--c-ink); font-variant-numeric: tabular-nums; }
 .kpi .k-value span { font-size: var(--fs-small); font-weight: 500; margin-left: 2px; }
-.kpi .k-note { margin-top: var(--sp-1); font-size: var(--fs-caption); color: var(--c-text-muted); }
+.kpi .k-note { grid-column: 3; grid-row: 1; font-size: var(--fs-xsmall); color: var(--c-text-muted); }
+.kpi a.k-link { grid-column: 4; grid-row: 1; display: inline-flex; align-items: center; min-height: 44px; font-size: var(--fs-xsmall); color: var(--c-action-text); text-decoration: underline; text-underline-offset: 2px; }
 .kpi a.k-link:hover { color: var(--c-action-hover); }
-.kpi a.k-link { display: inline-flex; align-items: center; min-height: 44px; margin-bottom: -10px; font-size: var(--fs-caption); color: var(--c-action-text); text-decoration: underline; text-underline-offset: 2px; }
+/* 합계 줄: 장부처럼 위에 굵은 선 하나 */
+.kpi.net { border-top: 2px solid var(--c-ink); }
+.kpi.net .k-value { font-size: var(--fs-h2); }
 
 /* 조회 조건: 빠른 기간, 표 선택, 증빙 상태 (admin-bookings 시안) */
 .range-btns { display: inline-flex; margin-left: var(--sp-2); }
@@ -333,7 +335,6 @@ textarea.ctl { height: auto; min-height: 120px; padding: var(--sp-3); line-heigh
 
 @media (max-width: 1180px) {
   .search-grid { grid-template-columns: 100px minmax(0, 1fr) 100px minmax(0, 1fr); }
-  .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .two-col { grid-template-columns: 1fr; }
 }
 @media (max-width: 900px) {
@@ -358,9 +359,10 @@ textarea.ctl { height: auto; min-height: 120px; padding: var(--sp-3); line-heigh
   .filter-bar .sep { display: none; }
 }
 @media (max-width: 560px) {
-  .kpis, .skeleton .sk-kpis { grid-template-columns: 1fr 1fr; gap: var(--sp-2); }
-  .kpi { padding: var(--sp-3); }
-  .kpi .k-value { font-size: var(--fs-h3); }
+  .kpi { grid-template-columns: minmax(0, 1fr) auto; padding: var(--sp-2) var(--sp-3); }
+  .kpi .k-value { grid-column: 2; grid-row: 1 / span 3; }
+  .kpi .k-note, .kpi a.k-link { grid-column: 1; grid-row: auto; }
+  .kpi a.k-link { justify-self: start; margin: -8px 0; }
   .topbar .brand span, .topbar .session .lbl, .topbar .who { display: none; }
   .topbar { gap: var(--sp-2); padding: 0 var(--sp-3); }
   .topbar .t-right { gap: var(--sp-2); }

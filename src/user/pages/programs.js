@@ -204,6 +204,16 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
         <article class="hero-feature" data-feature></article>
         <aside class="board-panel" aria-labelledby="board-title" data-board></aside>
       </div>
+      <div class="visit-strip">
+        <h2 class="sr-only">운영 정보</h2>
+        <dl>
+          <div><dt>운영 시간</dt><dd>화요일 - 일요일 09:00 - 22:00</dd></div>
+          <div><dt>휴관</dt><dd>월요일, 1월 1일</dd></div>
+          <div><dt>현장 매표소</dt><dd>공연 시작 1시간 전부터</dd></div>
+          <div><dt>예약 문의</dt><dd>031-000-1200 (평일 09:00 - 18:00)</dd></div>
+        </dl>
+        <a class="visit-more" href="#/guide/visit">관람 안내/오시는 길</a>
+      </div>
     </div>
   </section>
   <section class="section" aria-labelledby="list-title">
