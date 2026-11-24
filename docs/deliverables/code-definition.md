@@ -1,6 +1,6 @@
 # 코드 정의서
 
-기준: `supabase/migrations/0001_schema.sql`~`0016_qa_fixes.sql`의 check 제약과 DB 함수가 실제로 쓰는 값, 정책 모듈(`supabase/functions/_shared/policy`). 결제/환불 기록은 5년 보관 대상(DAR-005)입니다.
+기준: `supabase/migrations/0001_schema.sql`~`0017_review_fixes.sql`의 check 제약과 DB 함수가 실제로 쓰는 값, 정책 모듈(`supabase/functions/_shared/policy`). 결제/환불 기록은 5년 보관 대상(DAR-005)입니다.
 
 | 코드 그룹 | 테이블.컬럼 | 코드 | 한글명 | 보관 |
 |---|---|---|---|---|

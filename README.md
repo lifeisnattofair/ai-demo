@@ -7,7 +7,7 @@
 ```
 index.html, admin.html   사용자 화면과 관리자 화면 진입점
 src/                     화면 코드(user, admin, lib)
-supabase/migrations/     스키마, 정책 함수, RLS (0001~0015)
+supabase/migrations/     스키마, 정책 함수, RLS (0001~0017)
 supabase/seed.sql        시연 계정과 시드 일정
 supabase/functions/      Edge Functions(payments-confirm, payments-cancel, payments-webhook)와 정책/결제 공용 코드
 tests/                   policy, payments, db, ui, scripts 테스트
@@ -46,7 +46,7 @@ docs/                    요구사항, 설계, 계획, 산출물 정의서
 
 ## 결제 안내
 
-모의 결제라 실제 승인과 출금이 없습니다. 결제 화면에서 카드사를 반드시 골라야 하고, 카드 번호는 아무 가상 값이나 써도 됩니다. 실사업으로 바꿀 때는 두 곳을 결제대행사용으로 교체합니다.
+모의 결제라 실제 승인과 출금이 없습니다. 결제 화면에는 카드 번호 입력칸이 없습니다. 결제 수단을 고르고 약관에 동의하면 되고, 「신용/체크카드」를 고르면 카드사도 반드시 골라야 합니다. 실사업으로 바꿀 때는 두 곳을 결제대행사용으로 교체합니다.
 
 - 결제 어댑터 `supabase/functions/_shared/payments/gateway.js`
 - DB 함수 `order_has_charge`(`supabase/migrations/0004_booking.sql`). 주문에 승인된 결제가 있는지 모의 결제 기록(`pg_mock_transactions`)을 읽어 판단하므로, 실제 결제 기록(예: `payments` 테이블이나 결제대행사 조회 결과를 저장한 표)을 읽도록 바꿔야 합니다. 이 함수가 틀리면 sweep이 승인된 결제 중 선점을 풀어 좌석을 다시 팔 수 있습니다.
@@ -72,7 +72,7 @@ docs/                    요구사항, 설계, 계획, 산출물 정의서
 
 아래는 저장소 소유자가 자신의 계정에서 실행하는 순서입니다. 이 저장소의 작업 과정에서는 실행하지 않았습니다.
 
-1. Supabase 프로젝트를 만들고 `npx supabase link --project-ref <프로젝트 ref>` 후 `npx supabase db push` 로 마이그레이션을 올립니다. 시드(`supabase/seed.sql`)를 적용한 뒤, 대시보드의 SQL 편집기에서 환경을 `demo`로 바꿉니다.
+1. Supabase 프로젝트를 만들고 `npx supabase link --project-ref <프로젝트 ref>` 후 `npx supabase db push` 로 마이그레이션을 올립니다. 호스팅 Supabase는 마이그레이션을 올리기 전에 대시보드의 Database > Extensions에서 `pg_cron`을 켜 둡니다. `0017_review_fixes.sql`이 대기 기한 처리 작업 `sweep-due-offerings`(`sweep_due_offerings_cron`)를 1분마다 돌리도록 등록하는데, 확장이 없으면 알림만 남기고 이 작업을 건너뜁니다. 그러면 대기 기한 만료와 승격은 누군가 대기 현황, 알림함, 좌석 선택, 관리자 대기자 화면을 열 때(이 읽기 경로가 `sweep_due_offerings`를 부릅니다)에만 처리됩니다. 시드(`supabase/seed.sql`)를 적용한 뒤, 대시보드의 SQL 편집기에서 환경을 `demo`로 바꿉니다.
 
    ```sql
    insert into public.app_settings(key, value) values ('env', '"demo"')

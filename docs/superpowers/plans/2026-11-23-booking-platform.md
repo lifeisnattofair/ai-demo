@@ -54,8 +54,8 @@
 | 항목 | 필요한 시점 | 비고 |
 |---|---|---|
 | Docker 실행 | Task 3부터 | 로컬 Supabase(`npx supabase start`)용. 설치 확인됨(29.9.2) |
-| ~~결제대행사 테스트 키~~ 필요 없음 | - | 사용자가 직접 발급해 `.env`와 `supabase/functions/.env`에 넣음. AI는 키 값을 다루지 않음 |
-| Supabase 프로젝트 2개(검수용/시연용) | Task 16(배포 구성) 이후 | 로컬 개발에는 필요 없음 |
+| ~~결제대행사 테스트 키~~ 필요 없음 | - | 모의 결제 어댑터라 결제 키가 필요 없음 |
+| Supabase 호스팅 프로젝트 1개(시연용) | Task 16(배포 구성) 이후 | 검수(qa)는 로컬 Supabase로 하고, 로컬 개발에도 필요 없음 |
 
 ## Review Focus
 
@@ -297,7 +297,7 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 **Interfaces**
 - Consumes: `app_now`, `d_day`, `sweep_offering`
 - Produces
-  - `join_waitlist(p_offering uuid, p_qty int) returns waitlist`: 매진일 때만 받습니다(아니면 `NOT_SOLD_OUT`). 한도는 기존 확정 + 대기 수량으로 계산합니다. 같은 회차에 진행 중인 대기가 있으면 `ALREADY_WAITING`입니다.
+  - `join_waitlist(p_offering uuid, p_qty int) returns waitlist`: 매진일 때만 받습니다(아니면 `NOT_SOLD_OUT`). 한도는 기존 확정 + 대기 수량으로 계산합니다. 기준일 D-2 이내(정규 강좌는 개강 후 포함)에는 승격이 없으므로 `NOT_ON_SALE`로 거절하고, 수량이 회차 정원(공연은 좌석 수)을 넘으면 `WAITLIST_OVER_CAPACITY`로 거절합니다(둘 다 0017에서 추가). 같은 회차에 진행 중인 대기가 있으면 `ALREADY_WAITING`입니다.
   - `cancel_waitlist(p_id uuid) returns void`
   - `release_inventory(p_offering uuid, p_seat_ids uuid[], p_qty int) returns void`: 취소로 풀린 재고를 반환합니다. 내부 호출 전용입니다.
   - `hold_for_promotion(p_waitlist uuid) returns holds`: 승격자가 결제하러 들어올 때 배정분으로 선점을 만듭니다. `expires_at = deadline_at`
@@ -587,12 +587,12 @@ docs/deliverables/table-definition.md, code-definition.md   데이터 산출물 
 
 **Interfaces**
 - Produces
-  - `admin_set_clock(p_offset_ms bigint)`: `app_settings.env='qa'`일 때만 동작합니다. 아니면 `NOT_ALLOWED_IN_ENV`
-  - `admin_reset_demo()`: `env='demo'`일 때만 동작합니다. `seed_demo(app_now())`를 실행하고 감사 기록을 남깁니다.
-  - 메뉴 표시 규칙: `VITE_ENV==='qa'` → 「검수용 시계」, `VITE_ENV==='demo'` → 「시연 데이터 초기화」, `local` → 둘 다
+  - `admin_set_clock(p_offset_ms bigint)`: `app_settings.env`가 `qa` 또는 `local`일 때만 동작합니다. 아니면 `NOT_ALLOWED_IN_ENV`
+  - `admin_reset_demo()`: `env`가 `demo` 또는 `local`일 때만 동작합니다. `app_now()`의 KST 자정을 기준으로 고정 시각의 시드 일정을 다시 만들고(`seed_demo`, 0016), 시연 계정을 복구(`restore_demo_accounts`, 0015)한 뒤 감사 기록을 남깁니다.
+  - 메뉴 표시 규칙(`src/admin/layout.js`의 `envs`): 「검수용 시계」는 `qa`, `local`에서, 「시연 데이터 초기화」는 `demo`, `local`에서 보입니다.
 - [ ] **Step 1: 실패하는 테스트 작성**
   - env `demo`에서 `admin_set_clock` → `NOT_ALLOWED_IN_ENV`, 그리고 `app_now()`가 offset을 무시합니다(설계 5-7 증명 방법).
-  - env `qa`에서 `admin_reset_demo` → `NOT_ALLOWED_IN_ENV`
+  - env `qa`에서 `admin_reset_demo` → `NOT_ALLOWED_IN_ENV`(`local`에서는 둘 다 동작)
   - 초기화 후 예약 0건, 시드 회차 일정이 `app_now()` 기준으로 다시 생성됩니다.
   - `VITE_ENV=demo` 빌드의 메뉴에 「검수용 시계」가 없습니다.
 - [ ] **Step 2: 실행해서 실패 확인**
@@ -646,7 +646,7 @@ Task 8~15에서 만든 화면 전체에 인터랙션과 로딩 상태를 고르�
   - 실제 파일 대상 `npm run check:trace` → 빈 목록, 종료 코드 0
 - [ ] **Step 2: 실행해서 실패 확인**
 - [ ] **Step 3: 구현**
-  - 워크플로: `main` push 시 `VITE_*` 값을 GitHub Secrets에서 받아 빌드하고 Pages에 배포합니다. `VITE_BASE=/ai-demo/`, `VITE_ENV=demo`. **이 단계에서는 파일만 만들고 push하지 않습니다.**
+  - 워크플로: `main` push 시 `npm test`와 `npm run check:secrets`를 먼저 통과해야 하고(DB 테스트는 로컬 Supabase가 필요해 제외), `VITE_*` 값을 GitHub Secrets에서 받아 빌드하고 Pages에 배포합니다. `VITE_BASE=/ai-demo/`, `VITE_ENV=demo`. **이 단계에서는 파일만 만들고 push하지 않습니다.**
   - README
     - 로컬 실행: `npx supabase start` → `.env` 작성 → `npm run dev`
     - 시연 계정
@@ -665,7 +665,7 @@ Task 8~15에서 만든 화면 전체에 인터랙션과 로딩 상태를 고르�
 | 요구사항 ID | 명칭 | 구현 Task | 자동 검증 | 수동 검증 | AC | QA 케이스 |
 |---|---|---|---|---|---|---|
 | SFR-001 | 회원 가입/로그인 | 8 | tests/ui/auth | QA | AC-1 | QA-001, QA-002, QA-004, QA-006, QA-080 |
-| SFR-002 | 회원 정보 | 8 | - | QA | AC-1 | QA-008, QA-009, QA-042 |
+| SFR-002 | 회원 정보 | 8 | tests/ui/account, tests/db/member | QA | AC-1 | QA-008, QA-009, QA-042 |
 | SFR-003 | 프로그램 목록 | 9 | tests/ui/programs | QA | AC-1 | QA-010, QA-011, QA-080 |
 | SFR-004 | 프로그램 상세/회차 선택 | 9 | tests/ui/programs | QA | AC-1 | QA-012, QA-013, QA-080 |
 | SFR-005 | 공연 좌석 선택 | 10 | tests/ui/seat-map | QA | AC-1, AC-7 | QA-015, QA-016, QA-080, QA-086 |
@@ -678,8 +678,8 @@ Task 8~15에서 만든 화면 전체에 인터랙션과 로딩 상태를 고르�
 | SFR-012 | 예약 확인 | 12 | tests/ui/booking-detail | QA | AC-1 | QA-034, QA-035, QA-080 |
 | SFR-013 | 예약 취소/환불(기준일 전) | 1, 7, 12 | tests/policy/refund, tests/payments/cancel | QA | AC-1 | QA-036, QA-037, QA-038, QA-080 |
 | SFR-014 | 정규 강좌 중도 취소 | 1, 7, 12 | tests/policy/refund, tests/payments/cancel | QA | AC-2 | QA-039, QA-040, QA-081 |
-| SFR-015 | 대기 신청 | 5, 12 | tests/db/waitlist | QA | AC-5 | QA-043, QA-044, QA-049, QA-084 |
-| SFR-016 | 대기 승격/결제 기한 | 5, 12 | tests/db/waitlist, tests/db/cancel | QA | AC-5 | QA-045, QA-046, QA-047, QA-048, QA-049, QA-084 |
+| SFR-015 | 대기 신청 | 5, 12 | tests/db/waitlist, tests/db/qa-fixes, tests/ui/waitlist-join | QA | AC-5 | QA-043, QA-044, QA-049, QA-084 |
+| SFR-016 | 대기 승격/결제 기한 | 5, 12 | tests/db/waitlist, tests/db/cancel, tests/db/qa-fixes | QA | AC-5 | QA-045, QA-046, QA-047, QA-048, QA-049, QA-084 |
 | SFR-017 | 알림함 | 5, 6, 7, 12 | tests/db/waitlist | QA | AC-5 | QA-050, QA-084 |
 | SFR-018 | 관리자 로그인/역할 | 13 | tests/ui/admin-layout, tests/db/rls | QA | AC-6 | QA-051 |
 | SFR-019 | 프로그램 관리 | 13, 14 | tests/db/admin, tests/ui/admin-ops(할인 적용 여부) | QA | AC-6 | QA-052 |

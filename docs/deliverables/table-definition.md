@@ -219,8 +219,8 @@
 ### app_settings
 | 컬럼 | 타입 | 키 | 설명 |
 |---|---|---|---|
-| key | text | PK | env, clock_enabled, clock_offset_ms, pg_mock_mode |
-| value | jsonb | | 값. pg_mock_mode는 'APPROVE'/'DECLINE'(기본 APPROVE, qa 환경에서만 변경) |
+| key | text | PK | env, clock_enabled, clock_offset_ms, pg_mock_mode, sweep_cron_paused |
+| value | jsonb | | 값. pg_mock_mode는 'APPROVE'/'DECLINE'(기본 APPROVE, qa 환경에서만 변경). sweep_cron_paused는 boolean(기본 false)이며 true면 pg_cron 작업(sweep_due_offerings_cron)이 DB 시험 중 멈춥니다(0017) |
 
 ### offering_cancel_requests
 | 컬럼 | 타입 | 키 | 설명 |
