@@ -55,6 +55,26 @@ describe('내 정보(SFR-002)', () => {
     expect(el.querySelector('#phone').getAttribute('aria-invalid')).toBe('true');
   });
 
+  it('성공 뒤 잘못된 번호로 다시 저장하면 이전 성공 안내를 지우고 오류만 보입니다(D-10)', async () => {
+    const api = fakeApi();
+    await renderAccount(el, { api, go: vi.fn(), env: 'local' });
+    const form = el.querySelector('#contact-form');
+    submit(form);
+    await flush();
+    expect(form.querySelector('[role="status"]').textContent).toBe('회원 정보를 수정했습니다.');
+    type('#phone', '12345');
+    submit(form);
+    await flush();
+    expect(el.querySelector('#phone').getAttribute('aria-invalid')).toBe('true');
+    expect(form.textContent).not.toContain('회원 정보를 수정했습니다.');
+    type('#phone', '01099990000');
+    submit(form);
+    await flush();
+    expect(el.querySelector('#phone').getAttribute('aria-invalid')).not.toBe('true');
+    expect(form.querySelectorAll('[role="alert"]')).toHaveLength(0);
+    expect(form.querySelector('[role="status"]').textContent).toBe('회원 정보를 수정했습니다.');
+  });
+
   it('서버 거절(DEMO_ACCOUNT_LOCKED)은 원인과 다음 행동으로 안내합니다', async () => {
     const api = fakeApi({ updateContact: vi.fn().mockRejectedValue(new ApiError('DEMO_ACCOUNT_LOCKED')) });
     await renderAccount(el, { api, go: vi.fn(), env: 'local' });

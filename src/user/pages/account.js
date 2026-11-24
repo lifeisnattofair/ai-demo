@@ -99,6 +99,9 @@ export async function renderAccount(el, deps = {}) {
 
   const contactForm = q(el, '#contact-form');
   if (contactForm) {
+    // 다시 저장할 때는 이전 성공 안내부터 지웁니다. 입력칸 오류와 성공 안내가 함께 남지 않게 합니다(QA D-10).
+    // bindContactForm 보다 먼저 등록해 검사 전에 실행됩니다.
+    contactForm.addEventListener('submit', () => q(contactForm, '[data-note]')?.remove());
     bindContactForm(el, contactForm, async (name, phone) => {
       q(contactForm, '[data-note]')?.remove();
       const row = await api.updateContact(name, phone);
