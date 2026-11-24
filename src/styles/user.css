@@ -70,10 +70,8 @@ button, input, select { font: inherit; color: inherit; }
 .status.wait { color: var(--c-warn-text); }
 .status.soon { color: var(--c-info-text); }
 .status.closed { color: var(--c-text-3); }
-.type { display: inline-block; font-size: var(--fs-caption); font-weight: 700; padding: 2px var(--sp-2); border-radius: var(--r-sm); background: var(--c-surface-2); color: var(--c-text-2); }
-.type.perf { color: var(--c-type-perf); background: var(--c-type-perf-soft); }
-.type.exp { color: var(--c-type-exp); background: var(--c-ok-soft); }
-.type.course { color: var(--c-type-course); background: var(--c-warn-soft); }
+/* 유형 라벨은 무채색 하나로 둡니다. 유형은 글자로 구분하고, 유형별 파스텔 색 조합은 쓰지 않습니다(DESIGN.md). */
+.type { display: inline-block; font-size: var(--fs-caption); font-weight: 700; padding: 1px var(--sp-2); border: 1px solid var(--c-line); border-radius: var(--r-sm); background: #fff; color: var(--c-text-2); }
 
 .select { appearance: none; height: var(--h-control); padding: 0 36px 0 14px; border: 1px solid var(--c-line); border-radius: var(--r-md); background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23464c53' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center; font-size: var(--fs-small); }
 /* 푸터 */
@@ -167,7 +165,6 @@ button, input, select { font: inherit; color: inherit; }
 .board-head h2 { margin: 0 0 var(--sp-3); font-size: var(--fs-h3); color: var(--c-ink); }
 .board { list-style: none; margin: 0 0 var(--sp-4); padding: 0; border-top: 1px solid var(--c-ink); }
 .board li { border-bottom: 1px solid var(--c-line-soft); }
-.board li { position: relative; }
 .board a { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: var(--sp-3); align-items: center; min-height: 64px; padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-3); font-size: var(--fs-small); color: var(--c-text); transition: background-color var(--dur) var(--ease); }
 .board a:hover { background: var(--c-surface-2); }
 .board a:hover .b-title { text-decoration: underline; text-underline-offset: 3px; }
@@ -177,11 +174,9 @@ button, input, select { font: inherit; color: inherit; }
 .board .b-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 700; color: var(--c-ink); }
 .board .b-when { color: var(--c-text-3); font-variant-numeric: tabular-nums; }
 .board .b-badge { flex-shrink: 0; font-size: var(--fs-caption); font-weight: 700; color: var(--c-action-text); }
-/* 대표 공연 회차: 왼쪽 강조선과 글자 라벨(색만으로 구분하지 않음) */
-.board li.is-featured::before { content: ""; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 2px; background: var(--c-action); }
-.board .b-left { padding: 4px var(--sp-2); border-radius: var(--r-sm); background: var(--c-surface-2); font-size: var(--fs-xsmall); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--c-text-2); white-space: nowrap; }
-.board .b-left.low { color: var(--c-err-text); background: var(--c-err-soft); }
-.board .b-left.sold { color: var(--c-warn-text); background: var(--c-warn-soft); }
+.board .b-left { font-size: var(--fs-xsmall); font-weight: 700; font-variant-numeric: tabular-nums; color: var(--c-text-2); white-space: nowrap; }
+.board .b-left.low { color: var(--c-err-text); }
+.board .b-left.sold { color: var(--c-warn-text); }
 .board .b-go { font-size: 1.25rem; line-height: 1; color: var(--c-icon); }
 .board-empty { margin: 0 0 var(--sp-4); padding: var(--sp-5) 0; border-top: 1px solid var(--c-ink); color: var(--c-text-3); font-size: var(--fs-small); }
 .board-more { margin-top: auto; align-self: flex-start; }

@@ -141,9 +141,8 @@ textarea.ctl { height: auto; min-height: 120px; padding: var(--sp-3); line-heigh
 .chip.cancel { background: var(--c-line-soft); color: var(--c-text-2); }
 .chip.promo { background: var(--c-warn-soft); color: var(--c-warn-text); }
 .chip.refund { background: var(--c-err-soft); color: var(--c-err-text); }
-.chip.type-PERFORMANCE { background: var(--c-type-perf-soft); color: var(--c-type-perf); }
-.chip.type-EXPERIENCE { background: var(--c-ok-soft); color: var(--c-type-exp); }
-.chip.type-COURSE { background: var(--c-warn-soft); color: var(--c-type-course); }
+/* 유형은 글자로만 구분합니다. 유형별 색 조합은 쓰지 않습니다(DESIGN.md). */
+.chip.type-PERFORMANCE, .chip.type-EXPERIENCE, .chip.type-COURSE { background: #fff; box-shadow: inset 0 0 0 1px var(--c-line); color: var(--c-text-2); }
 .pager { display: flex; justify-content: center; align-items: center; gap: var(--sp-1); padding: var(--sp-3); flex-wrap: wrap; }
 .pager a, .pager span { min-width: 44px; height: 44px; display: grid; place-items: center; border-radius: var(--r-sm); font-size: var(--fs-xsmall); font-variant-numeric: tabular-nums; color: var(--c-text-2); cursor: pointer; }
 .pager a:hover { background: var(--c-surface-2); color: var(--c-ink); }
