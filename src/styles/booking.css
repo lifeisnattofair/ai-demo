@@ -100,6 +100,7 @@
 .booking-live + .note + .wait-rules-title { border-top: 0; padding-top: 0; margin-top: var(--sp-5); }
 .wait-rules { margin: 0; padding-left: var(--sp-5); display: grid; gap: var(--sp-2); font-size: var(--fs-small); color: var(--c-text-2); }
 .wait-rules li::marker { color: var(--c-text-3); }
+.sum-actions { margin-top: var(--sp-5); }
 
 /* 할인 선택, 결제 단계 */
 .booking > div > .panel + .panel { margin-top: var(--sp-4); }
