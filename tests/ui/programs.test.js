@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { saleStatus, STATUS_LABEL } from '../../src/user/components/program-card.js';
-import { renderPrograms } from '../../src/user/pages/programs.js';
+import { renderPrograms, boardRows } from '../../src/user/pages/programs.js';
 import { renderProgramDetail, cancellationRows } from '../../src/user/pages/program-detail.js';
 
 const NOW = new Date('2026-11-23T03:00:00Z'); // 2026.11.23(월) 12:00 KST
@@ -440,5 +440,73 @@ describe('메인 화면 다듬기(15A)', () => {
       expect(t.textContent).toMatch(/^\d{4}\.\d{2}\.\d{2}$/);
       expect(t.dateTime <= '2026-11-23').toBe(true);
     }
+  });
+});
+
+describe('예매 현황판', () => {
+  let el;
+  beforeEach(() => {
+    el = document.createElement('main');
+    document.body.replaceChildren(el);
+  });
+  const open = (api = fakeApi()) => renderPrograms(el, { api, now: () => NOW });
+  const rows = () => [...el.querySelectorAll('.board li')];
+  const remaining = { o1: 12, o2: 12, o3: 0, o4: 12, o5: 12, o6: 12, o7: 12, o8: 12 };
+
+  it('판매 중과 매진 회차만 시작 시각 순으로, 같은 시각이면 제목 순으로 고릅니다', () => {
+    const all = boardRows(fixture(), NOW, remaining, 10);
+    expect(all.map((r) => r.offering.id)).toEqual(['o4', 'o8', 'o7', 'o1', 'o2', 'o5', 'o3']);
+    expect(all.find((r) => r.offering.id === 'o3').status).toBe('SOLD_OUT_WAITLIST');
+  });
+
+  it('기본 최대 6건이고 취소된 회차는 뺍니다', () => {
+    const data = fixture();
+    data[2].offerings[0].status = 'CANCELLED';
+    const r = boardRows(data, NOW, remaining);
+    expect(r).toHaveLength(6);
+    expect(r.map((x) => x.offering.id)).not.toContain('o4');
+  });
+
+  it('줄마다 날짜와 시간, 프로그램 이름, 잔여석이 나오고 상세로 연결됩니다', async () => {
+    await open();
+    expect(rows()).toHaveLength(6);
+    const first = rows()[0];
+    expect(first.querySelector('.b-when').textContent).toBe('11.28(토) 19:00');
+    expect(first.querySelector('.b-title').textContent).toBe('가족 도자기 공방');
+    expect(first.querySelector('.b-left').textContent).toBe('잔여 12석');
+    expect(first.querySelector('a').getAttribute('href')).toBe('#/programs/p3');
+  });
+
+  it('매진은 대기 신청, 5석 이하는 마감 임박, 조회 실패는 예매 중으로 보입니다', async () => {
+    const left = { o4: 0, o8: 5 };
+    await open(fakeApi({ remainingCapacity: vi.fn(async (id) => { if (id in left) return left[id]; throw new Error('x'); }) }));
+    const byId = (pid) => rows().find((li) => li.querySelector('a').getAttribute('href') === `#/programs/${pid}`);
+    expect(byId('p3').querySelector('.b-left').textContent).toBe('매진, 대기 신청');
+    expect(byId('p6').querySelector('.b-left').textContent).toBe('마감 임박 5석');
+    expect(byId('p1').querySelector('.b-left').textContent).toBe('예매 중');
+  });
+
+  it('예매할 수 있는 회차가 없으면 안내 문구를 보입니다', async () => {
+    const data = fixture();
+    for (const p of data) for (const o of p.offerings) o.status = 'CLOSED';
+    await open(fakeApi({ listPrograms: vi.fn().mockResolvedValue(data) }));
+    expect(rows()).toHaveLength(0);
+    expect(el.querySelector('.board-empty').textContent).toBe('지금 예매할 수 있는 회차가 없습니다.');
+  });
+
+  it('전체 프로그램 보기는 아래 목록 제목으로 초점을 옮깁니다', async () => {
+    await open();
+    const btn = [...el.querySelectorAll('.board-panel button')].find((b) => b.textContent === '전체 프로그램 보기');
+    btn.click();
+    expect(document.activeElement.id).toBe('list-title');
+  });
+
+  it('대표 칸은 사진 위에 제목과 예매 버튼을 둡니다', async () => {
+    await open();
+    const f = el.querySelector('.hero-feature');
+    expect(f.querySelector('.f-photo img')).not.toBeNull();
+    expect(f.querySelector('h2 a').textContent).toBe('겨울 실내악 시리즈 「현의 대화」');
+    expect(f.querySelector('.btn-primary').textContent).toBe('예매하기');
+    expect(el.querySelector('.hero h1').textContent).toBe('무대와 배움이 가까운 곳에');
   });
 });

@@ -1,13 +1,13 @@
 // 메인과 프로그램 목록. 마크업과 클래스는 설계 확정본(user-list.html)과 같습니다.
 import { now as clockNow } from '../../lib/clock.js';
-import { dayKeyLabel, kstMonthKey, monthKeyLabel, sortGrades } from '../../lib/format.js';
+import { dayKeyLabel, kstMonthKey, kstShortDateTime, monthKeyLabel, sortGrades } from '../../lib/format.js';
 import { showSkeleton } from '../../components/skeleton.js';
 import { emptyState } from '../../components/empty-state.js';
 import {
-  activeOfferings, periodText, posterProps, priceText, programStatus,
-  renderProgramCard, sortPrograms, statusMark, typeMark,
+  activeOfferings, periodText, priceText, programStatus,
+  renderProgramCard, saleStatus, sortPrograms, statusMark, typeMark,
 } from '../components/program-card.js';
-import { renderPoster } from '../components/poster.js';
+import { posterImage } from '../components/poster-images.js';
 import { pageTitle } from '../../lib/router.js';
 
 const TYPES = [['ALL', '전체'], ['PERFORMANCE', '공연'], ['EXPERIENCE', '체험'], ['COURSE', '정규 강좌']];
@@ -19,6 +19,9 @@ const NOTICES = [
   ['2026-11-16', '할인 증빙은 입장(수업) 당일 현장에서 확인합니다'],
   ['2026-11-09', '주차장 공사로 12월 한 달간 지하 2층만 이용할 수 있습니다'],
 ];
+const BOARD_LIMIT = 6;
+const LOW_LEFT = 5; // 이 수 이하로 남으면 「마감 임박」
+const BOARD_EMPTY = '지금 예매할 수 있는 회차가 없습니다.';
 const LOAD_ERROR = '프로그램 목록을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
 
 function node(tag, className, value) {
@@ -54,40 +57,95 @@ function pickFeatured(programs, statusOf) {
 
 function renderFeature(host, program, status) {
   const href = `#/programs/${encodeURIComponent(program.id)}`;
-  const posterLink = node('a', 'poster-wrap');
-  posterLink.href = href;
-  // 제목 링크와 같은 곳으로 가는 중복 링크라서 보조기기와 탭 이동에서는 뺍니다.
-  posterLink.setAttribute('aria-hidden', 'true');
-  posterLink.tabIndex = -1;
-  renderPoster(posterLink, posterProps(program), { priority: true });
+  // 사진은 장식입니다. 제목과 정보는 글자로 함께 나옵니다.
+  const photo = node('div', 'f-photo');
+  const img = posterImage(program.poster_image);
+  if (img.src) {
+    const im = node('img');
+    im.src = img.src;
+    im.alt = '';
+    im.decoding = 'async';
+    im.fetchPriority = 'high';
+    im.style.objectPosition = img.position;
+    photo.append(im);
+  } else {
+    photo.classList.add('no-image');
+  }
 
   const info = node('div', 'f-info');
-  const dl = node('dl');
-  const rows = [
-    ['기간', periodText(program, 'full')],
-    ['장소', `한빛아트센터 ${program.venue ?? ''}`.trim()],
-    ['가격', program.type === 'PERFORMANCE'
-      ? priceLines(program)
-      : priceText(program)],
-  ];
-  for (const [k, v] of rows) {
-    dl.append(node('dt', '', k), node('dd', 'num', v));
-  }
+  const marks = node('div', 'f-marks');
+  marks.append(typeMark(program.type), statusMark(status));
   const title = node('h2');
   const titleLink = node('a', '', program.title);
   titleLink.href = href;
   title.append(titleLink);
+  const dl = node('dl');
+  const rows = [
+    ['기간', periodText(program, 'full')],
+    ['장소', `한빛아트센터 ${program.venue ?? ''}`.trim()],
+    ['가격', program.type === 'PERFORMANCE' ? priceLines(program) : priceText(program)],
+  ];
+  for (const [k, v] of rows) dl.append(node('dt', '', k), node('dd', 'num', v));
   const cta = node('a', 'btn btn-primary', program.type === 'PERFORMANCE' ? '예매하기' : '신청하기');
   cta.href = href;
-  info.append(
-    typeMark(program.type),
-    title,
-    statusMark(status),
-    dl,
-    node('p', 'f-mini num', `${periodText(program, 'full')} ${program.venue ?? ''}`.trim()),
-    cta,
-  );
-  host.replaceChildren(posterLink, info);
+  if (program.poster_series) info.append(node('p', 'f-series', program.poster_series));
+  info.append(marks, title, dl, cta);
+  host.replaceChildren(photo, info);
+}
+
+/**
+ * 예매 현황판 행. 판매 중과 매진(대기 가능) 회차만, 시작 시각 순(같으면 제목 순)으로 최대 limit 건.
+ * @param {Record<string, number>} remaining 회차 id 별 잔여석(모르면 없음)
+ */
+export function boardRows(programs, now, remaining = {}, limit = BOARD_LIMIT) {
+  const rows = [];
+  for (const program of programs) {
+    for (const offering of activeOfferings(program)) {
+      const left = remaining[offering.id];
+      const status = saleStatus(offering, now, left === 0);
+      if (status === 'ON_SALE' || status === 'SOLD_OUT_WAITLIST') rows.push({ program, offering, status, left });
+    }
+  }
+  rows.sort((a, b) => new Date(a.offering.starts_at) - new Date(b.offering.starts_at)
+    || a.program.title.localeCompare(b.program.title, 'ko'));
+  return rows.slice(0, limit);
+}
+
+function leftText({ status, left }) {
+  if (status === 'SOLD_OUT_WAITLIST') return '매진, 대기 신청';
+  if (typeof left !== 'number') return '예매 중';
+  return left <= LOW_LEFT ? `마감 임박 ${left}석` : `잔여 ${left}석`;
+}
+
+function renderBoard(host, rows, listTitle) {
+  const head = node('div', 'board-head');
+  head.append(node('h2', '', '지금 예매할 수 있는 회차'));
+  const body = [];
+  if (rows.length) {
+    const ul = node('ul', 'board');
+    ul.setAttribute('role', 'list');
+    for (const r of rows) {
+      const li = node('li');
+      const a = node('a');
+      a.href = `#/programs/${encodeURIComponent(r.program.id)}`;
+      const left = node('span', 'b-left', leftText(r));
+      if (r.status === 'SOLD_OUT_WAITLIST') left.classList.add('sold');
+      else if (typeof r.left === 'number' && r.left <= LOW_LEFT) left.classList.add('low');
+      a.append(node('span', 'b-when num', kstShortDateTime(r.offering.starts_at)), node('span', 'b-title', r.program.title), left);
+      li.append(a);
+      ul.append(li);
+    }
+    body.push(ul);
+  } else {
+    body.push(node('p', 'board-empty', BOARD_EMPTY));
+  }
+  const more = node('button', 'btn btn-secondary btn-sm board-more', '전체 프로그램 보기');
+  more.type = 'button';
+  more.addEventListener('click', () => {
+    listTitle.scrollIntoView?.({ block: 'start' });
+    listTitle.focus({ preventScroll: true });
+  });
+  host.replaceChildren(head, ...body, more);
 }
 
 // 공연은 등급별 가격을 모두 보여 줍니다. 예: R석 40,000원 / S석 30,000원
@@ -116,18 +174,21 @@ async function loadRemaining(api, programs) {
  */
 export async function renderPrograms(el, { api, query = new URLSearchParams(), now = clockNow }) {
   el.innerHTML = `<section class="hero">
-    <div class="container hero-grid">
-      <div class="hero-intro">
-        <h1>무대와 배움이<br>가까운 곳에</h1>
-        <p>공연과 체험, 정규 강좌를 한곳에서 찾고 예약하세요. 회원이면 좌석 선택부터 취소, 환불까지 직접 하실 수 있습니다.</p>
+    <div class="container">
+      <div class="hero-head">
+        <h1>무대와 배움이 가까운 곳에</h1>
+        <p>공연과 체험, 정규 강좌를 한곳에서 찾고 좌석 선택부터 취소, 환불까지 직접 하세요.</p>
         <a class="hero-mine" href="#/me/bookings">내 예약 확인</a>
       </div>
-      <article class="hero-feature" data-feature></article>
+      <div class="hero-grid">
+        <article class="hero-feature" data-feature></article>
+        <aside class="board-panel" aria-labelledby="board-title" data-board></aside>
+      </div>
     </div>
   </section>
   <section class="section" aria-labelledby="list-title">
     <div class="container">
-      <div class="section-head"><div><h2 id="list-title">프로그램</h2></div></div>
+      <div class="section-head"><div><h2 id="list-title" tabindex="-1">프로그램</h2></div></div>
       <div data-list></div>
     </div>
   </section>
@@ -146,6 +207,7 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
 
   const list = el.querySelector('[data-list]');
   const feature = el.querySelector('[data-feature]');
+  const board = el.querySelector('[data-board]');
 
   let programs;
   let remaining;
@@ -157,6 +219,7 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
     console.error(e);
     release();
     feature.remove();
+    board.remove();
     const msg = node('p', 'form-error', LOAD_ERROR);
     msg.setAttribute('role', 'alert');
     const retry = node('button', 'btn btn-secondary btn-sm', '다시 시도');
@@ -175,6 +238,8 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
   } else {
     feature.remove();
   }
+  renderBoard(board, boardRows(programs, now(), remaining), el.querySelector('#list-title'));
+  board.querySelector('h2').id = 'board-title';
 
   // 필터 상태
   const wanted = query.get('type');
