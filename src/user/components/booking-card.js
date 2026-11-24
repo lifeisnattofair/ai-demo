@@ -180,9 +180,20 @@ export function renderBookingCard(b, ctx) {
   payCol.append(node('h4', null, '결제 정보'), paymentList(b));
   detail.append(payCol);
 
+  // 시각 맞추기, 확인 대화상자, 취소 요청까지 한 번에 하나만 진행합니다(리뷰 I-3).
+  // 시각을 맞추는 사이 다시 누르거나 Enter 를 두 번 눌러도 대화상자가 둘 열리거나 취소를 두 번 요청하지 않습니다.
+  let pending = false;
   async function onCancel(button, preview) {
-    // 취소 처리 중에 다시 누르면 확인 대화상자를 또 열지 않습니다.
-    if (isBusy(button)) return;
+    if (pending || isBusy(button)) return;
+    pending = true;
+    try {
+      await cancelFlow(button, preview);
+    } finally {
+      pending = false;
+    }
+  }
+
+  async function cancelFlow(button, preview) {
     let p = preview;
     // 화면을 연 뒤 취소 구간이 바뀌었을 수 있으므로(자정 경과, 검수용 시계) 서버 시각을 다시 맞추고 금액을 새로 계산합니다.
     if (ctx.sync) {
@@ -192,7 +203,8 @@ export function renderBookingCard(b, ctx) {
         const fresh = refundBox(b, ctx.now(), onCancel);
         detail.querySelector('.refund-box')?.replaceWith(fresh);
         if (p.state === 'blocked' || p.state === 'ended') {
-          ctx.notice('error', p.sentence);
+          // 누른 버튼이 사라졌으므로 초점을 안내로 옮깁니다(리뷰 M-1).
+          ctx.notice('error', p.sentence, { focus: true });
           return;
         }
         button = [...fresh.querySelectorAll('button')].find((x) => x.textContent === '예약 취소') ?? button;

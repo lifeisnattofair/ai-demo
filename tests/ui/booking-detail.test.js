@@ -124,6 +124,7 @@ describe('예약 상세와 취소 환불 미리보기', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
     expect(document.activeElement).toBe(btn);
+    await new Promise((r) => setTimeout(r, 0));
     btn.click();
     await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull());
     button('닫기').click();
@@ -143,6 +144,38 @@ describe('예약 상세와 취소 환불 미리보기', () => {
     expect(fresh).not.toBe(old);
     expect(old.isConnected).toBe(false);
     expect(document.activeElement).toBe(fresh);
+  });
+
+  it('시각을 맞추는 사이 두 번 눌러도 확인 대화상자는 하나만 열리고 취소는 한 번만 요청한다(리뷰 I-3)', async () => {
+    let done;
+    const sync = vi.fn(() => new Promise((r) => { done = r; }));
+    const a = api();
+    await detail(a, { sync });
+    const btn = button('예약 취소');
+    btn.click();
+    btn.click();
+    done();
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull());
+    await new Promise((r) => setTimeout(r, 0));
+    expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+    expect(sync).toHaveBeenCalledTimes(1);
+    [...document.querySelectorAll('[role="dialog"] button')].find((b) => b.textContent === '예약 취소하기').click();
+    await vi.waitFor(() => expect(a.cancelBooking).toHaveBeenCalledTimes(1));
+    btn.click();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(a.cancelBooking).toHaveBeenCalledTimes(1);
+  });
+
+  it('다시 그린 환불 안내가 취소 불가로 바뀌면 초점을 안내로 옮긴다(리뷰 M-1)', async () => {
+    // 화면을 열 때는 D-5, 누르는 사이 공연 당일이 된 경우
+    let t = NOW;
+    const sync = vi.fn(async () => { t = new Date(NOW.getTime() + 5 * DAY); });
+    await detail(api(), { now: () => t, sync });
+    const btn = button('예약 취소');
+    btn.focus();
+    btn.click();
+    await vi.waitFor(() => expect(document.activeElement?.classList.contains('my-notice')).toBe(true));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
   });
 
   it('대화상자는 Tab 이동이 안에서만 돈다', async () => {
