@@ -1,6 +1,6 @@
 // 메인과 프로그램 목록. 마크업과 클래스는 설계 확정본(user-list.html)과 같습니다.
 import { now as clockNow } from '../../lib/clock.js';
-import { dayKeyLabel, kstMonthKey, monthKeyLabel } from '../../lib/format.js';
+import { dayKeyLabel, kstMonthKey, monthKeyLabel, sortGrades } from '../../lib/format.js';
 import { showSkeleton } from '../../components/skeleton.js';
 import { emptyState } from '../../components/empty-state.js';
 import {
@@ -97,7 +97,7 @@ function priceLines(program) {
     for (const p of o.prices ?? []) if (p.grade && !byGrade.has(p.grade)) byGrade.set(p.grade, p.price);
   }
   if (!byGrade.size) return priceText(program);
-  return [...byGrade].map(([g, price]) => `${g}석 ${price.toLocaleString('en-US')}원`).join(' / ');
+  return sortGrades([...byGrade.keys()]).map((g) => `${g}석 ${byGrade.get(g).toLocaleString('en-US')}원`).join(' / ');
 }
 
 async function loadRemaining(api, programs) {

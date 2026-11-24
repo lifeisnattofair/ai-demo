@@ -224,6 +224,8 @@ textarea.ctl { height: auto; min-height: 120px; padding: var(--sp-3); line-heigh
 .chart .plot { position: relative; display: grid; gap: var(--sp-4); align-items: end; border-bottom: 1px solid var(--c-line); background-image: linear-gradient(var(--c-line-soft), var(--c-line-soft)), linear-gradient(var(--c-line-soft), var(--c-line-soft)), linear-gradient(var(--c-line-soft), var(--c-line-soft)); background-size: 100% 1px; background-repeat: no-repeat; background-position: 0 0, 0 33.333%, 0 66.666%; }
 .chart .bar { position: relative; align-self: end; justify-self: center; width: 100%; max-width: 56px; min-height: 2px; background: var(--c-action); border-radius: var(--r-sm) var(--r-sm) 0 0; }
 .chart .bar.zero { background: var(--c-line); }
+/* 환불이 결제보다 많은 날: 막대는 0 선에 두고 금액만 위험 색으로 구분(QA D-06) */
+.chart .bar.neg span { color: var(--c-err-text); }
 .chart .bar span { position: absolute; bottom: calc(100% + 4px); left: 50%; transform: translateX(-50%); font-size: var(--fs-caption); color: var(--c-text-2); white-space: nowrap; font-variant-numeric: tabular-nums; }
 .chart .xl { grid-column: 2; display: grid; gap: var(--sp-4); font-size: var(--fs-caption); color: var(--c-text-muted); text-align: center; white-space: nowrap; }
 .chart.dense .plot, .chart.dense .xl { gap: 3px; }

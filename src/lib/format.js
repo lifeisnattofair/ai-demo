@@ -203,3 +203,10 @@ export function dayKeyLabel(dayKey, { short = false, plain = false } = {}) {
   if (short) return kstShortDate(iso);
   return plain ? kstDatePlain(iso) : kstDate(iso);
 }
+
+// 좌석 등급 표시 순서(가격이 높은 등급부터). 모르는 등급은 뒤로 보냅니다.
+export const GRADE_ORDER = ['R', 'S', 'A'];
+export function sortGrades(grades) {
+  const rank = (g) => { const i = GRADE_ORDER.indexOf(g); return i < 0 ? GRADE_ORDER.length : i; };
+  return [...grades].sort((a, b) => rank(a) - rank(b));
+}

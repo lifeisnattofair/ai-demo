@@ -62,8 +62,7 @@ function metaRows(b) {
   if (type === 'PERFORMANCE') {
     rows.push(row('관람일시', kstDateTime(b.offering.starts_at)));
     const seats = seatText(b);
-    const disc = discountText(b);
-    if (seats) rows.push(row('좌석', disc ? `${seats} (${disc})` : seats));
+    if (seats) rows.push(row('좌석', seats));
   } else if (type === 'EXPERIENCE') {
     rows.push(row('체험일시', kstDateTime(b.offering.starts_at)));
     rows.push(row('인원', `${b.items.length}명`));
@@ -74,6 +73,9 @@ function metaRows(b) {
     rows.push(row('수업 기간', `${dateRange(first, last, { weekday: true })}${lessons.length ? ` (${lessons.length}회)` : ''}`));
     rows.push(row('신청 인원', '본인 1명'));
   }
+  // 할인 내역은 좌석 문구 뒤 괄호에 붙이면 좁은 폭에서 괄호 안이 끊기므로 따로 보입니다(QA D-03).
+  const disc = discountText(b);
+  if (disc) rows.push(row('할인', disc));
   if (b.program.venue) rows.push(row('장소', b.program.venue));
   return rows;
 }
@@ -181,9 +183,24 @@ export function renderBookingCard(b, ctx) {
   async function onCancel(button, preview) {
     // 취소 처리 중에 다시 누르면 확인 대화상자를 또 열지 않습니다.
     if (isBusy(button)) return;
+    let p = preview;
+    // 화면을 연 뒤 취소 구간이 바뀌었을 수 있으므로(자정 경과, 검수용 시계) 서버 시각을 다시 맞추고 금액을 새로 계산합니다.
+    if (ctx.sync) {
+      await ctx.sync();
+      p = refundPreview(b, ctx.now());
+      if (p.state !== preview.state || p.refundAmount !== preview.refundAmount || p.rule !== preview.rule) {
+        const fresh = refundBox(b, ctx.now(), onCancel);
+        detail.querySelector('.refund-box')?.replaceWith(fresh);
+        if (p.state === 'blocked' || p.state === 'ended') {
+          ctx.notice('error', p.sentence);
+          return;
+        }
+        button = [...fresh.querySelectorAll('button')].find((x) => x.textContent === '예약 취소') ?? button;
+      }
+    }
     const ok = await confirmDialog({
       title: '예약을 취소하시겠습니까?',
-      message: preview.sentence,
+      message: p.sentence,
       detail: `${b.program.title}, 예약번호 ${b.booking_no}. 취소하면 되돌릴 수 없습니다.`,
       confirmLabel: '예약 취소하기',
       cancelLabel: '닫기',

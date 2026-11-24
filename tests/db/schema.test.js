@@ -120,8 +120,12 @@ describe('schema and seed', () => {
   });
 
   it('seed_demo keeps accounts when re-run', async () => {
+    // 로컬 검수에서 직접 가입한 계정이 있을 수 있으므로, 재실행 전후 수가 같고 시드 5계정 이상인지만 봅니다.
+    const before = (await rows('profiles')).length;
     await resetDb(BASE);
-    expect(await rows('profiles')).toHaveLength(5);
+    const after = (await rows('profiles')).length;
+    expect(after).toBe(before);
+    expect(after).toBeGreaterThanOrEqual(5);
     expect(await rows('programs')).toHaveLength(6);
   });
 });

@@ -1,7 +1,7 @@
 // 프로그램 상세. 마크업과 클래스는 설계 확정본(user-detail.html)과 같습니다.
 import { refundForBeforeStart, refundForCourse } from '@policy/refund.js';
 import { now as clockNow } from '../../lib/clock.js';
-import { kstDate, kstDateParts, kstDateTime, kstDayChipLabel, kstShortDateWd, kstTime, won } from '../../lib/format.js';
+import { kstDate, kstDateParts, kstDateTime, kstDayChipLabel, kstShortDateWd, kstTime, sortGrades, won } from '../../lib/format.js';
 import { showSkeleton } from '../../components/skeleton.js';
 import {
   activeOfferings, periodText, posterProps, saleStatus, STATUS_LABEL, statusMark, typeMark,
@@ -212,9 +212,9 @@ export async function renderProgramDetail(el, { api, id, now = clockNow }) {
     }
   }
   if (grades.size) {
-    for (const [g, p] of grades) {
+    for (const g of sortGrades([...grades.keys()])) {
       const s = node('span');
-      s.append(node('b', '', `${g}석`), document.createTextNode(won(p)));
+      s.append(node('b', '', `${g}석`), document.createTextNode(won(grades.get(g))));
       priceBox.append(s);
     }
   } else if (single != null) {

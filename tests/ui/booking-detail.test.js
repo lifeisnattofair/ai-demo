@@ -88,6 +88,22 @@ describe('예약 상세와 취소 환불 미리보기', () => {
     expect(document.activeElement.hasAttribute('role')).toBe(false);
   });
 
+  it('취소를 누르면 서버 시각을 다시 맞추고 바뀐 구간의 금액으로 확인한다(QA D-01)', async () => {
+    // 화면을 열 때는 D-9(수수료 없음), 취소를 누르는 사이에 D-5 구간으로 넘어간 경우
+    let t = new Date(NOW.getTime() - 4 * DAY);
+    const sync = vi.fn(async () => { t = NOW; });
+    const a = api();
+    await detail(a, { now: () => t, sync });
+    expect(el.textContent).toContain('40,000원이 환불됩니다(취소 수수료 없음)');
+    button('예약 취소').click();
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull());
+    expect(sync).toHaveBeenCalledTimes(1);
+    const dlg = document.querySelector('[role="dialog"]');
+    expect(dlg.textContent).toContain('36,000원이 환불됩니다(취소 수수료 4,000원)');
+    expect(el.textContent).toContain('지금 취소하면 36,000원이 환불됩니다(취소 수수료 4,000원).');
+    expect(el.textContent).not.toContain('40,000원이 환불됩니다');
+  });
+
   it('확인 대화상자를 닫으면 취소를 요청하지 않는다(Esc)', async () => {
     const a = api();
     await detail(a);
@@ -281,5 +297,20 @@ describe('알림함', () => {
   it('비어 있으면 빈 상태 화면을 보인다', async () => {
     await renderNotifications(el, { api: api(), go: vi.fn(), now });
     expect(el.querySelector('.empty-state')).not.toBeNull();
+  });
+});
+
+describe('예약 카드 할인 표시 (QA D-03)', () => {
+  it('할인 내역은 좌석과 따로 할인 항목으로 보인다', async () => {
+    const a = api({ myBooking: vi.fn().mockResolvedValue(booking({
+      items: [
+        { row_label: 'D', seat_no: 5, grade: 'R', discount_type: 'DISABLED', amount: 20000 },
+        { row_label: 'D', seat_no: 6, grade: 'R', discount_type: 'DISABLED_COMPANION', amount: 20000 },
+      ],
+    })) });
+    await detail(a);
+    const rows = [...el.querySelectorAll('.bk-meta > *')].map((r) => r.textContent.replace(/\s+/g, ' ').trim());
+    expect(rows.some((t) => t.startsWith('좌석') && !t.includes('('))).toBe(true);
+    expect(rows.some((t) => t.startsWith('할인') && t.includes('장애인 1'))).toBe(true);
   });
 });

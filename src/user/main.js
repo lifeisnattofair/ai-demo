@@ -66,7 +66,11 @@ root.querySelector('[data-skip]').addEventListener('click', (e) => {
   main.focus();
 });
 
-window.addEventListener('hashchange', () => window.scrollTo(0, 0));
+// 화면을 옮길 때마다 서버 시각과의 차이를 다시 맞춥니다(남은 선점 시간, 환불 구간 표시, QA D-01).
+window.addEventListener('hashchange', () => {
+  window.scrollTo(0, 0);
+  syncClock();
+});
 
 // 비밀번호 재설정 메일의 링크로 들어오면 내 정보에서 새 비밀번호를 정하게 합니다.
 api.onAuthChange((event) => {

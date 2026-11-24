@@ -66,8 +66,13 @@ export function chartScale(maxValue) {
   return { max: step * 3, ticks: [step * 3, step * 2, step, 0] };
 }
 
-// 막대 위 짧은 금액: 1,330,000 -> 133만
-const manLabel = (v) => (Math.abs(v) >= 10000 ? `${Math.round(v / 10000).toLocaleString('en-US')}만` : fmt(v));
+// 막대 위 짧은 금액: 1,330,000 -> 133만, 36,000 -> 3.6만(100만 원 미만은 소수 한 자리, QA D-06)
+export function manLabel(v) {
+  const a = Math.abs(v);
+  if (a < 10000) return fmt(v);
+  const man = a >= 1000000 ? Math.round(v / 10000) : Math.round(v / 1000) / 10;
+  return `${man.toLocaleString('en-US', { maximumFractionDigits: 1 })}만`;
+}
 
 const kpi = (label, count, value, note, cls = '') => `<div class="kpi${cls ? ` ${cls}` : ''}"><div class="k-label">${label}${count != null ? `<small>${fmt(count)}건</small>` : ''}</div>`
   + `<div class="k-value">${fmt(value)}<span>원</span></div><div class="k-note">${note}</div></div>`;
@@ -85,7 +90,7 @@ function chartHtml(s, from, to) {
       <div class="axis" aria-hidden="true">${scale.ticks.map((t) => `<span>${fmt(t)}</span>`).join('')}</div>
       <div class="plot" aria-hidden="true" style="${cols}">${days.map((d) => {
         const h = d.net > 0 ? Math.max(0.5, (d.net / scale.max) * 100) : 0;
-        return `<div class="bar${d.net <= 0 ? ' zero' : ''}" style="height:${h.toFixed(1)}%" title="${escapeHtml(`${dayKeyLabel(d.day)} ${won(d.net)}`)}"><span>${manLabel(d.net)}</span></div>`;
+        return `<div class="bar${d.net < 0 ? ' zero neg' : d.net === 0 ? ' zero' : ''}" style="height:${h.toFixed(1)}%" title="${escapeHtml(`${dayKeyLabel(d.day)} ${won(d.net)}`)}"><span>${manLabel(d.net)}</span></div>`;
       }).join('')}</div>
       <div class="xl" aria-hidden="true" style="${cols}">${days.map((d, i) => `<span>${i % every === 0 ? escapeHtml(dayKeyLabel(d.day, { short: true })) : ''}</span>`).join('')}</div>
     </div>

@@ -35,7 +35,9 @@ describe('검수용 시계 화면', () => {
     await renderSystemClock(el, { api });
     expect(el.querySelector('h1').textContent).toBe('검수용 시계');
     expect(el.querySelector('.clock-now').textContent).toContain('2026.12.07(월) 10:00');
-    for (const l of ['+10분', '+1일', '+24시간', '초기화']) expect(btn(l), l).toBeTruthy();
+    for (const l of ['+10분', '+1일', '+7일', '초기화']) expect(btn(l), l).toBeTruthy();
+    // +1일과 같은 값을 더하던 +24시간 버튼은 두지 않습니다(QA D-04)
+    expect(btn('+24시간')).toBeFalsy();
   });
 
   it('+10분과 +1일을 누르면 지금 오프셋에 더해 저장하고 띠를 갱신합니다', async () => {
@@ -53,12 +55,12 @@ describe('검수용 시계 화면', () => {
     expect(el.querySelector('[role="status"].form-alert')).toBeTruthy();
   });
 
-  it('+24시간은 +1일과 같은 값이고 초기화는 0 으로 되돌립니다', async () => {
+  it('+7일은 환불 구간을 넘기는 7일을 더하고 초기화는 0 으로 되돌립니다', async () => {
     const { api } = mk(86400000);
     await renderSystemClock(el, { api });
-    btn('+24시간').click();
+    btn('+7일').click();
     await settle();
-    expect(api.setClock).toHaveBeenLastCalledWith(2 * 86400000);
+    expect(api.setClock).toHaveBeenLastCalledWith(8 * 86400000);
     btn('초기화').click();
     await settle();
     expect(api.setClock).toHaveBeenLastCalledWith(0);

@@ -177,5 +177,11 @@ adminApi.onAuthChange((event) => {
   }
 });
 
+// 화면을 옮기면 맨 위에서 시작하고(QA D-05), 서버 시각과의 차이를 다시 맞춥니다.
+window.addEventListener('hashchange', () => {
+  window.scrollTo(0, 0);
+  syncClock();
+});
+
 syncClock();
 adminApi.session().then(boot);

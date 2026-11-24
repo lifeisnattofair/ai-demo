@@ -6,7 +6,7 @@ import { discountText, proofTargets, renderBookings } from '../../src/admin/page
 import { renderWaitlist } from '../../src/admin/pages/waitlist.js';
 import { renderPayments } from '../../src/admin/pages/payments.js';
 import { needsRefundRun, renderCancelRequests, requestStatus } from '../../src/admin/pages/cancel-requests.js';
-import { chartScale, renderSettlement, summarizeSettlement } from '../../src/admin/pages/settlement.js';
+import { chartScale, manLabel, renderSettlement, summarizeSettlement } from '../../src/admin/pages/settlement.js';
 import { cancelRuleLines, renderProgramEdit } from '../../src/admin/pages/programs.js';
 import { quickRange } from '../../src/admin/components/search-box.js';
 import { addDays, addMonths, dayKeysBetween } from '../../src/lib/format.js';
@@ -350,6 +350,14 @@ describe('정산 현황', () => {
     expect(s.stats.avg).toBe(Math.round(94000 / 7));
     const only = summarizeSettlement(settlementRows, { from: '2026-12-01', to: '2026-12-07', program: 'p2' });
     expect(only.totals.net).toBe(10000);
+  });
+
+  it('막대 위 금액은 100만 원 미만이면 소수 한 자리 만 단위로 보입니다(QA D-06)', () => {
+    expect(manLabel(36000)).toBe('3.6만');
+    expect(manLabel(-36000)).toBe('-3.6만');
+    expect(manLabel(40000)).toBe('4만');
+    expect(manLabel(1330000)).toBe('133만');
+    expect(manLabel(9500)).toBe('9,500');
   });
 
   it('그래프 눈금은 보기 좋은 값으로 올림합니다', () => {

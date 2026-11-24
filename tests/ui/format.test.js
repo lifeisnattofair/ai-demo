@@ -54,3 +54,11 @@ describe('format', () => {
     expect(formatPhone('0111234567')).toBe('011-123-4567');
   });
 });
+
+describe('좌석 등급 순서 (QA D-02)', () => {
+  it('등급은 R, S, A 순으로 정렬하고 모르는 등급은 뒤로 보낸다', async () => {
+    const { sortGrades } = await import('../../src/lib/format.js');
+    expect(sortGrades(['A', 'R', 'S'])).toEqual(['R', 'S', 'A']);
+    expect(sortGrades(['VIP', 'A', 'R'])).toEqual(['R', 'A', 'VIP']);
+  });
+});

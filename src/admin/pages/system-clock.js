@@ -9,7 +9,8 @@ import { loadInto, pageHead } from '../components/page.js';
 const STEPS = [
   { label: '+10분', ms: 10 * 60 * 1000 },
   { label: '+1일', ms: 24 * 60 * 60 * 1000 },
-  { label: '+24시간', ms: 24 * 60 * 60 * 1000 },
+  // 환불 구간(7일 전, 3일 전)과 정규 강좌 경과 비율을 빠르게 넘겨 보는 용도(QA D-04: 같은 값의 +24시간을 대신함)
+  { label: '+7일', ms: 7 * 24 * 60 * 60 * 1000 },
 ];
 
 /**

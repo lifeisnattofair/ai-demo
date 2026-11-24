@@ -1,18 +1,20 @@
 // 예약 상세: 예약 내용, 결제 정보, 환불 미리보기와 예약 취소
 import { api as defaultApi, describeError } from '../../lib/api.js';
-import { now as clockNow } from '../../lib/clock.js';
+import { now as clockNow, syncClock } from '../../lib/clock.js';
 import { showSkeleton } from '../../components/skeleton.js';
 import { renderBookingCard } from '../components/booking-card.js';
 import { mountMyPage, node, emptyState, loadError } from './my-shell.js';
 
 /**
  * @param {HTMLElement} el
- * @param {{api?:object, go?:(h:string)=>void, id:string, now?:()=>Date}} deps
+ * @param {{api?:object, go?:(h:string)=>void, id:string, now?:()=>Date, sync?:()=>Promise<void>}} deps
  */
 export async function renderBookingDetail(el, deps) {
   const api = deps.api ?? defaultApi;
   const go = deps.go ?? ((h) => { window.location.hash = h; });
   const now = deps.now ?? clockNow;
+  // 시각을 주입한 경우(테스트)에는 서버 시각 맞추기를 주입할 때만 씁니다.
+  const sync = deps.sync ?? (deps.now ? undefined : syncClock);
   const { id } = deps;
 
   const shell = await mountMyPage(el, { api, go, active: 'bookings', next: `#/me/bookings/${id}` });
@@ -47,7 +49,7 @@ export async function renderBookingDetail(el, deps) {
       return;
     }
     body.replaceChildren(renderBookingCard(booking, {
-      api, now, notice, expanded: true,
+      api, now, sync, notice, expanded: true,
       reload: async () => { await load(); refreshCounts(); },
     }));
   }

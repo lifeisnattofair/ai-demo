@@ -1,6 +1,6 @@
 // 내 예약 목록: 예정, 지난 예약, 취소 탭과 대기 승격 결제 안내
 import { api as defaultApi, describeError } from '../../lib/api.js';
-import { now as clockNow } from '../../lib/clock.js';
+import { now as clockNow, syncClock } from '../../lib/clock.js';
 import { showSkeleton } from '../../components/skeleton.js';
 import { renderBookingCard, bookingGroup } from '../components/booking-card.js';
 import { promotionCard } from './waitlist.js';
@@ -20,12 +20,13 @@ const EMPTY = {
 
 /**
  * @param {HTMLElement} el
- * @param {{api?:object, go?:(h:string)=>void, query?:URLSearchParams, now?:()=>Date}} deps
+ * @param {{api?:object, go?:(h:string)=>void, query?:URLSearchParams, now?:()=>Date, sync?:()=>Promise<void>}} deps
  */
 export async function renderMyBookings(el, deps = {}) {
   const api = deps.api ?? defaultApi;
   const go = deps.go ?? ((h) => { window.location.hash = h; });
   const now = deps.now ?? clockNow;
+  const sync = deps.sync ?? (deps.now ? undefined : syncClock);
   const tab = TABS.some(([k]) => k === deps.query?.get('tab')) ? deps.query.get('tab') : 'upcoming';
 
   const shell = await mountMyPage(el, { api, go, active: 'bookings', next: '#/me/bookings' });
@@ -75,7 +76,7 @@ export async function renderMyBookings(el, deps = {}) {
       return;
     }
     body.replaceChildren(...items.map((b) => renderBookingCard(b, {
-      api, now, notice, collapsible: true,
+      api, now, sync, notice, collapsible: true,
       reload: async () => { await load(); refreshCounts(); },
     })));
   }
