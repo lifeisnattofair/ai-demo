@@ -205,6 +205,8 @@ export function renderBookingCard(b, ctx) {
       confirmLabel: '예약 취소하기',
       cancelLabel: '닫기',
       danger: true,
+      // 닫으면 누른 「예약 취소」 버튼(환불 안내를 다시 그렸으면 새 버튼)으로 초점을 돌려줍니다(QA D-15).
+      returnFocus: button,
     });
     if (!ok) return;
     await withBusy(button, async () => {

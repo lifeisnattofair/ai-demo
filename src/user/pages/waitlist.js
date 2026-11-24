@@ -91,6 +91,7 @@ function waitCard(w, ctx) {
       confirmLabel: '대기 취소하기',
       cancelLabel: '닫기',
       danger: true,
+      returnFocus: cancel,
     });
     if (!ok) return;
     await withBusy(cancel, async () => {

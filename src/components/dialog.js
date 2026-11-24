@@ -14,11 +14,12 @@ function node(tag, className, text) {
 const FOCUSABLE = 'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /**
- * @param {{title:string, message:string|string[], detail?:string, rows?:Array<[string,string]>, confirmLabel?:string, cancelLabel?:string|null, danger?:boolean}} opts
+ * @param {{title:string, message:string|string[], detail?:string, rows?:Array<[string,string]>, confirmLabel?:string, cancelLabel?:string|null, danger?:boolean, returnFocus?:HTMLElement|(() => HTMLElement|null)}} opts
  *   rows 는 이름/값 목록(dl)으로 보입니다. cancelLabel 이 null 이면 확인 버튼 하나만 둡니다(정보 보기).
+ *   returnFocus 는 닫은 뒤 초점을 돌려줄 요소입니다(열기 전 초점 위치보다 먼저 씁니다). 대화상자를 연 버튼을 넘깁니다.
  * @returns {Promise<boolean>} 확인하면 true, 닫거나 취소하면 false
  */
-export function confirmDialog({ title, message, detail, rows, confirmLabel = '확인', cancelLabel = '닫기', danger = false }) {
+export function confirmDialog({ title, message, detail, rows, confirmLabel = '확인', cancelLabel = '닫기', danger = false, returnFocus = null }) {
   return new Promise((resolve) => {
     const opener = document.activeElement;
     const id = `dlg-${++seq}`;
@@ -61,7 +62,9 @@ export function confirmDialog({ title, message, detail, rows, confirmLabel = '�
       document.removeEventListener('keydown', onKey, true);
       backdrop.remove();
       document.body.classList.remove('dialog-open');
-      if (opener && typeof opener.focus === 'function' && opener.isConnected) opener.focus();
+      const asked = typeof returnFocus === 'function' ? returnFocus() : returnFocus;
+      const target = asked?.isConnected ? asked : opener;
+      if (target && typeof target.focus === 'function' && target.isConnected) target.focus();
       resolve(result);
     }
 

@@ -113,6 +113,38 @@ describe('예약 상세와 취소 환불 미리보기', () => {
     expect(a.cancelBooking).not.toHaveBeenCalled();
   });
 
+  it('Esc 나 닫기로 닫으면 초점이 「예약 취소」 버튼으로 돌아간다(QA D-15)', async () => {
+    // 서버 시각을 맞추는 사이 초점이 다른 곳(main)으로 옮겨진 경우도 버튼으로 돌아와야 합니다.
+    const sync = vi.fn(async () => { el.focus(); });
+    await detail(api(), { sync });
+    const btn = button('예약 취소');
+    btn.focus();
+    btn.click();
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull());
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    expect(document.querySelector('[role="dialog"]')).toBeNull();
+    expect(document.activeElement).toBe(btn);
+    btn.click();
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull());
+    button('닫기').click();
+    expect(document.activeElement).toBe(btn);
+  });
+
+  it('금액이 바뀌어 환불 안내를 다시 그렸으면 새 「예약 취소」 버튼으로 초점을 돌려준다(QA D-15)', async () => {
+    let t = new Date(NOW.getTime() - 4 * DAY);
+    const sync = vi.fn(async () => { t = NOW; });
+    await detail(api(), { now: () => t, sync });
+    const old = button('예약 취소');
+    old.focus();
+    old.click();
+    await vi.waitFor(() => expect(document.querySelector('[role="dialog"]')).not.toBeNull());
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    const fresh = button('예약 취소');
+    expect(fresh).not.toBe(old);
+    expect(old.isConnected).toBe(false);
+    expect(document.activeElement).toBe(fresh);
+  });
+
   it('대화상자는 Tab 이동이 안에서만 돈다', async () => {
     await detail(api());
     button('예약 취소').click();
