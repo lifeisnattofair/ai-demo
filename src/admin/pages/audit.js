@@ -51,7 +51,9 @@ export async function renderAudit(el, { api, now = clockNow }) {
     { key: 'target', label: '대상', align: 'l', format: (r) => {
       const s = document.createElement('span');
       const id = String(r.target_id ?? '');
-      s.textContent = `${TARGETS[r.target_type] ?? r.target_type ?? '-'}${id ? ` ${id.length > 8 ? id.slice(0, 8) : id}` : ''}`;
+      // 서버가 만든 표시 이름(회원은 가린 이름과 ID 끝 4자리, 결제와 예약 매수는 예약번호)을 먼저 씁니다(QA D-14).
+      const label = r.target_label || (id ? (id.length > 8 ? id.slice(0, 8) : id) : '');
+      s.textContent = `${TARGETS[r.target_type] ?? r.target_type ?? '-'}${label ? ` ${label}` : ''}`;
       if (id) s.title = id;
       return s;
     } },

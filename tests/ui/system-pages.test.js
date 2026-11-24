@@ -136,6 +136,16 @@ describe('작업 이력 화면', () => {
     expect(actionLabel('SOMETHING_NEW')).toBe('SOMETHING_NEW');
   });
 
+  it('회원 대상은 가린 이름과 ID 끝 4자리로 구분하고, 결제는 예약번호를 보입니다(D-14)', async () => {
+    const pii = (id, label) => ({ id, at: '2026-12-05T00:30:00Z', actor_id: 'u1', actor_name_masked: '김*영', actor_role: 'operator', action: 'VIEW_PII', target_type: 'profile', target_id: `00000000-0000-4000-8000-00000000000${id.slice(-1)}`, target_label: label, detail: {} });
+    const api = { audit: vi.fn(async () => [pii('p1', '회***나 (0001)'), pii('p2', '회***둘 (0002)'), { ...rows[1], target_label: 'B12345678' }]) };
+    await renderAudit(el, { api, now: () => NOW });
+    await settle();
+    const cells = [...el.querySelectorAll('tbody tr')].map((tr) => tr.children[3].textContent);
+    expect(cells).toEqual(['회원 회***나 (0001)', '회원 회***둘 (0002)', '결제 B12345678']);
+    expect(el.querySelector('tbody tr').children[3].querySelector('span').title).toBe('00000000-0000-4000-8000-000000000001');
+  });
+
   it('상세 JSON 은 들여쓰기해서 글자 그대로 보입니다(태그로 해석하지 않음)', async () => {
     const api = { audit: vi.fn(async () => rows) };
     await renderAudit(el, { api, now: () => NOW });
