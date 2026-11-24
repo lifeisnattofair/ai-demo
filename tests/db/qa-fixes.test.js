@@ -96,7 +96,8 @@ describe('D-09 기한 만료 처리가 다른 회원의 선점에 기대지 않�
     const o = await promotedPerformance();
     await at(new Date(Date.parse(BASE) + 24 * H + 60000).toISOString());
     // 다른 회원의 선점이나 결제 요청 없이, 화면이 부르는 조회 순서 그대로입니다.
-    expect(await ok(m[1].rpc('sweep_due_offerings'))).toBe(1);
+    // 반환 건수는 1분 예약 작업이 먼저 처리했을 수 있어 보지 않고, 최종 상태만 확인합니다.
+    await ok(m[1].rpc('sweep_due_offerings'));
     const list = await ok(m[1].rpc('my_waitlist_overview'));
     expect(list[0]).toMatchObject({ status: 'PROMOTED', position: 1, allocated_qty: 2 });
     const [w1, w2] = await queue(o);
@@ -105,8 +106,9 @@ describe('D-09 기한 만료 처리가 다른 회원의 선점에 기대지 않�
     expect(await notes(uid[0], 'WAIT_EXPIRED')).toHaveLength(1);
     expect(await notes(uid[1], 'WAIT_PROMOTED')).toHaveLength(1);
     // 여러 번 불러도 결과가 같습니다.
-    expect(await ok(m[0].rpc('sweep_due_offerings'))).toBe(0);
+    await ok(m[0].rpc('sweep_due_offerings'));
     expect(await notes(uid[1], 'WAIT_PROMOTED')).toHaveLength(1);
+    expect(await notes(uid[0], 'WAIT_EXPIRED')).toHaveLength(1);
   });
 
   it('D-2 가 되면 모으던 배정분도 조회만으로 일반 판매로 풀립니다', async () => {
@@ -115,11 +117,28 @@ describe('D-09 기한 만료 처리가 다른 회원의 선점에 기대지 않�
     await ok(m[0].rpc('join_waitlist', { p_offering: o.id, p_qty: 2 }));
     await release(o, [5], 1);
     await at('2026-12-09T09:00:00+09:00');
-    expect(await ok(m[0].rpc('sweep_due_offerings'))).toBe(1);
+    await ok(m[0].rpc('sweep_due_offerings'));
     const [w1] = await queue(o);
     expect(w1.status).toBe('RELEASED');
     const seat = await ok(db.from('inventory_seats').select('status').eq('offering_id', o.id).eq('seat_id', 5).single());
     expect(seat.status).toBe('AVAILABLE');
+  });
+
+  it('결제 승인이 끝난(PG 기록이 있는) 오래된 결제 중 선점은 처리 대상으로 다시 잡지 않습니다(M-3)', async () => {
+    const o = await offering('EXPERIENCE');
+    const oid = 'HB-20261201-STALEPAID1';
+    await ok(db.from('holds').insert({ offering_id: o.id, user_id: uid[0], qty: 1, status: 'PAYING', order_id: oid,
+      paying_since: new Date(Date.parse(BASE) - 3600000).toISOString(), expires_at: new Date(Date.parse(BASE) + 600000).toISOString() }));
+    await ok(db.from('pg_mock_transactions').insert({ payment_key: 'pk_stale_paid', order_id: oid, amount: 10000, balance_amount: 10000, status: 'DONE' }));
+    expect(await ok(m[0].rpc('sweep_due_offerings'))).toBe(0);
+  });
+
+  it('예약 작업 일시 정지 설정이 있으면 예약 작업 함수는 아무것도 처리하지 않습니다(시험 격리)', async () => {
+    const o = await promotedPerformance();
+    await at(new Date(Date.parse(BASE) + 24 * H + 60000).toISOString());
+    const { error } = await db.rpc('sweep_due_offerings_cron');
+    expect(error).toBeNull();
+    expect((await queue(o))[0].status).toBe('PROMOTED');
   });
 
   it('비회원은 부를 수 없습니다', async () => {
@@ -133,7 +152,7 @@ describe('D-09 기한 만료 처리가 다른 회원의 선점에 기대지 않�
   it.skipIf(!dockerOk)('pg_cron 이 있으면 1분마다 sweep_due_offerings 를 부르는 작업이 등록됩니다', () => {
     const out = execFileSync('docker', ['exec', container, 'psql', '-U', 'postgres', '-tAc',
       "select schedule || '|' || command from cron.job where jobname = 'sweep-due-offerings'"], { encoding: 'utf8' }).trim();
-    expect(out).toBe('* * * * *|select public.sweep_due_offerings()');
+    expect(out).toBe('* * * * *|select public.sweep_due_offerings_cron()');
   });
 });
 
@@ -188,5 +207,24 @@ describe('D-14 작업 이력 대상 표시', () => {
       expect(l).toMatch(/\*/);
       expect(l).not.toContain(p.name);
     }
+  });
+});
+
+describe('I-1 대기 수량은 회차 정원을 넘을 수 없음', () => {
+  it('정원보다 많은 수량의 대기 신청은 WAITLIST_OVER_CAPACITY 로 거절하고, 정원 안이면 받습니다', async () => {
+    const exp = await offering('EXPERIENCE');
+    await soldOutCapacity(exp, 2);
+    const { error } = await m[0].rpc('join_waitlist', { p_offering: exp.id, p_qty: 3 });
+    expect(error?.message).toBe('WAITLIST_OVER_CAPACITY');
+    await ok(m[0].rpc('join_waitlist', { p_offering: exp.id, p_qty: 2 }));
+  });
+
+  it('공연은 회차 좌석 수를 정원으로 봅니다', async () => {
+    const perf = await offering('PERFORMANCE');
+    await ok(db.from('inventory_seats').delete().eq('offering_id', perf.id).gt('seat_id', 3));
+    await ok(db.from('inventory_seats').update({ status: 'SOLD' }).eq('offering_id', perf.id));
+    const { error } = await m[0].rpc('join_waitlist', { p_offering: perf.id, p_qty: 4 });
+    expect(error?.message).toBe('WAITLIST_OVER_CAPACITY');
+    await ok(m[0].rpc('join_waitlist', { p_offering: perf.id, p_qty: 3 }));
   });
 });
