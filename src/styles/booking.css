@@ -94,6 +94,13 @@
 .qty-meta dt { color: var(--c-text-3); }
 .qty-meta dd { margin: 0; }
 
+/* 매진 회차의 대기 신청(선택 화면이 매진일 때) */
+.wait-lead { margin: 0 0 var(--sp-5); font-size: var(--fs-small); color: var(--c-text-2); }
+.wait-rules-title { margin: var(--sp-6) 0 var(--sp-3); padding-top: var(--sp-5); border-top: 1px solid var(--c-line-soft); font-size: var(--fs-body); color: var(--c-ink); }
+.booking-live + .note + .wait-rules-title { border-top: 0; padding-top: 0; margin-top: var(--sp-5); }
+.wait-rules { margin: 0; padding-left: var(--sp-5); display: grid; gap: var(--sp-2); font-size: var(--fs-small); color: var(--c-text-2); }
+.wait-rules li::marker { color: var(--c-text-3); }
+
 /* 할인 선택, 결제 단계 */
 .booking > div > .panel + .panel { margin-top: var(--sp-4); }
 .ticket-rows { display: grid; gap: var(--sp-3); }

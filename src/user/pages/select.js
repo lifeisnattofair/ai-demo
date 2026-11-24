@@ -13,6 +13,7 @@ import { renderSeatList } from '../components/seat-list.js';
 import { showSkeleton } from '../../components/skeleton.js';
 import { withBusy } from '../../components/button-busy.js';
 import { contactHash, hasContact } from './auth.js';
+import { renderWaitlistJoin } from './waitlist-join.js';
 
 const NEXT_LABEL = '다음: 할인 선택';
 const LOAD_ERROR = '예매 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.';
@@ -134,9 +135,14 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
     ? !seats.some((s) => statusById[s.id] === 'AVAILABLE')
     : remainingCap === 0;
   const sale = saleStatus(offering, now(), soldOut);
+  // 매진이면 같은 자리에서 대기 신청을 받습니다(SFR-015, QA D-07).
+  if (sale === 'SOLD_OUT_WAITLIST' && !activeHold) {
+    const limitLeft = checkLimit({ productType: type, existingQty: existing, requestedQty: LIMITS[type] }).remaining;
+    await renderWaitlistJoin(el, { api, go, offering, limitLeft, now });
+    return;
+  }
   if (sale !== 'ON_SALE' && !activeHold) {
-    const code = sale === 'SOLD_OUT_WAITLIST' ? 'SOLD_OUT' : 'NOT_ON_SALE';
-    messagePage(el, '지금은 선택할 수 없는 회차입니다.', api.messageFor(code), detailHref, '프로그램 상세');
+    messagePage(el, '지금은 선택할 수 없는 회차입니다.', api.messageFor('NOT_ON_SALE'), detailHref, '프로그램 상세');
     return;
   }
 

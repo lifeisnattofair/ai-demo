@@ -110,11 +110,13 @@ function waitCard(w, ctx) {
 
 /**
  * @param {HTMLElement} el
- * @param {{api?:object, go?:(h:string)=>void, now?:()=>Date}} deps
+ * @param {{api?:object, go?:(h:string)=>void, now?:()=>Date, query?:URLSearchParams}} deps
  */
 export async function renderWaitlist(el, deps = {}) {
   const api = deps.api ?? defaultApi;
   const go = deps.go ?? ((h) => { window.location.hash = h; });
+  // 예매 선택 화면에서 방금 대기 신청을 마쳤으면 그 건의 순번을 알려 줍니다.
+  let joinedId = deps.query?.get('joined') ?? null;
 
   const shell = await mountMyPage(el, { api, go, active: 'waitlist', next: '#/me/waitlist' });
   if (!shell) return;
@@ -150,6 +152,9 @@ export async function renderWaitlist(el, deps = {}) {
     const sorted = [...list].sort((a, b) => (b.status === 'PROMOTED') - (a.status === 'PROMOTED'));
     const ctx = { api, go, notice, reload: async () => { await load(); refreshCounts(); } };
     body.replaceChildren(...sorted.map((w) => waitCard(w, ctx)));
+    const joined = joinedId && list.find((w) => w.id === joinedId);
+    joinedId = null;
+    if (joined) notice('ok', `대기 신청을 마쳤습니다. 「${joined.program.title}」 대기 순번은 ${joined.position}번째입니다.`);
   }
   await load();
 }
