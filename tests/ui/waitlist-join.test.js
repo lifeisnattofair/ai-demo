@@ -141,3 +141,15 @@ describe('대기 신청 목록의 신청 완료 안내', () => {
     expect(notice.textContent).toBe('대기 신청을 마쳤습니다. 「현의 대화」 대기 순번은 3번째입니다.');
   });
 });
+
+describe('승격 안내 문구(D-11)', () => {
+  it('공연은 좌석, 체험과 강좌는 자리로 안내한다', async () => {
+    const { promotionCard } = await import('../../src/user/pages/waitlist.js');
+    const w = (type) => ({ id: 'w1', allocated_qty: 2, deadline_at: iso(1), offering: { starts_at: iso(10) }, program: { type, title: '현의 대화' } });
+    expect(promotionCard(w('PERFORMANCE'), {}).textContent).toContain('좌석이 배정되었습니다');
+    const exp = promotionCard(w('EXPERIENCE'), {}).textContent;
+    expect(exp).toContain('자리가 배정되었습니다');
+    expect(exp).toContain('2명 배정');
+    expect(exp).not.toContain('좌석');
+  });
+});

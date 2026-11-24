@@ -42,7 +42,7 @@ export function promotionCard(w, ctx) {
   const card = node('section', 'wait-card');
   card.setAttribute('aria-label', '대기 승격 안내');
   const text = node('div');
-  const title = node('b', null, `대기하신 「${w.program.title}」 좌석이 배정되었습니다`);
+  const title = node('b', null, `대기하신 「${w.program.title}」 ${w.program.type === 'PERFORMANCE' ? '좌석이' : '자리가'} 배정되었습니다`);
   const p = node('p', 'num');
   p.append(
     document.createTextNode(`${kstShortDateTime(w.offering.starts_at)}, ${w.allocated_qty}${unit(w.program.type)} 배정. `),
@@ -86,7 +86,7 @@ function waitCard(w, ctx) {
     if (isBusy(cancel)) return;
     const ok = await confirmDialog({
       title: '대기 신청을 취소하시겠습니까?',
-      message: promoted ? '배정된 좌석도 함께 다음 대기자에게 넘어갑니다.' : '대기 순번이 사라지며, 다시 신청하면 맨 뒤에 서게 됩니다.',
+      message: promoted ? `배정된 ${w.program.type === 'PERFORMANCE' ? '좌석' : '자리'}도 함께 다음 대기자에게 넘어갑니다.` : '대기 순번이 사라지며, 다시 신청하면 맨 뒤에 서게 됩니다.',
       detail: w.program.title,
       confirmLabel: '대기 취소하기',
       cancelLabel: '닫기',
