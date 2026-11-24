@@ -17,6 +17,8 @@ export default async function setup() {
   const db = createClient(process.env.API_URL, process.env.SERVICE_ROLE_KEY, opts);
   const { error } = await db.from('app_settings').upsert([{ key: 'sweep_cron_paused', value: true }]);
   if (error) throw error;
+  // 끝날 때 되돌리는 함수를 돌려줍니다(기본 내보내기 setup 은 이 반환값으로 teardown 을 부릅니다).
+  return teardown;
 }
 
 // 시험이 끝나면 검수용 시계와 모의 결제 설정, 예약 작업을 되돌려 로컬 개발 화면이 어긋나지 않게 합니다.
