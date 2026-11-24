@@ -1,6 +1,6 @@
 # 테이블 정의서
 
-기준: `supabase/migrations/0001_schema.sql`. 일시는 timestamptz(UTC) 저장, 금액은 원 단위 정수입니다.
+기준: `supabase/migrations/0001_schema.sql`~`0017_review_fixes.sql`(나중 마이그레이션에서 더한 열은 설명 끝에 번호 표시). 일시는 timestamptz(UTC) 저장, 금액은 원 단위 정수입니다.
 보관 기간 열에서 「5년」은 결제/환불 기록 5년 보관 대상(DAR-005)을 뜻합니다.
 
 ## 목록
@@ -22,9 +22,9 @@
 | pg_mock_transactions | 모의 결제 거래 | 모의 결제 어댑터의 거래 기록 | 프로토타입 한정 |
 | waitlist | 대기 신청 | 대기 순번, 승격, 결제 기한 | 1년 |
 | notifications | 알림 | 문자 알림(모의) 발송 기록 | 1년 |
-| admin_audit | 운영 감사 기록 | 운영/재무 담당자 처리 이력 | 5년 |
+| admin_audit | 운영 감사 기록 | 운영/정산 담당자 처리 이력 | 5년 |
 | app_settings | 앱 설정 | 환경, 시계, 모의 결제 모드 | 상시 |
-| offering_cancel_requests | 판매 단위 취소 요청 | 운영 취소 요청과 재무 승인 | 5년 |
+| offering_cancel_requests | 판매 단위 취소 요청 | 운영 담당 취소 요청과 정산 담당 승인 | 5년 |
 
 ## 컬럼
 
@@ -51,6 +51,11 @@
 | poster_tone | text | | 포스터 톤 (light/dark) |
 | is_public | boolean | | 공개 여부, 기본 true |
 | created_at | timestamptz | | 등록 일시 |
+| poster_series | text | | 포스터 위 시리즈 문구(0006) |
+| poster_title | text | | 포스터 제목, 줄바꿈은 \n(0006) |
+| poster_sub | text | | 포스터 부제(0006) |
+| details | jsonb | | 상세 소개(관람 시간, 소개 문단, 진행 순서/프로그램, 출연/강사, 이용 안내), 기본 {}(0006) |
+| discount_enabled | boolean | | 할인 적용 여부, false면 일반만 선택 가능, 기본 true(0012, SFR-019) |
 
 ### offerings
 | 컬럼 | 타입 | 키 | 설명 |
@@ -109,6 +114,7 @@
 | expires_at | timestamptz | | 선점 만료 일시 (승격 선점은 결제 기한) |
 | waitlist_id | uuid | FK waitlist | 대기 승격 선점 연결 (0003_waitlist.sql) |
 | created_at | timestamptz | | |
+| paying_since | timestamptz | | 결제 진행(PAYING) 시작 시각. 5분 넘게 결제 기록 없이 멈추면 정리 대상(0004) |
 
 ### bookings
 | 컬럼 | 타입 | 키 | 설명 |
@@ -122,6 +128,8 @@
 | total_amount | int | | 총 결제액 |
 | created_at | timestamptz | | |
 | cancelled_at | timestamptz | | 취소 일시 |
+| cancel_started_at | timestamptz | | 취소 처리 시작 시각(결제 취소 중 중복 요청 방지, 0004) |
+| cancel_rule | text | | 취소 시 적용한 환불 규칙 코드(코드 정의서 환불 규칙, 0004) |
 
 ### booking_items
 | 컬럼 | 타입 | 키 | 설명 |
@@ -164,8 +172,8 @@
 ### pg_mock_transactions
 | 컬럼 | 타입 | 키 | 설명 |
 |---|---|---|---|
-| payment_key | text | PK | |
-| order_id | text | UK | |
+| payment_key | text | PK | 모의 결제 키(결제 승인 시 발급) |
+| order_id | text | UK | 주문번호(선점의 order_id) |
 | amount | int | | 승인액 |
 | balance_amount | int | | 취소 후 잔액 |
 | status | text | | DONE/CANCELED/PARTIAL_CANCELED |
@@ -222,5 +230,6 @@
 | requested_by | uuid | FK profiles | 요청자 (운영) |
 | reason | text | | 사유 |
 | status | text | | REQUESTED/APPROVED/REJECTED |
-| decided_by | uuid | FK profiles | 승인/반려자 (재무) |
-| decided_at | timestamptz | | |
+| decided_by | uuid | FK profiles | 승인/반려자(정산 담당) |
+| decided_at | timestamptz | | 승인 또는 반려 일시 |
+| requested_at | timestamptz | | 취소 요청 일시, 기본 now()(0012) |
