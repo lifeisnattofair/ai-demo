@@ -1,4 +1,4 @@
-// 선점 남은 시간 표시. 화면 낭독기에는 1분이 바뀔 때만 알립니다(초 단위 갱신은 읽지 않습니다).
+// 선점 남은 시간 표시. 화면 낭독기에는 분(60분 이상이면 시간)이 바뀔 때만 알립니다(초 단위 갱신은 읽지 않습니다).
 export const EXPIRED_MESSAGE = '선점 시간이 지나 좌석이 해제되었습니다. 다시 선택해 주세요.';
 
 const pad = (n) => String(n).padStart(2, '0');
@@ -27,7 +27,7 @@ export function startHoldTimer(el, expiresAt, now, onExpire) {
 
   let timerId = null;
   let done = false;
-  let lastMinute = null;
+  let lastSpoken = null;
 
   function stop() {
     done = true;
@@ -59,11 +59,15 @@ export function startHoldTimer(el, expiresAt, now, onExpire) {
       expire();
       return;
     }
-    clock.textContent = `${pad(Math.floor(left / 60))}:${pad(left % 60)}`;
-    const minute = Math.ceil(left / 60);
-    if (minute !== lastMinute) {
-      lastMinute = minute;
-      live.textContent = `남은 선점 시간 ${minute}분 이내`;
+    // 60분 이상(대기 승격 결제의 24시간 선점)은 「23시간 59분」처럼, 60분 미만은 mm:ss 로 보입니다(QA D-12).
+    const long = left >= 3600;
+    clock.textContent = long
+      ? `${Math.floor(left / 3600)}시간 ${pad(Math.floor((left % 3600) / 60))}분`
+      : `${pad(Math.floor(left / 60))}:${pad(left % 60)}`;
+    const spoken = long ? `${Math.ceil(left / 3600)}시간 이내` : `${Math.ceil(left / 60)}분 이내`;
+    if (spoken !== lastSpoken) {
+      lastSpoken = spoken;
+      live.textContent = `남은 선점 시간 ${spoken}`;
     }
   }
 

@@ -66,3 +66,21 @@ describe('선점 타이머', () => {
     expect(onExpire).not.toHaveBeenCalled();
   });
 });
+
+describe('긴 선점(대기 승격 결제, D-12)', () => {
+  it('60분 이상 남으면 「H시간 MM분」과 시간 단위 안내를 보이고, 60분 미만부터는 mm:ss 로 바뀐다', () => {
+    startHoldTimer(el, new Date(T0.getTime() + 24 * 3600000 - 47000), now, () => {});
+    expect(text()).toContain('남은 선점 시간 23시간 59분');
+    const live = el.querySelector('[aria-live="polite"]');
+    expect(live.textContent).toBe('남은 선점 시간 24시간 이내');
+    expect(text()).not.toMatch(/\d{3,}:/);
+    vi.advanceTimersByTime(60000);
+    expect(text()).toContain('남은 선점 시간 23시간 58분');
+    vi.advanceTimersByTime(23 * 3600000 - 47000 - 60000);
+    expect(text()).toContain('남은 선점 시간 1시간 00분');
+    expect(live.textContent).toBe('남은 선점 시간 1시간 이내');
+    vi.advanceTimersByTime(1000);
+    expect(text()).toContain('남은 선점 시간 59:59');
+    expect(live.textContent).toBe('남은 선점 시간 60분 이내');
+  });
+});
