@@ -1,6 +1,6 @@
 // 좌석 배치도. 마크업과 클래스는 설계 확정본(user-seat.html)의 .hall 과 같습니다.
 // 좌석은 버튼이며 방향키로 옮겨 다닙니다(Tab 은 배치도 안에서 한 곳에만 멈춥니다).
-import { messageFor } from '../../lib/api.js';
+import { limitMessage } from '../../lib/api.js';
 
 export const GRADE_NAME = { R: 'R석', S: 'S석', A: 'A석' };
 
@@ -163,7 +163,7 @@ export function renderSeatMap(el, state, onToggle) {
   function activate(seat) {
     const result = toggleSeat(seat, st);
     if (result === 'limit') {
-      seatMessage(el, st, messageFor('LIMIT_EXCEEDED'));
+      seatMessage(el, st, limitMessage('PERFORMANCE'));
       return;
     }
     if (result === 'blocked') return;

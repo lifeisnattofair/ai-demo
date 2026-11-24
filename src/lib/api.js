@@ -3,7 +3,8 @@ import { supabase } from './supabase.js';
 
 const MESSAGES = {
   SEAT_TAKEN: '방금 다른 분이 선택한 좌석입니다. 다른 좌석을 선택해 주세요.',
-  LIMIT_EXCEEDED: '1인 예약 한도를 넘었습니다. 남은 매수 안에서 선택해 주세요.',
+  LIMIT_EXCEEDED: '1인 예약 한도를 넘었습니다. 남은 수량 안에서 선택해 주세요.',
+  WAITLIST_OVER_CAPACITY: '회차 정원보다 많이 대기 신청할 수 없습니다. 수량을 줄여 다시 신청해 주세요.',
   SOLD_OUT: '매진되었습니다. 대기 신청을 하실 수 있습니다.',
   NOT_ON_SALE: '지금은 예매할 수 없는 회차입니다. 판매 기간을 확인해 주세요.',
   HOLD_EXPIRED: '좌석 선점 시간이 지나 결제가 진행되지 않았습니다. 좌석을 다시 선택해 주세요.',
@@ -24,6 +25,11 @@ const GENERIC = '요청을 처리하지 못했습니다. 잠시 후 다시 시�
 
 export function messageFor(code) {
   return MESSAGES[code] ?? GENERIC;
+}
+
+/** 1인 한도 안내를 상품 유형의 단위(공연 매수, 체험과 강좌 인원)로 씁니다. */
+export function limitMessage(type) {
+  return `1인 예약 한도를 넘었습니다. 남은 ${type === 'PERFORMANCE' ? '매수' : '인원'} 안에서 선택해 주세요.`;
 }
 
 export class ApiError extends Error {

@@ -227,7 +227,7 @@ describe('연락처 입력 이어서 하기(#/signup/contact)', () => {
 describe('messageFor', () => {
   it('오류 코드를 안내 문구로 바꿉니다', () => {
     expect(messageFor('SEAT_TAKEN')).toBe('방금 다른 분이 선택한 좌석입니다. 다른 좌석을 선택해 주세요.');
-    expect(messageFor('LIMIT_EXCEEDED')).toBe('1인 예약 한도를 넘었습니다. 남은 매수 안에서 선택해 주세요.');
+    expect(messageFor('LIMIT_EXCEEDED')).toBe('1인 예약 한도를 넘었습니다. 남은 수량 안에서 선택해 주세요.');
     expect(messageFor('SOLD_OUT')).toBe('매진되었습니다. 대기 신청을 하실 수 있습니다.');
     expect(messageFor('???')).toBe('요청을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.');
   });

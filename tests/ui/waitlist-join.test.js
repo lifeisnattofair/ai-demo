@@ -76,7 +76,54 @@ describe('매진 회차의 대기 신청', () => {
     for (let i = 0; i < 5; i += 1) plus.click();
     expect(el.querySelector('[data-qty]').textContent).toBe('3명');
     expect(plus.getAttribute('aria-disabled')).toBe('true');
-    expect(el.querySelector('[role="alert"]').textContent).toBe(messageFor('LIMIT_EXCEEDED'));
+    expect(el.querySelector('[role="alert"]').textContent).toBe('1인 예약 한도를 넘었습니다. 남은 인원 안에서 선택해 주세요.');
+  });
+
+  it('수량은 회차 정원(공연은 좌석 수)보다 많이 고를 수 없다(리뷰 I-1)', async () => {
+    const api = fakeApi('EXPERIENCE');
+    api.getOffering.mockResolvedValue({ ...offering('EXPERIENCE'), capacity: 2 });
+    await run(api);
+    const plus = el.querySelector('[data-step="1"]');
+    for (let i = 0; i < 4; i += 1) plus.click();
+    expect(el.querySelector('[data-qty]').textContent).toBe('2명');
+    expect(el.querySelector('[role="alert"]').textContent).toBe('회차 정원보다 많이 대기 신청할 수 없습니다. 2명까지 신청할 수 있습니다.');
+
+    document.body.innerHTML = '<main></main>';
+    el = document.querySelector('main');
+    await run(fakeApi('PERFORMANCE', { offeringSeatMap: vi.fn().mockResolvedValue(soldSeats().slice(0, 3)) }));
+    for (let i = 0; i < 4; i += 1) el.querySelector('[data-step="1"]').click();
+    expect(el.querySelector('[data-qty]').textContent).toBe('3매');
+  });
+
+  it('서버의 마감, 한도 응답은 대기 신청에 맞는 안내로 보인다(리뷰 M-7)', async () => {
+    const api = fakeApi('EXPERIENCE', { joinWaitlist: vi.fn().mockRejectedValue(new ApiError('NOT_ON_SALE')) });
+    await run(api);
+    el.querySelector('.summary [data-join]').click();
+    await flush();
+    expect(el.querySelector('[role="alert"]').textContent).toBe('대기 신청이 마감된 회차입니다. 체험일 2일 전부터는 대기 신청을 받지 않습니다.');
+    api.joinWaitlist.mockRejectedValue(new ApiError('LIMIT_EXCEEDED'));
+    el.querySelector('.summary [data-join]').click();
+    await flush();
+    expect(el.querySelector('[role="alert"]').textContent).toBe('1인 예약 한도를 넘었습니다. 남은 인원 안에서 선택해 주세요.');
+    api.joinWaitlist.mockRejectedValue(new ApiError('WAITLIST_OVER_CAPACITY'));
+    el.querySelector('.summary [data-join]').click();
+    await flush();
+    expect(el.querySelector('[role="alert"]').textContent).toBe(messageFor('WAITLIST_OVER_CAPACITY'));
+  });
+
+  it('대기 목록을 늦게 받은 이전 화면은 새로 그린 화면을 덮지 않는다(리뷰 M-6)', async () => {
+    let late;
+    const slow = fakeApi('PERFORMANCE', { myWaitlist: vi.fn(() => new Promise((r) => { late = r; })) });
+    const first = renderSelect(el, { api: slow, go: vi.fn(), offeringId: 'o1', now: () => NOW });
+    await flush();
+    const fresh = fakeApi('PERFORMANCE', {
+      myWaitlist: vi.fn().mockResolvedValue([{ id: 'w9', status: 'WAITING', position: 4, qty: 1, offering: { id: 'o1' } }]),
+    });
+    await renderSelect(el, { api: fresh, go: vi.fn(), offeringId: 'o1', now: () => NOW });
+    late([]);
+    await first;
+    expect(el.textContent).toContain('4번째');
+    expect(el.querySelector('[data-join]')).toBeNull();
   });
 
   it('정규 강좌는 본인 1명으로 고정해 신청한다', async () => {

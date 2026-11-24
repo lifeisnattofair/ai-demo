@@ -1,6 +1,6 @@
 // 좌석 목록. 배치도를 쓰기 어려운 경우를 위한 대체 수단입니다(SFR-005).
 // 열, 번호, 등급을 표로 보여 주고 체크박스로 고릅니다. 선택 상태는 배치도와 같은 Set 을 씁니다.
-import { messageFor } from '../../lib/api.js';
+import { limitMessage } from '../../lib/api.js';
 import { GRADE_NAME, groupByRow, seatLabel, seatState, seatMessage, toggleSeat } from './seat-map.js';
 import { won } from '../../lib/format.js';
 
@@ -82,7 +82,7 @@ export function renderSeatList(el, state, onToggle) {
     const result = toggleSeat(seat, st);
     if (result === 'limit') {
       input.checked = false;
-      seatMessage(el, st, messageFor('LIMIT_EXCEEDED'));
+      seatMessage(el, st, limitMessage('PERFORMANCE'));
       return;
     }
     if (result === 'blocked') {

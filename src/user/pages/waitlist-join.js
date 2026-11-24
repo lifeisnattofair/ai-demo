@@ -1,7 +1,7 @@
 // 매진 회차의 대기 신청(SFR-015). 예매 선택 화면이 매진일 때 이 화면으로 바뀝니다.
-// 수량은 남은 1인 한도 안에서 고르고(정규 강좌는 본인 1명), 신청하면 내 대기 신청 목록으로 보냅니다.
+// 수량은 남은 1인 한도와 회차 정원 안에서 고르고(정규 강좌는 본인 1명), 신청하면 내 대기 신청 목록으로 보냅니다.
 import { dDay } from '@policy/time.js';
-import { describeError } from '../../lib/api.js';
+import { describeError, limitMessage } from '../../lib/api.js';
 import { escapeHtml, kstDateTime } from '../../lib/format.js';
 import { posterImage } from '../components/poster-images.js';
 import { withBusy } from '../../components/button-busy.js';
@@ -34,9 +34,10 @@ function rules(type) {
 
 /**
  * @param {HTMLElement} el
- * @param {{api:object, go:(h:string)=>void, offering:object, existing:number, limitLeft:number, now:()=>Date}} ctx
+ * @param {{api:object, go:(h:string)=>void, offering:object, limitLeft:number, capacity?:number, now:()=>Date, stale?:()=>boolean}} ctx
+ *   capacity 는 회차 정원(공연은 좌석 수), stale 은 더 새로운 화면이 그려졌는지 알려 줍니다.
  */
-export async function renderWaitlistJoin(el, { api, go, offering, limitLeft, now }) {
+export async function renderWaitlistJoin(el, { api, go, offering, limitLeft, capacity = Infinity, now, stale = () => false }) {
   const program = offering.program;
   const type = program.type;
   const w = WORDS[type];
@@ -52,9 +53,16 @@ export async function renderWaitlistJoin(el, { api, go, offering, limitLeft, now
   } catch (e) {
     console.error(e); // 목록을 못 읽어도 신청은 서버가 중복을 막습니다.
   }
+  if (stale()) return; // 기다리는 사이 다른 화면이 그려졌으면 덮지 않습니다(리뷰 M-6).
   const closed = dDay(offering.starts_at, now()) <= 2;
   const isCourse = type === 'COURSE';
-  const maxQty = Math.max(0, limitLeft);
+  const capLeft = Math.max(0, capacity ?? Infinity);
+  const maxQty = Math.max(0, Math.min(limitLeft, capLeft));
+  const closedMessage = `대기 신청이 마감된 회차입니다. ${w.base} 2일 전부터는 대기 신청을 받지 않습니다.`;
+  // 한도와 정원 중 무엇에 걸렸는지에 따라 안내합니다.
+  const overMessage = () => (capLeft < limitLeft
+    ? `회차 정원보다 많이 대기 신청할 수 없습니다. ${capLeft}${w.unit}까지 신청할 수 있습니다.`
+    : limitMessage(type));
   let qty = maxQty > 0 ? 1 : 0;
 
   el.innerHTML = `<div data-booking data-waitlist-join>
@@ -120,7 +128,7 @@ export async function renderWaitlistJoin(el, { api, go, offering, limitLeft, now
   if (mine) {
     body.append(node('p', 'note info', `이미 대기 신청한 회차입니다. 현재 대기 순번은 ${mine.position}번째이며, 순번과 결제 기한은 내 대기 신청에서 확인할 수 있습니다.`));
   } else if (closed) {
-    body.append(node('p', 'note', `대기 신청이 마감된 회차입니다. ${w.base} 2일 전부터는 대기 신청을 받지 않습니다. 다른 일정을 확인해 주세요.`));
+    body.append(node('p', 'note', `${closedMessage} 다른 일정을 확인해 주세요.`));
   } else {
     body.append(node('p', 'wait-lead', '모든 자리가 판매되었습니다. 대기 신청을 하시면 취소된 자리가 생길 때 순번대로 결제 기회를 드립니다.'));
     if (isCourse) {
@@ -129,7 +137,7 @@ export async function renderWaitlistJoin(el, { api, go, offering, limitLeft, now
       body.append(fixed);
     } else {
       const row = node('div', 'qty-row');
-      row.innerHTML = `<div><b id="wj-qty-label">${w.qty}</b><span class="qty-sub">남은 한도 ${maxQty}${w.unit}</span></div>
+      row.innerHTML = `<div><b id="wj-qty-label">${w.qty}</b><span class="qty-sub">${maxQty}${w.unit}까지 신청 가능</span></div>
         <div class="stepper" role="group" aria-labelledby="wj-qty-label">
           <button type="button" data-step="-1" aria-label="${w.qty} 줄이기">-</button>
           <output class="num" aria-live="polite" data-qty>${qty}${w.unit}</output>
@@ -137,7 +145,7 @@ export async function renderWaitlistJoin(el, { api, go, offering, limitLeft, now
         </div>`;
       body.append(row);
     }
-    if (maxQty <= 0) say(api.messageFor('LIMIT_EXCEEDED'));
+    if (maxQty <= 0) say(overMessage());
   }
   if (!closed) {
     const list = node('ul', 'wait-rules');
@@ -166,7 +174,7 @@ export async function renderWaitlistJoin(el, { api, go, offering, limitLeft, now
     if (!b) return;
     const next = qty + Number(b.dataset.step);
     if (next < 1) return;
-    if (next > maxQty) { say(api.messageFor('LIMIT_EXCEEDED')); return; }
+    if (next > maxQty) { say(overMessage()); return; }
     say('');
     qty = next;
     sync();
@@ -185,7 +193,10 @@ export async function renderWaitlistJoin(el, { api, go, offering, limitLeft, now
           const row = await api.joinWaitlist(offering.id, isCourse ? 1 : qty);
           go(`#/me/waitlist?joined=${encodeURIComponent(row.id)}`);
         } catch (e) {
-          say(describeError(e));
+          // 서버의 판매 기간 응답은 대기 신청 마감으로, 한도 응답은 유형 단위로 안내합니다(리뷰 M-7).
+          if (e?.code === 'NOT_ON_SALE') say(closedMessage);
+          else if (e?.code === 'LIMIT_EXCEEDED') say(limitMessage(type));
+          else say(describeError(e));
         }
       });
     } finally {

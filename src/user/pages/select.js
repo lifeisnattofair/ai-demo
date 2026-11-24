@@ -1,7 +1,7 @@
 // 좌석/인원 선택. 마크업과 클래스는 설계 확정본(user-seat.html)과 같습니다.
 // 공연은 좌석 배치도(또는 좌석 목록), 체험은 인원, 정규 강좌는 본인 1명 신청으로 고릅니다.
 import { checkLimit, LIMITS } from '@policy/limits.js';
-import { describeError } from '../../lib/api.js';
+import { describeError, limitMessage } from '../../lib/api.js';
 import { now as clockNow } from '../../lib/clock.js';
 import { escapeHtml, kstDateTime, won } from '../../lib/format.js';
 import { saleStatus } from '../components/program-card.js';
@@ -138,7 +138,9 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
   // 매진이면 같은 자리에서 대기 신청을 받습니다(SFR-015, QA D-07).
   if (sale === 'SOLD_OUT_WAITLIST' && !activeHold) {
     const limitLeft = checkLimit({ productType: type, existingQty: existing, requestedQty: LIMITS[type] }).remaining;
-    await renderWaitlistJoin(el, { api, go, offering, limitLeft, now });
+    // 대기 수량은 회차 정원(공연은 회차 좌석 수)을 넘을 수 없습니다(리뷰 I-1).
+    const capacity = type === 'PERFORMANCE' ? seats.length : offering.capacity;
+    await renderWaitlistJoin(el, { api, go, offering, limitLeft, capacity, now, stale });
     return;
   }
   if (sale !== 'ON_SALE' && !activeHold) {
@@ -397,7 +399,7 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
       const next = qty + Number(b.dataset.step);
       if (next < 1) return;
       if (next > maxPick) {
-        say(maxPick === limitLeft ? api.messageFor('LIMIT_EXCEEDED') : '남은 정원보다 많이 선택할 수 없습니다. 남은 인원 안에서 선택해 주세요.');
+        say(maxPick === limitLeft ? limitMessage(type) : '남은 정원보다 많이 선택할 수 없습니다. 남은 인원 안에서 선택해 주세요.');
         return;
       }
       say('');
@@ -414,7 +416,7 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
     drawSummary();
   } else if (maxPick <= 0) {
     body.append(live);
-    say(api.messageFor('LIMIT_EXCEEDED'));
+    say(limitMessage(type));
     drawSummary();
   } else {
     if (type === 'PERFORMANCE') buildSeatPanel(); else buildQtyPanel();
@@ -441,7 +443,7 @@ export async function renderSelect(el, { api, go, offeringId, now = clockNow, no
           stops.forEach((x) => x());
           go(`#/booking/${encodeURIComponent(hold.id)}/discount`);
         } catch (e) {
-          say(describeError(e));
+          say(e?.code === 'LIMIT_EXCEEDED' ? limitMessage(type) : describeError(e));
           try {
             if (type === 'PERFORMANCE') await reloadSeats();
             else {
