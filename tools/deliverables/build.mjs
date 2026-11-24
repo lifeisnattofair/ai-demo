@@ -6,6 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { marked } from 'marked';
 import ExcelJS from 'exceljs';
 import puppeteer from 'puppeteer-core';
+import { loadQa } from './qa-data.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, '../..');
@@ -178,14 +179,25 @@ async function buildTrace(reqRows, acMap) {
   const byId = Object.fromEntries(reqRows.map((r) => [r.id, r]));
   const rows = table.rows.map((r) => r.map(cellText).map((s) => plain(s).replace(/`/g, '')));
 
+  // QA 단계(2026-11-24) 결과로 진행 상태를 정합니다. 연결된 케이스가 모두 PASS 또는 자동 확인이면 검수 완료입니다.
+  const qa = loadQa(root);
+  const statusOf = (ids) => {
+    const list = ids.split(/,\s*/).filter(Boolean);
+    if (!list.length) return '계획';
+    const res = list.map((q) => qa.results.get(q)?.result ?? '미수행');
+    if (res.some((x) => /^FAIL/.test(x))) return '결함';
+    if (res.every((x) => x === 'PASS' || /자동/.test(x))) return '검수 완료';
+    if (res.some((x) => /^PASS/.test(x) || /자동/.test(x))) return '검수 중';
+    return '구현 완료';
+  };
   const wb = new ExcelJS.Workbook();
   wb.creator = '서비스 기획';
-  wb.created = new Date('2026-11-23T09:00:00+09:00');
+  wb.created = new Date('2026-11-24T18:00:00+09:00');
   const font = { name: '맑은 고딕', size: 9 };
   const border = { top: { style: 'thin', color: { argb: 'FF9AA3AE' } }, left: { style: 'thin', color: { argb: 'FF9AA3AE' } }, bottom: { style: 'thin', color: { argb: 'FF9AA3AE' } }, right: { style: 'thin', color: { argb: 'FF9AA3AE' } } };
   const headFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEDF0F4' } };
 
-  const ws = wb.addWorksheet('요구사항 추적표', { views: [{ state: 'frozen', xSplit: 3, ySplit: 4 }], pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '4:4', margins: { left: 0.4, right: 0.4, top: 0.6, bottom: 0.6, header: 0.3, footer: 0.3 } }, headerFooter: { oddHeader: `&L&8${PROJECT}&R&8요구사항 추적표 v1.0`, oddFooter: '&C&8- &P -&R&8HB-PMO-TRC-01' } });
+  const ws = wb.addWorksheet('요구사항 추적표', { views: [{ state: 'frozen', xSplit: 3, ySplit: 4 }], pageSetup: { paperSize: 9, orientation: 'landscape', fitToPage: true, fitToWidth: 1, fitToHeight: 0, printTitlesRow: '4:4', margins: { left: 0.4, right: 0.4, top: 0.6, bottom: 0.6, header: 0.3, footer: 0.3 } }, headerFooter: { oddHeader: `&L&8${PROJECT}&R&8요구사항 추적표 v1.1`, oddFooter: '&C&8- &P -&R&8HB-PMO-TRC-01' } });
   const cols = [
     { h: '번호', w: 6 }, { h: '분류', w: 14 }, { h: '요구사항 ID', w: 11 }, { h: '요구사항 명칭', w: 24 }, { h: '세부 내용', w: 52 },
     { h: '검수 기준', w: 12 }, { h: '구현 Task', w: 10 }, { h: '자동 검증(테스트)', w: 34 }, { h: '수동 검증', w: 18 }, { h: 'QA 케이스 ID', w: 13 }, { h: '진행 상태', w: 10 },
@@ -196,7 +208,7 @@ async function buildTrace(reqRows, acMap) {
   ws.getCell('A1').font = { name: '맑은 고딕', size: 16, bold: true, color: { argb: 'FF1D3557' } };
   ws.getRow(1).height = 30;
   ws.mergeCells(2, 1, 2, cols.length);
-  ws.getCell('A2').value = `사업명: ${PROJECT}    문서번호: HB-PMO-TRC-01    버전: v1.0    작성일: 2026. 11. 23.    기준 문서: 요구사항정의서 v1.1`;
+  ws.getCell('A2').value = `사업명: ${PROJECT}    문서번호: HB-PMO-TRC-01    버전: v1.1    작성일: 2026. 11. 24.    기준 문서: 요구사항정의서 v1.1, QA 테스트 케이스 v1.0`;
   ws.getCell('A2').font = { ...font, color: { argb: 'FF3A4250' } };
   ws.getRow(3).height = 6;
   const hr = ws.getRow(4);
@@ -204,10 +216,10 @@ async function buildTrace(reqRows, acMap) {
   hr.height = 22;
 
   rows.forEach((r, i) => {
-    const [id, name, task, auto, manual, ac] = r;
+    const [id, name, task, auto, manual, ac, qaIds = ''] = r;
     const pre = id.slice(0, 3);
     const req = byId[id];
-    const row = ws.addRow([i + 1, CATEGORY[pre], id, name, plain(req?.detail), ac, task, auto, manual, '', '계획']);
+    const row = ws.addRow([i + 1, CATEGORY[pre], id, name, plain(req?.detail), ac, task, auto, manual, qaIds.split(/,\s*/).join('\n'), statusOf(qaIds)]);
     row.eachCell({ includeEmpty: true }, (cell, c) => {
       cell.font = font; cell.border = border;
       cell.alignment = { vertical: 'top', wrapText: true, horizontal: [1, 3, 6, 7, 10, 11].includes(c) ? 'center' : 'left' };
@@ -245,9 +257,9 @@ async function buildTrace(reqRows, acMap) {
   // 개정 이력
   const hist = wb.addWorksheet('개정 이력');
   hist.columns = [{ width: 8 }, { width: 14 }, { width: 60 }, { width: 12 }];
-  [['버전', '일자', '개정 내용', '작성'], ['v1.0', '2026. 11. 23.', '최초 작성(구현 계획 Task 0~16, 8A와 요구사항 64개 연결)', '서비스 기획']].forEach((v, i) => { const r = hist.addRow(v); r.eachCell((c) => { c.font = { ...font, bold: i === 0 }; c.border = border; if (i === 0) c.fill = headFill; }); });
+  [['버전', '일자', '개정 내용', '작성'], ['v1.0', '2026. 11. 23.', '최초 작성(구현 계획 Task 0~16, 8A와 요구사항 64개 연결)', '서비스 기획'], ['v1.1', '2026. 11. 24.', 'QA 케이스 ID 연결(88건), 진행 상태를 QA 결과로 갱신', '서비스 기획']].forEach((v, i) => { const r = hist.addRow(v); r.eachCell((c) => { c.font = { ...font, bold: i === 0 }; c.border = border; if (i === 0) c.fill = headFill; }); });
 
-  const file = resolve(OUT, '02_요구사항추적표_v1.0.xlsx');
+  const file = resolve(OUT, '02_요구사항추적표_v1.1.xlsx');
   await wb.xlsx.writeFile(file);
   return { file, count: rows.length };
 }

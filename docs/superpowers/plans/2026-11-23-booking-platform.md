@@ -660,71 +660,71 @@ Task 8~15에서 만든 화면 전체에 인터랙션과 로딩 상태를 고르�
 
 ## 요구사항 추적표
 
-검증 열의 「QA」는 다음 단계(QA 문서/크롬 검수)에서 QA 케이스 ID로 바뀝니다. 테스트 파일명은 위 Task에 정의돼 있습니다.
+수동 검증 열의 「QA」는 브라우저 검수 대상이라는 뜻이고, 연결된 케이스는 「QA 케이스」 열에 적었습니다(docs/qa/2026-11-24-qa-cases.md, 2026-11-24 QA 단계에서 추가). 테스트 파일명은 위 Task에 정의돼 있습니다.
 
-| 요구사항 ID | 명칭 | 구현 Task | 자동 검증 | 수동 검증 | AC |
-|---|---|---|---|---|---|
-| SFR-001 | 회원 가입/로그인 | 8 | tests/ui/auth | QA | AC-1 |
-| SFR-002 | 회원 정보 | 8 | - | QA | AC-1 |
-| SFR-003 | 프로그램 목록 | 9 | tests/ui/programs | QA | AC-1 |
-| SFR-004 | 프로그램 상세/회차 선택 | 9 | tests/ui/programs | QA | AC-1 |
-| SFR-005 | 공연 좌석 선택 | 10 | tests/ui/seat-map | QA | AC-1, AC-7 |
-| SFR-006 | 교육 인원/과정 신청 | 10 | tests/db/hold | QA | AC-1 |
-| SFR-007 | 선점과 만료 | 4, 10 | tests/db/hold, tests/ui/hold-timer | QA | AC-4 |
-| SFR-008 | 1인 한도 검증 | 2, 4, 10 | tests/policy/limits, tests/db/hold | QA | AC-1 |
-| SFR-009 | 할인 선택/금액 계산 | 2, 11 | tests/policy/pricing, tests/ui/discount | QA | AC-1 |
-| SFR-010 | 결제 | 11 | tests/ui/payment, tests/ui/payment-result | QA | AC-1 |
-| SFR-011 | 결제 승인/동시 결제 처리 | 6 | tests/payments/confirm, tests/db/booking | QA | AC-3 |
-| SFR-012 | 예약 확인 | 12 | tests/ui/booking-detail | QA | AC-1 |
-| SFR-013 | 예약 취소/환불(기준일 전) | 1, 7, 12 | tests/policy/refund, tests/payments/cancel | QA | AC-1 |
-| SFR-014 | 정규 강좌 중도 취소 | 1, 7, 12 | tests/policy/refund, tests/payments/cancel | QA | AC-2 |
-| SFR-015 | 대기 신청 | 5, 12 | tests/db/waitlist | QA | AC-5 |
-| SFR-016 | 대기 승격/결제 기한 | 5, 12 | tests/db/waitlist, tests/db/cancel | QA | AC-5 |
-| SFR-017 | 알림함 | 5, 6, 7, 12 | tests/db/waitlist | QA | AC-5 |
-| SFR-018 | 관리자 로그인/역할 | 13 | tests/ui/admin-layout, tests/db/rls | QA | AC-6 |
-| SFR-019 | 프로그램 관리 | 13, 14 | tests/db/admin, tests/ui/admin-ops(할인 적용 여부) | QA | AC-6 |
-| SFR-020 | 회차, 정원, 좌석 관리 | 13 | tests/db/admin | QA | AC-6 |
-| SFR-021 | 예약 내역 관리 | 14 | tests/ui/admin-ops | QA | AC-6 |
-| SFR-022 | 결제/환불 내역 | 14 | tests/ui/admin-ops | QA | AC-6 |
-| SFR-023 | 회차 취소/일괄 환불 | 7, 14 | tests/payments/cancel, tests/db/settlement | QA | AC-6 |
-| SFR-024 | 정산 현황 | 14 | tests/db/settlement, tests/ui/csv | QA | AC-6 |
-| SFR-025 | 검수용 시계 | 4, 15 | tests/db/hold, tests/db/system | QA | AC-4, AC-5 |
-| SFR-026 | 시연 데이터 초기화 | 15 | tests/db/system | QA | AC-6 |
-| PER-001 | 응답 시간 | - | - | 목표치(미측정) | - |
-| PER-002 | 동시 접속 | - | - | 목표치(미측정) | - |
-| PER-003 | 결제 승인 처리 | - | - | 목표치(미측정) | - |
-| PER-004 | 선점/확정 정합성 | 4, 6 | tests/db/hold(동시 20회), tests/db/booking | - | AC-3 |
-| SER-001 | 인증 | 8 | tests/ui/auth | QA | AC-1 |
-| SER-002 | 접근 통제 | 13 | tests/db/rls | QA | AC-6 |
-| SER-003 | 비밀값 관리 | 0, 6 | tests/scripts/check-secrets | - | AC-9 |
-| SER-004 | 개인정보 최소 수집 | 3 | tests/db/schema | 테이블 정의서 검토 | AC-9 |
-| SER-005 | 개인정보 표시 제한 | 13 | - | QA | AC-6 |
-| SER-006 | 관리자 작업 이력 | 13, 15 | tests/db/admin | QA | AC-6 |
-| SER-007 | 결제 위변조 방지 | 6, 7 | tests/payments/confirm, tests/payments/webhook | - | AC-3 |
-| SER-008 | 시큐어 코딩 | 8~15 | - | 리뷰 단계 점검 | - |
-| DAR-001 | 데이터 모델 | 3 | tests/db/schema | 테이블 정의서 | - |
-| DAR-002 | 코드 정의 | 3 | tests/db/schema | 코드 정의서 | - |
-| DAR-003 | 금액 처리 | 1, 2 | tests/policy/refund, tests/policy/pricing | - | AC-1, AC-2 |
-| DAR-004 | 시간 기준 | 1, 4 | tests/policy/time, tests/db/hold | - | AC-1, AC-2 |
-| DAR-005 | 보관 기간 | 3 | - | 테이블 정의서 | - |
-| DAR-006 | 초기 데이터 | 3, 15 | tests/db/schema, tests/db/system | - | AC-6 |
-| SIR-001 | 결제 요청 화면 | 11 | tests/ui/payment | QA | AC-1 |
-| SIR-002 | 결제 승인 연계 | 6 | tests/payments/confirm | QA | AC-1, AC-3 |
-| SIR-003 | 결제 취소 연계 | 7 | tests/payments/cancel | QA | AC-1, AC-2 |
-| SIR-004 | 결제 웹훅 | 7 | tests/payments/webhook | - | AC-3 |
-| SIR-005 | 회원 인증 | 8 | tests/ui/auth | QA | AC-1 |
-| SIR-006 | 본인인증(모의) | 8 | - | QA | AC-1 |
-| QUR-001 | 웹 접근성 | 8~15 | tests/ui/seat-map | QA(자동 점검 + 키보드) | AC-7 |
-| QUR-002 | 디자인 시스템 | 8A, 8, 13 | - | QA | - |
-| QUR-003 | 반응형 | 8~15 | - | QA(1440/390) | - |
-| QUR-004 | 브라우저 지원 | - | - | QA | - |
-| QUR-005 | 정책 로직 검증 | 1, 2 | tests/policy/* | - | AC-1, AC-2, AC-4, AC-5 |
-| QUR-006 | 요구사항 추적성 | 16 | tests/scripts/check-trace | - | AC-8 |
-| QUR-007 | 오류 안내 | 8, 10, 11, 12, 15A | tests/ui/* 문구 단언 | QA | - |
-| COR-001 | 가상 데이터 | 3, 9 | tests/ui/poster | 시드 검토 | - |
-| COR-002 | 결제 모의 연동 | 6 | tests/payments/gateway | - | AC-9 |
-| COR-003 | 키 관리 | 0 | tests/scripts/check-secrets | - | AC-9 |
-| COR-004 | 호스팅 | 16 | - | 배포 시 확인 | - |
-| COR-005 | 기술 구성 | 0 | - | 리뷰 | - |
-| COR-006 | 실사업 전환 기준 | - | - | 설계 문서 4장 | - |
-| COR-007 | 개발 방식 | 전체 | - | 포트폴리오 기록 | - |
+| 요구사항 ID | 명칭 | 구현 Task | 자동 검증 | 수동 검증 | AC | QA 케이스 |
+|---|---|---|---|---|---|---|
+| SFR-001 | 회원 가입/로그인 | 8 | tests/ui/auth | QA | AC-1 | QA-001, QA-002, QA-004, QA-006, QA-080 |
+| SFR-002 | 회원 정보 | 8 | - | QA | AC-1 | QA-008, QA-009, QA-042 |
+| SFR-003 | 프로그램 목록 | 9 | tests/ui/programs | QA | AC-1 | QA-010, QA-011, QA-080 |
+| SFR-004 | 프로그램 상세/회차 선택 | 9 | tests/ui/programs | QA | AC-1 | QA-012, QA-013, QA-080 |
+| SFR-005 | 공연 좌석 선택 | 10 | tests/ui/seat-map | QA | AC-1, AC-7 | QA-015, QA-016, QA-080, QA-086 |
+| SFR-006 | 교육 인원/과정 신청 | 10 | tests/db/hold | QA | AC-1 | QA-017 |
+| SFR-007 | 선점과 만료 | 4, 10 | tests/db/hold, tests/ui/hold-timer | QA | AC-4 | QA-020, QA-021, QA-083 |
+| SFR-008 | 1인 한도 검증 | 2, 4, 10 | tests/policy/limits, tests/db/hold | QA | AC-1 | QA-018, QA-019 |
+| SFR-009 | 할인 선택/금액 계산 | 2, 11 | tests/policy/pricing, tests/ui/discount | QA | AC-1 | QA-023, QA-024 |
+| SFR-010 | 결제 | 11 | tests/ui/payment, tests/ui/payment-result | QA | AC-1 | QA-026, QA-027, QA-028, QA-080 |
+| SFR-011 | 결제 승인/동시 결제 처리 | 6 | tests/payments/confirm, tests/db/booking | QA | AC-3 | QA-029, QA-030, QA-082 |
+| SFR-012 | 예약 확인 | 12 | tests/ui/booking-detail | QA | AC-1 | QA-034, QA-035, QA-080 |
+| SFR-013 | 예약 취소/환불(기준일 전) | 1, 7, 12 | tests/policy/refund, tests/payments/cancel | QA | AC-1 | QA-036, QA-037, QA-038, QA-080 |
+| SFR-014 | 정규 강좌 중도 취소 | 1, 7, 12 | tests/policy/refund, tests/payments/cancel | QA | AC-2 | QA-039, QA-040, QA-081 |
+| SFR-015 | 대기 신청 | 5, 12 | tests/db/waitlist | QA | AC-5 | QA-043, QA-044, QA-049, QA-084 |
+| SFR-016 | 대기 승격/결제 기한 | 5, 12 | tests/db/waitlist, tests/db/cancel | QA | AC-5 | QA-045, QA-046, QA-047, QA-048, QA-049, QA-084 |
+| SFR-017 | 알림함 | 5, 6, 7, 12 | tests/db/waitlist | QA | AC-5 | QA-050, QA-084 |
+| SFR-018 | 관리자 로그인/역할 | 13 | tests/ui/admin-layout, tests/db/rls | QA | AC-6 | QA-051 |
+| SFR-019 | 프로그램 관리 | 13, 14 | tests/db/admin, tests/ui/admin-ops(할인 적용 여부) | QA | AC-6 | QA-052 |
+| SFR-020 | 회차, 정원, 좌석 관리 | 13 | tests/db/admin | QA | AC-6 | QA-053, QA-054, QA-085 |
+| SFR-021 | 예약 내역 관리 | 14 | tests/ui/admin-ops | QA | AC-6 | QA-055 |
+| SFR-022 | 결제/환불 내역 | 14 | tests/ui/admin-ops | QA | AC-6 | QA-056, QA-085 |
+| SFR-023 | 회차 취소/일괄 환불 | 7, 14 | tests/payments/cancel, tests/db/settlement | QA | AC-6 | QA-057 |
+| SFR-024 | 정산 현황 | 14 | tests/db/settlement, tests/ui/csv | QA | AC-6 | QA-058, QA-085 |
+| SFR-025 | 검수용 시계 | 4, 15 | tests/db/hold, tests/db/system | QA | AC-4, AC-5 | QA-021, QA-059, QA-083, QA-084 |
+| SFR-026 | 시연 데이터 초기화 | 15 | tests/db/system | QA | AC-6 | QA-060 |
+| PER-001 | 응답 시간 | - | - | 목표치(미측정) | - | QA-014 |
+| PER-002 | 동시 접속 | - | - | 목표치(미측정) | - | QA-014 |
+| PER-003 | 결제 승인 처리 | - | - | 목표치(미측정) | - | QA-014 |
+| PER-004 | 선점/확정 정합성 | 4, 6 | tests/db/hold(동시 20회), tests/db/booking | - | AC-3 | QA-022, QA-082 |
+| SER-001 | 인증 | 8 | tests/ui/auth | QA | AC-1 | QA-003, QA-005, QA-080 |
+| SER-002 | 접근 통제 | 13 | tests/db/rls | QA | AC-6 | QA-035, QA-051, QA-063 |
+| SER-003 | 비밀값 관리 | 0, 6 | tests/scripts/check-secrets | - | AC-9 | QA-064, QA-088 |
+| SER-004 | 개인정보 최소 수집 | 3 | tests/db/schema | 테이블 정의서 검토 | AC-9 | QA-065, QA-088 |
+| SER-005 | 개인정보 표시 제한 | 13 | - | QA | AC-6 | QA-061 |
+| SER-006 | 관리자 작업 이력 | 13, 15 | tests/db/admin | QA | AC-6 | QA-062, QA-085 |
+| SER-007 | 결제 위변조 방지 | 6, 7 | tests/payments/confirm, tests/payments/webhook | - | AC-3 | QA-029, QA-031 |
+| SER-008 | 시큐어 코딩 | 8~15 | - | 리뷰 단계 점검 | - | QA-066, QA-067 |
+| DAR-001 | 데이터 모델 | 3 | tests/db/schema | 테이블 정의서 | - | QA-074 |
+| DAR-002 | 코드 정의 | 3 | tests/db/schema | 코드 정의서 | - | QA-074 |
+| DAR-003 | 금액 처리 | 1, 2 | tests/policy/refund, tests/policy/pricing | - | AC-1, AC-2 | QA-025, QA-080, QA-081 |
+| DAR-004 | 시간 기준 | 1, 4 | tests/policy/time, tests/db/hold | - | AC-1, AC-2 | QA-041, QA-080, QA-081 |
+| DAR-005 | 보관 기간 | 3 | - | 테이블 정의서 | - | QA-074 |
+| DAR-006 | 초기 데이터 | 3, 15 | tests/db/schema, tests/db/system | - | AC-6 | QA-075, QA-085 |
+| SIR-001 | 결제 요청 화면 | 11 | tests/ui/payment | QA | AC-1 | QA-026, QA-027, QA-080 |
+| SIR-002 | 결제 승인 연계 | 6 | tests/payments/confirm | QA | AC-1, AC-3 | QA-027, QA-032, QA-080, QA-082 |
+| SIR-003 | 결제 취소 연계 | 7 | tests/payments/cancel | QA | AC-1, AC-2 | QA-032, QA-080, QA-081 |
+| SIR-004 | 결제 웹훅 | 7 | tests/payments/webhook | - | AC-3 | QA-031 |
+| SIR-005 | 회원 인증 | 8 | tests/ui/auth | QA | AC-1 | QA-001, QA-004, QA-006, QA-080 |
+| SIR-006 | 본인인증(모의) | 8 | - | QA | AC-1 | QA-001, QA-007, QA-080 |
+| QUR-001 | 웹 접근성 | 8~15 | tests/ui/seat-map | QA(자동 점검 + 키보드) | AC-7 | QA-016, QA-068, QA-086 |
+| QUR-002 | 디자인 시스템 | 8A, 8, 13 | - | QA | - | QA-069 |
+| QUR-003 | 반응형 | 8~15 | - | QA(1440/390) | - | QA-070 |
+| QUR-004 | 브라우저 지원 | - | - | QA | - | QA-071 |
+| QUR-005 | 정책 로직 검증 | 1, 2 | tests/policy/* | - | AC-1, AC-2, AC-4, AC-5 | QA-072, QA-080, QA-081, QA-082, QA-083, QA-084 |
+| QUR-006 | 요구사항 추적성 | 16 | tests/scripts/check-trace | - | AC-8 | QA-079, QA-087 |
+| QUR-007 | 오류 안내 | 8, 10, 11, 12, 15A | tests/ui/* 문구 단언 | QA | - | QA-073 |
+| COR-001 | 가상 데이터 | 3, 9 | tests/ui/poster | 시드 검토 | - | QA-076 |
+| COR-002 | 결제 모의 연동 | 6 | tests/payments/gateway | - | AC-9 | QA-033, QA-088 |
+| COR-003 | 키 관리 | 0 | tests/scripts/check-secrets | - | AC-9 | QA-064, QA-088 |
+| COR-004 | 호스팅 | 16 | - | 배포 시 확인 | - | QA-077 |
+| COR-005 | 기술 구성 | 0 | - | 리뷰 | - | QA-077 |
+| COR-006 | 실사업 전환 기준 | - | - | 설계 문서 4장 | - | QA-077 |
+| COR-007 | 개발 방식 | 전체 | - | 포트폴리오 기록 | - | QA-078 |
