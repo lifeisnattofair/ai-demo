@@ -54,6 +54,20 @@ async function rpc(name, args) {
   return data;
 }
 
+// 기한이 지난 대기 승격과 D-2 배정분을 조회 전에 처리합니다(QA D-09). 다른 회원의 선점을 기다리지 않게 합니다.
+// 로그인한 경우에만 부르고, 실패해도 조회는 그대로 이어 갑니다(1분마다 서버 예약 작업도 같은 처리를 합니다).
+async function sweepDue() {
+  if (!supabase) return;
+  try {
+    const { data } = await supabase.auth.getSession();
+    if (!data?.session) return;
+    const { error } = await supabase.rpc('sweep_due_offerings');
+    if (error) console.error(error);
+  } catch (e) {
+    console.error(e);
+  }
+}
+
 async function invoke(name, body) {
   const { data, error } = await client().functions.invoke(name, { body });
   if (error) {
@@ -152,6 +166,7 @@ export const api = {
   cancelWaitlist: (id) => rpc('cancel_waitlist', { p_id: id }),
   holdForPromotion: (waitlistId) => rpc('hold_for_promotion', { p_waitlist: waitlistId }),
   sweepOffering: (offeringId) => rpc('sweep_offering', { p_offering: offeringId }),
+  sweepDue,
 
   // 좌석/인원 선택 화면용 조회
   offeringSeatMap: (offeringId) => rpc('offering_seat_map', { p_offering: offeringId }),
@@ -168,6 +183,7 @@ export const api = {
     return (await rpc('my_booking_items', { p_booking: bookingId })) ?? [];
   },
   async getOffering(id) {
+    await sweepDue();
     const { data, error } = await client()
       .from('offerings')
       .select('id, starts_at, ends_at, capacity, sale_starts_at, sale_ends_at, status, prices:offering_prices(grade, price), '
@@ -187,6 +203,7 @@ export const api = {
     return data;
   },
   async getProgram(id) {
+    await sweepDue();
     const { data, error } = await client().from('programs').select(PROGRAM_COLUMNS).eq('id', id).eq('is_public', true).maybeSingle();
     // 주소의 id 가 uuid 형식이 아니면 없는 프로그램으로 봅니다.
     if (error?.code === '22P02') return null;
@@ -205,12 +222,14 @@ export const api = {
     return data?.[0] ?? null;
   },
   async myWaitlist() {
+    await sweepDue();
     return (await rpc('my_waitlist_overview', {})) ?? [];
   },
   async myCounts() {
     return (await rpc('my_counts', {})) ?? { upcoming: 0, waitlist: 0, unread: 0 };
   },
   async myNotifications() {
+    await sweepDue();
     return (await rpc('my_notifications', {})) ?? [];
   },
   markNotificationRead: (id) => rpc('mark_notification_read', { p_id: id }),

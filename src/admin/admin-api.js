@@ -1,6 +1,8 @@
 // 관리자 화면용 Supabase 래퍼. 조회는 RLS 가 역할에 맞는 행만 돌려주고, 변경은 admin_* 함수로만 합니다.
 import { supabase } from '../lib/supabase.js';
-import { ApiError, fromDbError, messageFor } from '../lib/api.js';
+import { ApiError, api as userApi, fromDbError, messageFor } from '../lib/api.js';
+
+const sweepDue = () => userApi.sweepDue();
 
 const MESSAGES = {
   FORBIDDEN: '이 작업을 할 권한이 없습니다. 담당 역할을 확인해 주세요.',
@@ -94,7 +96,11 @@ export const adminApi = {
     return query(client().from('profiles').select('id, name, role').eq('id', userId).maybeSingle());
   },
 
-  dashboard: () => rpc('staff_dashboard'),
+  // 기한이 지난 대기 승격과 D-2 배정분을 먼저 처리한 뒤 보여 줍니다(QA D-09).
+  async dashboard() {
+    await sweepDue();
+    return rpc('staff_dashboard');
+  },
 
   // 프로그램
   async programs() {
@@ -147,6 +153,7 @@ export const adminApi = {
 
   // 대기자
   async waitlist(offeringId = null) {
+    await sweepDue();
     return (await rpc('staff_waitlist', { p_offering: offeringId })) ?? [];
   },
 

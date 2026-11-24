@@ -105,10 +105,11 @@ describe('시연 데이터 초기화(admin_reset_demo)', () => {
     }
     const { count: offerings } = await db.from('offerings').select('*', { count: 'exact', head: true });
     expect(offerings).toBeGreaterThan(0);
-    // 처음 시드의 기준은 내일(BASE)이었고 초기화는 지금(app_now) 기준이라 일정이 하루 앞섭니다.
+    // 초기화는 app_now 의 KST 날짜 자정을 기준으로 시드의 고정 시각(체험 14:00)을 씁니다(QA D-08).
     const { data: after } = await db.from('offerings').select('starts_at').order('starts_at').limit(1);
-    expect(Date.parse(first[0].starts_at) - Date.parse(after[0].starts_at)).toBeGreaterThan(DAY - 60000);
-    expect(Date.parse(first[0].starts_at) - Date.parse(after[0].starts_at)).toBeLessThan(DAY + 60000);
+    const kstMidnight = Date.parse(`${new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10)}T00:00:00+09:00`);
+    expect(Date.parse(after[0].starts_at)).toBe(kstMidnight + 5 * DAY + 14 * 3600000);
+    expect(first[0].starts_at).not.toBe(after[0].starts_at);
     // 계정은 그대로입니다.
     expect((await ok(op.from('profiles').select('role').eq('id', (await op.auth.getUser()).data.user.id).single())).role).toBe('operator');
     await userClient('member2@demo.test');
