@@ -55,7 +55,7 @@ function pickFeatured(programs, statusOf) {
     ?? programs[0];
 }
 
-function renderFeature(host, program, status) {
+function renderFeature(host, program, status, next) {
   const href = `#/programs/${encodeURIComponent(program.id)}`;
   // 사진은 장식입니다. 제목과 정보는 글자로 함께 나옵니다.
   const photo = node('div', 'f-photo');
@@ -79,17 +79,25 @@ function renderFeature(host, program, status) {
   const titleLink = node('a', '', program.title);
   titleLink.href = href;
   title.append(titleLink);
-  const dl = node('dl');
-  const rows = [
-    ['기간', periodText(program, 'full')],
-    ['장소', `한빛아트센터 ${program.venue ?? ''}`.trim()],
-    ['가격', program.type === 'PERFORMANCE' ? priceLines(program) : priceText(program)],
-  ];
-  for (const [k, v] of rows) dl.append(node('dt', '', k), node('dd', 'num', v));
+  const parts = [marks, title];
+  if (program.summary) parts.push(node('p', 'f-summary', program.summary));
+  // 기간과 장소는 한 줄로, 가격은 시작 가격을 크게 두고 등급별 가격을 작게 덧붙입니다.
+  const meta = node('p', 'f-meta num');
+  meta.append(node('span', '', periodText(program, 'full')), node('span', '', `한빛아트센터 ${program.venue ?? ''}`.trim()));
+  const price = node('p', 'f-price');
+  price.append(node('b', 'num', priceText(program)));
+  if (program.type === 'PERFORMANCE') {
+    const grades = priceLines(program);
+    if (grades !== priceText(program)) price.append(node('span', 'f-grades num', grades));
+  }
+  parts.push(meta, price);
+  const action = node('div', 'f-action');
   const cta = node('a', 'btn btn-primary', program.type === 'PERFORMANCE' ? '예매하기' : '신청하기');
   cta.href = href;
-  if (program.poster_series) info.append(node('p', 'f-series', program.poster_series));
-  info.append(marks, title, dl, cta);
+  action.append(cta);
+  if (next) action.append(node('p', 'f-next num', `가장 가까운 회차 ${kstShortDateTime(next.offering.starts_at)}, ${leftText(next)}`));
+  parts.push(action);
+  info.append(...parts);
   host.replaceChildren(photo, info);
 }
 
@@ -117,7 +125,7 @@ function leftText({ status, left }) {
   return left <= LOW_LEFT ? `마감 임박 ${left}석` : `잔여 ${left}석`;
 }
 
-function renderBoard(host, rows, listTitle) {
+function renderBoard(host, rows, listTitle, featured) {
   const head = node('div', 'board-head');
   head.append(node('h2', '', '지금 예매할 수 있는 회차'));
   const body = [];
@@ -128,10 +136,22 @@ function renderBoard(host, rows, listTitle) {
       const li = node('li');
       const a = node('a');
       a.href = `#/programs/${encodeURIComponent(r.program.id)}`;
+      const line = node('span', 'b-line');
+      line.append(typeMark(r.program.type));
+      // 첫 화면 왼쪽의 대표 공연과 같은 프로그램이면 글자 라벨로 이어 줍니다.
+      if (r.program === featured) {
+        li.classList.add('is-featured');
+        line.append(node('span', 'b-badge', '대표 공연'));
+      }
+      line.append(node('span', 'b-title', r.program.title));
+      const main = node('span', 'b-main');
+      main.append(line, node('span', 'b-when num', kstShortDateTime(r.offering.starts_at)));
       const left = node('span', 'b-left', leftText(r));
       if (r.status === 'SOLD_OUT_WAITLIST') left.classList.add('sold');
       else if (typeof r.left === 'number' && r.left <= LOW_LEFT) left.classList.add('low');
-      a.append(node('span', 'b-when num', kstShortDateTime(r.offering.starts_at)), node('span', 'b-title', r.program.title), left);
+      const go = node('span', 'b-go', '›');
+      go.setAttribute('aria-hidden', 'true');
+      a.append(main, left, go);
       li.append(a);
       ul.append(li);
     }
@@ -177,7 +197,7 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
     <div class="container">
       <div class="hero-head">
         <h1>무대와 배움이 가까운 곳에</h1>
-        <p>공연과 체험, 정규 강좌를 한곳에서 찾고 좌석 선택부터 취소, 환불까지 직접 하세요.</p>
+        <p>공연, 체험, 정규 강좌 예약을 한곳에서</p>
         <a class="hero-mine" href="#/me/bookings">내 예약 확인</a>
       </div>
       <div class="hero-grid">
@@ -234,11 +254,11 @@ export async function renderPrograms(el, { api, query = new URLSearchParams(), n
   let featured = null;
   if (programs.length) {
     featured = pickFeatured(programs, statusOf);
-    renderFeature(feature, featured, statusOf(featured));
+    renderFeature(feature, featured, statusOf(featured), boardRows([featured], now(), remaining, 1)[0]);
   } else {
     feature.remove();
   }
-  renderBoard(board, boardRows(programs, now(), remaining), el.querySelector('#list-title'));
+  renderBoard(board, boardRows(programs, now(), remaining), el.querySelector('#list-title'), featured);
   board.querySelector('h2').id = 'board-title';
 
   // 필터 상태

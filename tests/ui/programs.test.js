@@ -509,4 +509,37 @@ describe('예매 현황판', () => {
     expect(f.querySelector('.btn-primary').textContent).toBe('예매하기');
     expect(el.querySelector('.hero h1').textContent).toBe('무대와 배움이 가까운 곳에');
   });
+
+  it('대표 공연의 회차는 현황판에서 「대표 공연」 글자와 함께 표시됩니다', async () => {
+    await open();
+    const marked = rows().filter((li) => li.classList.contains('is-featured'));
+    expect(marked.length).toBeGreaterThan(0);
+    for (const li of marked) {
+      expect(li.querySelector('a').getAttribute('href')).toBe('#/programs/p1');
+      expect(li.querySelector('.b-badge').textContent).toBe('대표 공연');
+    }
+    expect(rows().filter((li) => !li.classList.contains('is-featured')).every((li) => !li.querySelector('.b-badge'))).toBe(true);
+  });
+
+  it('현황판 줄은 유형 라벨과 이동 표시를 함께 보입니다', async () => {
+    await open();
+    const first = rows()[0];
+    expect(first.querySelector('.type').textContent).toBe('체험');
+    expect(first.querySelector('.b-go').getAttribute('aria-hidden')).toBe('true');
+  });
+
+  it('대표 칸은 가장 가까운 회차와 잔여석을 알려 줍니다', async () => {
+    await open();
+    expect(el.querySelector('.hero-feature .f-next').textContent).toBe('가장 가까운 회차 12.03(목) 19:00, 잔여 12석');
+  });
+
+  it('대표 칸은 한 줄 소개, 기간과 장소 한 줄, 시작 가격을 따로 보입니다', async () => {
+    await open();
+    const f = el.querySelector('.hero-feature');
+    expect(f.querySelector('.f-series')).toBeNull();
+    expect(f.querySelector('.f-summary').textContent).toBe('겨울 실내악 시리즈 「현의 대화」 한 줄 소개');
+    expect(f.querySelector('.f-meta').textContent).toContain('한빛아트센터 소극장');
+    expect(f.querySelector('.f-price b').textContent).toBe('20,000원부터');
+    expect(f.querySelector('.f-price .f-grades').textContent).toBe('R석 40,000원 / S석 30,000원 / A석 20,000원');
+  });
 });
