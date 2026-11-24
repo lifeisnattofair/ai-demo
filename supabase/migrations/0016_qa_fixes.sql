@@ -189,7 +189,7 @@ begin
 end $$;
 
 -- D-14: 작업 이력의 대상을 구분할 수 있게 표시용 이름을 함께 돌려줍니다.
--- 회원은 가린 이름과 ID 끝 4자리, 예약 매수와 결제는 예약번호, 프로그램과 회차는 이름과 일시입니다.
+-- 회원은 가린 이름과 ID 끝 4자리, 예약 매수와 결제는 예약번호, 프로그램과 회차(취소 요청 포함)는 이름과 일시입니다.
 drop function if exists public.staff_audit(timestamptz, timestamptz, uuid, text, int);
 create function public.staff_audit(p_from timestamptz default null, p_to timestamptz default null,
                                    p_actor uuid default null, p_action text default null, p_limit int default 1000)
@@ -210,6 +210,9 @@ begin
              when 'program' then (select g.title from public.programs g where g.id::text = a.target_id)
              when 'offering' then (select g.title || ' ' || to_char(o.starts_at at time zone 'Asia/Seoul', 'FMMM. FMDD. HH24:MI')
                                      from public.offerings o join public.programs g on g.id = o.program_id where o.id::text = a.target_id)
+             when 'offering_cancel_request' then (select g.title || ' ' || to_char(o.starts_at at time zone 'Asia/Seoul', 'FMMM. FMDD. HH24:MI')
+                                     from public.offering_cancel_requests r join public.offerings o on o.id = r.offering_id
+                                     join public.programs g on g.id = o.program_id where r.id::text = a.target_id)
            end,
            a.detail
       from public.admin_audit a left join public.profiles p on p.id = a.actor_id

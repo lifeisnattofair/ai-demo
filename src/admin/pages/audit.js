@@ -23,7 +23,7 @@ const ACTIONS = {
   RESET_DEMO: '시연 데이터 초기화',
 };
 const TARGETS = {
-  program: '프로그램', offering: '회차', profile: '회원', payment: '결제', booking_item: '예약 매수', app_settings: '설정', system: '시스템',
+  program: '프로그램', offering: '회차', offering_cancel_request: '회차 취소 요청', profile: '회원', payment: '결제', booking_item: '예약 매수', app_settings: '설정', system: '시스템',
 };
 
 export const actionLabel = (code) => ACTIONS[code] ?? code;
