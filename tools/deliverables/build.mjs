@@ -130,17 +130,18 @@ function buildRequirements() {
 <tr><td class="center">v0.9</td><td class="center">2026. 11. 23.</td><td>최초 작성(요구사항 협의 결과 반영)</td><td class="center">서비스 기획</td><td class="center">-</td></tr>
 <tr><td class="center">v1.0</td><td class="center">2026. 11. 23.</td><td>설계 검토 의견 반영(대기 승격 수량, 시연 환경 분리, 금액 처리 기준), SFR-026 추가</td><td class="center">서비스 기획</td><td class="center">발주기관 승인</td></tr>
 <tr><td class="center">v1.1</td><td class="center">2026. 11. 23.</td><td>결제 연계를 결제대행 어댑터 구조로 변경하고 프로토타입은 모의 어댑터 적용(SFR-010, SIR-001~003, COR-002)</td><td class="center">서비스 기획</td><td class="center">발주기관 승인</td></tr>
+<tr><td class="center">v1.2</td><td class="center">2026. 11. 24.</td><td>QA 결과 반영: 회원 정보 수정 범위(SFR-002), 대기 신청 수량 상한과 D-2 마감(SFR-015, SFR-016), 시연 데이터 초기화의 시연 계정 복구(SFR-026)</td><td class="center">서비스 기획</td><td class="center">-</td></tr>
 </tbody></table></section>`;
   const cover = `<section class="cover"><!--RUN-->
 <div class="docno">문서번호 HB-PMO-REQ-01</div>
 <div class="title-block"><div class="project">${esc(PROJECT)}</div><h1>요구사항정의서</h1><div class="subtitle">제안요청 내용 및 상세 요구사항</div></div>
 <table class="meta"><tbody>
-<tr><th>문서 버전</th><td>v1.1</td><th>작성일</th><td>2026. 11. 23.</td></tr>
+<tr><th>문서 버전</th><td>v1.2</td><th>작성일</th><td>2026. 11. 24.</td></tr>
 <tr><th>발주기관</th><td colspan="3">${esc(ISSUER)}</td></tr>
 <tr><th>작성</th><td>서비스 기획</td><th>보안 등급</th><td>일반</td></tr>
 </tbody></table>
 <div class="issuer">한빛시 문화재단</div></section>`;
-  return { html: page({ title: '요구사항정의서', docName: '요구사항정의서 v1.1', docNo: 'HB-PMO-REQ-01', body: cover + history + tocHtml + html }), reqRows, acMap };
+  return { html: page({ title: '요구사항정의서', docName: '요구사항정의서 v1.2', docNo: 'HB-PMO-REQ-01', body: cover + history + tocHtml + html }), reqRows, acMap };
 }
 
 /* ---------------- 기획 점검표 ---------------- */
@@ -209,7 +210,7 @@ async function buildTrace(reqRows, acMap) {
   ws.getCell('A1').font = { name: '맑은 고딕', size: 16, bold: true, color: { argb: 'FF1D3557' } };
   ws.getRow(1).height = 30;
   ws.mergeCells(2, 1, 2, cols.length);
-  ws.getCell('A2').value = `사업명: ${PROJECT}    문서번호: HB-PMO-TRC-01    버전: v1.1    작성일: 2026. 11. 24.    기준 문서: 요구사항정의서 v1.1, QA 테스트 케이스 v1.0`;
+  ws.getCell('A2').value = `사업명: ${PROJECT}    문서번호: HB-PMO-TRC-01    버전: v1.1    작성일: 2026. 11. 24.    기준 문서: 요구사항정의서 v1.2, QA 테스트 케이스 v1.0`;
   ws.getCell('A2').font = { ...font, color: { argb: 'FF3A4250' } };
   ws.getRow(3).height = 6;
   const hr = ws.getRow(4);
@@ -290,7 +291,7 @@ const checklist = buildChecklist();
 const trace = await buildTrace(req.reqRows, req.acMap);
 const browser = await puppeteer.launch({ executablePath: CHROME, headless: true, args: ['--allow-file-access-from-files'] });
 try {
-  const reqPages = await renderPdf(browser, req.html, '01_요구사항정의서_v1.1', [1, 2, 3, 6, 9]);
+  const reqPages = await renderPdf(browser, req.html, '01_요구사항정의서_v1.2', [1, 2, 3, 6, 9]);
   const chkPages = await renderPdf(browser, checklist, '01_기획점검표_v1.0', [1, 2, 3]);
   console.log(JSON.stringify({ reqPages, chkPages, traceRows: trace.count, reqCount: req.reqRows.length }));
 } finally {

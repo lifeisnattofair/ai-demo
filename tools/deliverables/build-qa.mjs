@@ -50,7 +50,7 @@ function title(ws, text, span) {
   ws.getCell('A1').font = { name: '맑은 고딕', size: 16, bold: true, color: { argb: 'FF1D3557' } };
   ws.getRow(1).height = 30;
   ws.mergeCells(2, 1, 2, span);
-  ws.getCell('A2').value = `사업명: ${PROJECT}    문서번호: ${DOC_NO}    버전: ${VERSION}    작성일: ${DATE}    기준 문서: 요구사항정의서 v1.1, QA 테스트 케이스 v1.0`;
+  ws.getCell('A2').value = `사업명: ${PROJECT}    문서번호: ${DOC_NO}    버전: ${VERSION}    작성일: ${DATE}    기준 문서: 요구사항정의서 v1.2, QA 테스트 케이스 v1.0`;
   ws.getCell('A2').font = { ...font, color: { argb: 'FF3A4250' } };
   ws.getRow(3).height = 6;
 }
@@ -160,7 +160,7 @@ const overview = [
   ['대상', `통합 예약 플랫폼 프로토타입(사용자 화면, 관리자 화면, DB 함수, 결제 서버 함수)${COMMIT ? `, main ${COMMIT}` : ''}`],
   ['테스트 일자', DATE],
   ['테스트 환경', '로컬: Vite 개발 서버, Supabase CLI 3.3.0(PostgreSQL, Auth, Edge Functions), 모의 결제 어댑터, Chromium 계열 브라우저 1024 x 768(반응형은 390, 1440)'],
-  ['기준 문서', '요구사항정의서 v1.1(요구사항 64개, 검수 기준 AC-1~AC-9), QA 테스트 케이스 v1.0(88건)'],
+  ['기준 문서', '요구사항정의서 v1.2(요구사항 64개, 검수 기준 AC-1~AC-9), QA 테스트 케이스 v1.0(88건)'],
   ['판정 기준', 'PASS: 기대 결과와 일치 / PASS(일부): 확인한 범위는 일치 / FAIL: 불일치 / BLOCKED: 환경 제약으로 수행 불가 / 자동 확인: 자동 테스트로만 확인'],
 ];
 for (const [k, v] of overview) {

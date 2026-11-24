@@ -354,7 +354,7 @@ export const SCREENS = [
   {
     id: 'UI-A08', who: 'operator@demo.test', admin: true, h: 700,
     go: async (c) => { await c.goto('#/waitlist', 1800); },
-    note: '승격은 회원의 취소 처리 안에서 자동으로 일어나며, 기한 만료는 다음 조회 때 처리합니다(지연 처리).',
+    note: '승격은 회원의 취소 처리 안에서 자동으로 일어나며, 기한 만료와 다음 순번 승격은 1분마다 도는 DB 예약 작업과 조회 화면이 처리합니다.',
     items: [
       { sel: '.page-head .help', title: '규칙 안내', desc: '「순번은 회차별 진행 중 신청의 순서입니다. 취소분이 1순위 신청 수량만큼 모이면 자동으로 승격되고 24시간 안에 결제해야 합니다.」' },
       { sel: 'form.search-box', title: '조회 조건', desc: '유형, 프로그램, 상태(진행 중(대기, 승격) 기본, 전체, 대기 중, 승격(결제 대기), 종료).' },
