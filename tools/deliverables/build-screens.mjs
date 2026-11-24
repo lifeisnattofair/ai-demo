@@ -21,7 +21,7 @@ const CHROME = process.env.CHROME_PATH ?? 'C:/Program Files/Google/Chrome/Applic
 const PROJECT = '한빛아트센터 공연·교육 프로그램 통합 예약 플랫폼 구축';
 const ISSUER = '(가상) 한빛시 문화재단 한빛아트센터';
 const DOC_NO = 'HB-PMO-UI-01';
-const VERSION = 'v1.0';
+const VERSION = 'v1.1';
 const DATE = '2026. 11. 24.';
 const NAME = `05_화면설계서_${VERSION}`;
 const css = readFileSync(resolve(here, 'template.css'), 'utf8');
@@ -56,7 +56,8 @@ const adminCount = SCREEN_LIST.length - userCount;
 const front = `<section class="front">
 <h2 class="front-title">개정 이력</h2>
 <table class="doc hist"><thead><tr><th>버전</th><th>일자</th><th>개정 내용</th><th>작성</th><th>검토/승인</th></tr></thead><tbody>
-<tr><td class="center">${VERSION}</td><td class="center">${DATE}</td><td>최초 작성. 사용자 ${userCount}개, 관리자 ${adminCount}개 화면 정의, 화면 흐름과 공통 규칙, 주요 ${SCREENS.length}개 화면 상세 설계(프로토타입 화면 기준)</td><td class="center">서비스 기획</td><td class="center">발주기관 검토</td></tr>
+<tr><td class="center">v1.0</td><td class="center">2026. 11. 24.</td><td>최초 작성. 사용자 ${userCount}개, 관리자 ${adminCount}개 화면 정의, 화면 흐름과 공통 규칙, 주요 ${SCREENS.length}개 화면 상세 설계(프로토타입 화면 기준)</td><td class="center">서비스 기획</td><td class="center">발주기관 검토</td></tr>
+<tr><td class="center">${VERSION}</td><td class="center">${DATE}</td><td>메인 화면(UI-U01) 개편 반영(대표 공연, 예매 현황판, 운영 정보 띠). 기관 로고, 본문 17px, 관리자 주요 수치 목록형(UI-A02, UI-A11) 반영을 위해 전 화면 재캡처</td><td class="center">서비스 기획</td><td class="center">발주기관 검토</td></tr>
 </tbody></table>
 <h2 class="front-title sub">문서 개요</h2>
 <table class="doc overview"><tbody>
